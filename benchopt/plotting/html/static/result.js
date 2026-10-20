@@ -1193,57 +1193,59 @@ const renderImages = () => {
   // Title
   if (plotData.title) {
     const titleEl = document.createElement('h2');
-    titleEl.className = 'text-xl text-center text-gray-800 mb-6';
+    titleEl.className = 'image-title';
     titleEl.innerText = plotData.title;
     image_container.appendChild(titleEl);
   }
 
   const ncols = plotData.ncols || Math.min(plotData.data.length, 3);
   const grid = document.createElement('div');
-  grid.className = `grid gap-6`;
+  grid.className = 'image-grid';
   grid.style.gridTemplateColumns = `repeat(${ncols}, minmax(0, 1fr))`;
 
   plotData.data.forEach(imgData => {
-    const card = document.createElement('div');
+    const cell = document.createElement('figure');
+    cell.className = 'image-cell';
+    grid.appendChild(cell);
 
-    if (imgData.image === null) {
-      // Empty invisible block for grid alignment
-      grid.appendChild(card);
-      return;
-    }
-
-    card.className = 'bg-white rounded-lg shadow border border-gray-200 p-2 flex flex-col gap-2';
-
-    const imgWrapper = document.createElement('div');
-    imgWrapper.className = 'bg-gray-50 flex items-center justify-center';
-    imgWrapper.style.aspectRatio = '1 / 1';
+    // Empty invisible block for grid alignment
+    if (imgData.image === null) return;
 
     if (imgData.image === '__incompatible__') {
       const msg = document.createElement('span');
-      msg.className = 'text-sm text-gray-500 italic';
+      msg.className = 'image-incompatible';
       msg.innerText = 'Incompatible image';
-      imgWrapper.appendChild(msg);
+      cell.appendChild(msg);
     } else {
       const img = document.createElement('img');
       img.src = imgData.image;
       img.alt = imgData.label || '';
-      img.className = 'block w-full h-full object-contain';
-      img.style.imageRendering = 'pixelated';
-      imgWrapper.appendChild(img);
+      img.title = 'Click to enlarge';
+      img.onclick = () => openImageModal(img, imgData.label);
+      cell.appendChild(img);
     }
-    card.appendChild(imgWrapper);
 
     if (imgData.label) {
-      const labelEl = document.createElement('div');
-      labelEl.className = 'text-sm text-center text-gray-700';
+      const labelEl = document.createElement('figcaption');
       labelEl.innerText = imgData.label;
-      card.appendChild(labelEl);
+      cell.appendChild(labelEl);
     }
-
-    grid.appendChild(card);
   });
 
   image_container.appendChild(grid);
+};
+
+const openImageModal = (img, label) => {
+  const modal = document.getElementById('image-modal');
+  const modalImg = modal.querySelector('img');
+  modalImg.src = img.src;
+  // Upscale to fit the viewport while keeping the aspect ratio
+  modalImg.decode().then(() => {
+    const ratio = modalImg.naturalWidth / modalImg.naturalHeight;
+    modalImg.style.width = `min(90vw, ${80 * ratio}vh)`;
+  });
+  modal.querySelector('figcaption').innerText = label || '';
+  modal.showModal();
 };
 
 /*
@@ -1282,6 +1284,74 @@ const valueToFixed = (value) => {
   return value;
 }
 
+/*
+ * Inline markup for table cells: `**bold**`, `*italic*` and `__underlined__`.
+ * They are rendered as HTML in the report and converted to the matching LaTeX
+ * commands on export. A cell whose text is a single number, e.g. `**1.234**`,
+ * is still handled as a number by the float precision control and the sorting.
+ */
+const CELL_MARKUP = [
+  [/\*\*([^*]+)\*\*/g, 'b'],
+  [/__([^_]+)__/g, 'u'],
+  [/\*([^*]+)\*/g, 'i'],
+];
+const LATEX_COMMANDS = {B: 'textbf', I: 'textit', U: 'underline'};
+
+const escapeHtml = (value) => value.replace(
+  /[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c])
+);
+
+// `\*` and `\_` give a literal marker: hide them behind a placeholder while
+// the markup is converted, then put them back.
+const PLACEHOLDERS = {'*': '\u0000', '_': '\u0001'};
+const LITERALS = {'\u0000': '*', '\u0001': '_'};
+
+// Escape the cell content first: only our own markup produces HTML tags.
+const markupToHtml = (value) => CELL_MARKUP.reduce(
+  (html, [regexp, tag]) => html.replace(regexp, `<${tag}>$1</${tag}>`),
+  escapeHtml(value).replace(/\\([*_])/g, (match, c) => PLACEHOLDERS[c])
+).replace(/[\u0000\u0001]/g, c => LITERALS[c]);
+
+// Cell text without its markup, used to sort and to format a wrapped number.
+const stripMarkup = (value) => CELL_MARKUP.reduce(
+  (text, [regexp]) => text.replace(regexp, '$1'),
+  String(value).replace(/\\([*_])/g, (match, c) => PLACEHOLDERS[c])
+).replace(/[\u0000\u0001]/g, c => LITERALS[c]);
+
+// Numeric value of a cell, or null if its text is not a single number.
+const cellNumber = (value) => {
+  if (typeof value === 'number') return value;
+  const text = typeof value === 'string' ? stripMarkup(value).trim() : '';
+  return text !== '' && !isNaN(text) ? Number(text) : null;
+};
+
+/**
+ * Render a cell, applying the float precision to numbers, markup or not.
+ */
+const formatCell = (value) => {
+  if (typeof value !== 'string') return valueToFixed(value);
+  const number = cellNumber(value);
+  const text = number === null ? value
+    : value.replace(stripMarkup(value).trim(), valueToFixed(number));
+  return gridjs.html(markupToHtml(text));
+};
+
+const escapeLatex = (value) => value.replace(/([&%$#_{}])/g, '\\$1');
+
+// Recurse: Grid.js wraps formatted cells in a <span>, and markup can be
+// nested (`**__text__**`).
+const nodeToLatex = (node) => {
+  if (node.nodeType === Node.TEXT_NODE) return escapeLatex(node.textContent);
+  const content = Array.from(node.childNodes, nodeToLatex).join('');
+  const command = LATEX_COMMANDS[node.nodeName];
+  return command ? `\\${command}{${content}}` : content;
+};
+
+/**
+ * Convert a rendered cell (or header) to LaTeX, keeping its formatting.
+ */
+const elementToLatex = (element) => nodeToLatex(element).trim();
+
 /**
  * Compare two cell values, handling both numbers and strings.
  *
@@ -1290,10 +1360,11 @@ const valueToFixed = (value) => {
  * would make all close numbers compare as equal.
  */
 const compareCells = (a, b) => {
-  if (typeof a === 'number' && typeof b === 'number') {
-    return a > b ? 1 : a < b ? -1 : 0;
+  const [numA, numB] = [cellNumber(a), cellNumber(b)];
+  if (numA !== null && numB !== null) {
+    return numA > numB ? 1 : numA < numB ? -1 : 0;
   }
-  return String(a).localeCompare(String(b));
+  return stripMarkup(a).localeCompare(stripMarkup(b));
 }
 
 const sortRows = (plotData, column, ascending) =>
@@ -1367,7 +1438,8 @@ function renderTable() {
     return;
   }
 
-  const gridKey = [state().plot_kind, ...plotData.columns].join('|');
+  const dropdownValues = getPlotDropdowns().map(dropdown => state()[dropdown]);
+  const gridKey = [state().plot_kind, ...dropdownValues].join('|');
   if (tableGrid && tableGridKey === gridKey && !tablePendingView) {
     // Same table: refresh in place (e.g. after a precision change), keeping
     // the current sorting. The formatters read the global precision.
@@ -1377,41 +1449,55 @@ function renderTable() {
     return;
   }
 
+  // Grid.js fills the table asynchronously: keep the new card at the previous
+  // grid height during a rebuild so the column pills and footer below don't
+  // jump around while the rows load.
+  const prevGrid = table_container.querySelector('.gridjs-container');
+  const prevGridHeight = prevGrid ? prevGrid.offsetHeight : 0;
+
   table_container.innerHTML = "";
 
   // Restore the hidden columns / order from a saved view when one is being
-  // loaded, otherwise start fresh with the table's default order.
-  tableHiddenColumns = new Set();
-  if (tablePendingView && Array.isArray(tablePendingView.hidden)) {
-    const valid = tablePendingView.hidden.filter(c => plotData.columns.includes(c));
-    // Never hide every column.
-    if (valid.length < plotData.columns.length) {
-      valid.forEach(c => tableHiddenColumns.add(c));
-    }
-  }
+  // loaded, otherwise keep the ones set through the column toggles.
+  const hidden = tablePendingView && Array.isArray(tablePendingView.hidden)
+    ? tablePendingView.hidden : [...tableHiddenColumns];
+  const valid = hidden.filter(c => plotData.columns.includes(c));
+  // Never hide every column.
+  tableHiddenColumns = new Set(
+    valid.length < plotData.columns.length ? valid : []
+  );
   const orderedData = orderTableData(plotData, tablePendingView && tablePendingView.order);
   tablePendingView = null;
+
+  // Title. Titles are stored with plotly line breaks (<br />).
+  if (plotData.title) {
+    const titleEl = document.createElement('h2');
+    titleEl.className =
+      'text-xl text-center text-gray-800 mb-6 whitespace-pre-line';
+    titleEl.innerText = plotData.title.replace(/<br\s*\/?>/g, '\n');
+    table_container.appendChild(titleEl);
+  }
 
   // Grid.js table with sortable columns and a search bar
   const card = document.createElement("div");
   card.className = "w-full bg-white overflow-hidden mx-auto";
 
-  // First column: values are already short labels. A hover icon carrying the
-  // full parameter list is added from the global `descriptions` map (short ->
-  // HTML). The SVG icon stays out of `innerText`, so exports are unaffected.
-  const solverCellHTML = (value) => {
-    const label = String(value);
-    const desc = (window.descriptions || {})[label];
-    return escapeHTML(label) + (desc ? descIconHTML(desc) : '');
+  // Solver/dataset/objective names are already short labels, in any column.
+  // Cells matching one get a hover icon carrying the full parameter list, from
+  // the global `descriptions` map (short -> HTML). The SVG icon stays out of
+  // `innerText`, so exports are unaffected.
+  const tableCell = (value) => {
+    const desc = typeof value === 'string' && (window.descriptions || {})[value];
+    return desc
+      ? gridjs.html(markupToHtml(value) + descIconHTML(desc))
+      : formatCell(value);
   };
 
-  const buildColumns = () => plotData.columns.map((name, colIdx) => ({
+  const buildColumns = () => plotData.columns.map(name => ({
     name,
     hidden: tableHiddenColumns.has(name),
     sort: { compare: compareCells },
-    formatter: colIdx === 0
-      ? (value) => gridjs.html(solverCellHTML(value))
-      : (value) => valueToFixed(value),
+    formatter: tableCell,
   }));
 
   tableGrid = new gridjs.Grid({
@@ -1420,6 +1506,10 @@ function renderTable() {
     sort: true,
     search: true,
   });
+  if (prevGridHeight) {
+    card.style.minHeight = `${prevGridHeight}px`;
+    tableGrid.on('ready', () => card.style.minHeight = '');
+  }
   tableGrid.render(card);
   tableGridKey = gridKey;
 
@@ -1469,8 +1559,10 @@ function renderTable() {
       } else {
         tableHiddenColumns.add(name);
       }
-      setPillStyle(pill, checkbox.checked, name);
-      tableGrid.updateConfig({ columns: buildColumns() }).forceRender();
+      // Rebuild the grid from scratch: Grid.js' forceRender keeps the column
+      // widths pinned during the first render
+      tablePendingView = {order: getTableOrder(), hidden: [...tableHiddenColumns]};
+      renderTable();
     };
 
     label.appendChild(checkbox);
@@ -1549,33 +1641,42 @@ async function exportTable() {
   // float precision.
   const displayedColumns = Array.from(
     document.querySelectorAll('#table_container .gridjs-th-content'),
-    el => el.textContent.trim()
+    elementToLatex
   );
   const displayedRows = Array.from(
     document.querySelectorAll('#table_container .gridjs-table tbody tr')
-  ).map(tr => Array.from(tr.querySelectorAll('td'), td => td.innerText));
+  ).map(tr => Array.from(tr.querySelectorAll('td'), elementToLatex));
 
-  let value = "\\begin{tabular}{l";
+  const title = (getPlotData() || {}).title;
+  let value = "";
+  if (title) {
+    // Caption above the table, kept on a single line.
+    value += "\\begin{table}[h]\n\\centering\n\\caption{";
+    value += escapeLatex(title.replace(/<br\s*\/?>/g, ", "));
+    value += "}\n";
+  }
+  value += "\\begin{tabular}{l";
   value += "c".repeat(displayedColumns.length);
   value += "}\n";
   value += "\\hline\n";
 
-  value += displayedColumns[0].replace('_', '\\_');
-  displayedColumns.slice(1).forEach(metric => value += ` & ${metric.replace('_', '\\_')}`);
+  value += displayedColumns[0];
+  displayedColumns.slice(1).forEach(metric => value += ` & ${metric}`);
 
   value += " \\\\\n";
   value += "\\hline\n";
 
   displayedRows.forEach(rowData => {
-    value += rowData[0].replace('_', '\\_');
+    value += rowData[0];
     rowData.slice(1).forEach(cell => {
-      value += ` & ${cell.replace('_', '\\_')}`;
+      value += ` & ${cell}`;
     });
     value += " \\\\\n";
   });
 
   value += "\\hline\n";
   value += "\\end{tabular}";
+  if (title) value += "\n\\end{table}";
 
   try {
     await navigator.clipboard.writeText(value);

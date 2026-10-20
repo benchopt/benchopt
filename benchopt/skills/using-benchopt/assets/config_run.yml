@@ -1,0 +1,19 @@
+# benchopt run . --config config_run.yml
+# CLI flags become top-level keys; lists expand to cartesian products.
+
+n-repetitions: 3
+max-runs: 30
+timeout: 60               # per-solver wall-clock seconds; remove for no limit
+
+dataset:
+  - "simulated[n_samples=[100,1000],n_features=20]"
+
+# objective:
+#   - "my-objective[param=value]"
+
+solver:
+  - my-solver
+  # - "other-solver[step_size=[0.01,0.1]]"
+
+# Uncomment to fix the random seed for reproducibility:
+# seed: 42

@@ -1,3 +1,6 @@
+import threading
+import time
+
 import pytest
 
 
@@ -74,6 +77,49 @@ def test_backend_not_installed(backend):
                     *"-d test-dataset -n 0 -r 1 --no-plot "
                     f"--parallel-config {parallel_config_file}".split()
                 ], standalone_mode=False)
+
+
+def test_parallel_run_dispatches_lazily():
+    # Make sure we keep the lazy dispatching when possible (loky).
+    from benchopt.parallel_backends import parallel_run
+
+    n_runs = 100
+    # Hard-block the generator's tail after dispatching a few tasks,
+    # so we can check that the first results are yielded before the generator
+    # is fully consumed.
+    block_after = 50
+    release = threading.Event()
+    pulled = 0
+
+    def kwargs_gen():
+        nonlocal pulled
+        for i in range(n_runs):
+            if i == block_after:
+                release.wait(timeout=60)
+            pulled += 1
+            yield dict(i=i)
+
+    # Make sure every run is dispatched, and keep a small sleep so
+    # main thread retrieval kicks in faster than dispatch hanging.
+    def _run(i):
+        time.sleep(0.005)
+        return (i,)
+    _run.check_call_in_cache = lambda **kwargs: False
+
+    results = parallel_run(
+        benchmark=None, run=_run, run_kwargs_generator=kwargs_gen(),
+        # batch_size=1 avoids joblib auto-batching pulling many tasks at once.
+        config=dict(backend="loky", n_jobs=2, batch_size=1),
+    )
+    try:
+        next(results)
+        # A result came out while the generator tail is still blocked, so at
+        # most the unblocked prefix was pulled.
+        assert pulled <= block_after
+    finally:
+        release.set()
+    # Drain the rest so the workers shut down cleanly.
+    assert len(list(results)) == n_runs - 1
 
 
 @pytest.mark.parametrize("backend", ["submitit", "dask"])

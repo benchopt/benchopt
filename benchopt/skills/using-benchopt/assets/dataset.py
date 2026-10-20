@@ -1,0 +1,31 @@
+import numpy as np
+from benchopt import BaseDataset
+
+
+class Dataset(BaseDataset):
+    name = "simulated"  # display/CLI identifier; must not contain "/"
+    requirements = []
+    parameters = {
+        "n_samples": [100, 1000],
+        "n_features": [20],
+    }
+    # Small, fast config used by `benchopt test` (single values, not lists).
+    test_config = {"n_samples": 10, "n_features": 5}
+    # Legacy grid fallback for test_solver_run only (same shape as parameters):
+    # test_parameters = {"n_samples": [10], "n_features": [5]}
+    # Params that don't affect prepare() output (omit or set to "all"):
+    # prepare_cache_ignore = ("seed",)
+
+    def get_data(self):
+        # Must return a dict; benchopt calls Objective.set_data(**data).
+        # get_seed(use_repetition=True) makes --n-repetitions draw distinctly.
+        rng = np.random.default_rng(self.get_seed(use_repetition=True))
+        X = rng.standard_normal((self.n_samples, self.n_features))
+        y = X @ rng.standard_normal(self.n_features)
+        return dict(X=X, y=y)
+
+    # Optional: expensive one-time work (downloads, preprocessing).
+    # benchopt run never calls prepare(); trigger via `benchopt prepare .`
+    # or share an _ensure_prepared() guard called from both.
+    # def prepare(self):
+    #     ...  # idempotent; safe to re-run

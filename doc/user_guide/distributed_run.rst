@@ -83,7 +83,9 @@ Hereafter is an example of such config file:
 
 Using this backend, each configuration of ``(dataset, objective, solver)`` with
 unique parameters is launched as a separated job in a job-array on the SLURM
-cluster. The logs of each run can be found in ``./benchopt_run/``.
+cluster. The logs of each run can be found in ``./benchopt_run/``. Cache hits
+are detected on the submitting node before dispatching, so no SLURM job is
+allocated for a configuration whose result is already cached.
 
 The parameters defined in this config file should be compatible with
 the ``submitit`` library, as they are passed to the ``submitit.AutoExecutor``

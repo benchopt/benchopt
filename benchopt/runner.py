@@ -1,3 +1,4 @@
+import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -73,18 +74,23 @@ def run_one_resolution(objective, solver, meta, stop_val):
     ], result
 
 
-def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
-                   force=False, terminal=None, run_context=None):
+def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
+                   timeout, max_runs, force=False, terminal=None,
+                   run_context=None):
     """Run all repetitions of the solver for a value of stopping criterion.
 
     Parameters
     ----------
     benchmark : benchopt.Benchmark object
         Object to represent the benchmark.
+    dataset : instance of BaseDataset
+        The dataset to use.
     objective : instance of BaseObjective
         The objective to minimize.
     solver : instance of BaseSolver
         The solver to use.
+    repetition : int
+        Index of the repetition being run.
     meta : dict
         Metadata passed to store in Cost results.
         Contains objective, data, dimension.
@@ -112,9 +118,10 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
     status : 'done' | 'diverged' | 'timeout' | 'max_runs'
         The status on which the solver was stopped.
     """
-    # Re-attach the run context after deserialization (it is excluded from
-    # pickle via __getstate__ so workers receive components without it).
-    run_context.attach(objective, getattr(objective, '_dataset', None), solver)
+    # Re-attach the run context after deserialization (dataset, objective and
+    # solver are pickled independently, so it is not carried across it).
+    run_context.attach(objective, dataset, solver)
+    objective._repetition = repetition
 
     pdb = run_context.pdb if run_context is not None else False
 
@@ -127,6 +134,12 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
     )
 
     with exception_handler(terminal, pdb=pdb) as ctx:
+
+        # `_set_dataset` is a no-op if already called for this dataset
+        # (e.g. for sequential runs).
+        skip, reason = objective._set_dataset(dataset)
+        if skip:
+            return [], run_key, 'skip', reason
 
         skip, reason = solver._set_objective(objective)
         if skip:
@@ -253,8 +266,10 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     pdb : bool
         If pdb is set to True, open a debugger on error.
     output_file : str
-        Filename for the parquet output. If given, the results will
-        be stored at <BENCHMARK>/outputs/<filename>.parquet.
+        Name or path for the result output. A bare name is stored at
+        <BENCHMARK>/outputs/<name>.parquet. A value containing a path separator
+        is treated as an explicit path and written exactly there, leaving the
+        benchmark folder untouched.
 
     Returns
     -------
@@ -267,22 +282,32 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     exit_code = 0
     terminal = TerminalOutput(n_repetitions, show_progress)
 
-    # Resolve the output filename stem before runs start so that
-    # run_output_base is stable across all workers.
-    output_dir = benchmark.get_output_folder()
+    # Resolve the output path before runs start so that run_output_base is
+    # stable across all workers. A value containing a path separator is an
+    # explicit path, written exactly as given; a bare name lands in
+    # <BENCHMARK>/outputs/. Only touch the benchmark outputs folder when it is
+    # actually used, to keep the benchmark directory read-only for explicit
+    # output paths.
     if output_file == "None":
         timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
-        output_file = f'benchopt_run_{timestamp}.parquet'
+        output_path = (
+            benchmark.get_output_folder()
+            / f'benchopt_run_{timestamp}.parquet'
+        )
+    elif os.sep in output_file or (os.altsep and os.altsep in output_file):
+        output_path = Path(output_file)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        output_path = benchmark.get_output_folder() / output_file
     from .utils.run_context import RunContext
     base_run_context = RunContext(
         pdb=pdb,
-        run_output_base=output_dir / Path(output_file).stem,
+        run_output_base=output_path.parent / output_path.stem,
     )
 
     run_one_to_cvg_cached = benchmark.cache(
         run_one_to_cvg,
         ignore=['force', 'terminal', 'run_context'],
-        collect=collect
     )
 
     def run_one_to_cvg_final(**kwargs):
@@ -298,6 +323,11 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
             )
             return ([], key, e.status, "")
 
+    # Forward the cache lookup so the parallel dispatch can skip cached runs.
+    run_one_to_cvg_final.check_call_in_cache = (
+        run_one_to_cvg_cached.check_call_in_cache
+    )
+
     total_cvg_kwargs_generator = generate_run_kwargs(
         benchmark, solvers=solvers, forced_solvers=forced_solvers,
         datasets=datasets, objectives=objectives,
@@ -312,10 +342,10 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         config=parallel_config, collect=collect
     )
     try:
-        for result, key, status, reason in results_generator:
+        for result, key, status, reason, cached in results_generator:
             run_statistics.extend(result)
             terminal.set(dataset=key[0], objective=key[1], solver=key[2])
-            terminal.show_status(status=status, reason=reason)
+            terminal.show_status(status=status, reason=reason, cached=cached)
             if status == 'interrupted':
                 raise SystemExit(1)
     except KeyboardInterrupt:
@@ -329,8 +359,8 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         terminal.savefile_status()
         return 1, None
 
-    # Save output in parquet file in the benchmark folder
-    output_file = save_results(df, output_dir / output_file)
+    # Save output in parquet file at the resolved output path.
+    output_file = save_results(df, output_path)
 
     if plot_result:
         try:
@@ -413,6 +443,9 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
     output_file : Path
         Path to the output file where the results have been saved.
     """
+    assert not (collect and no_cache), (
+        "Cannot collect when using `no_cache=True`."
+    )
     benchmark = Benchmark(benchmark_path, no_cache=no_cache)
     if solver_names is None:
         solver_names = []

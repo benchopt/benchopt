@@ -75,7 +75,7 @@ def publish_result_file(benchmark, file_path, repo, token=None, keep='last'):
         api.create_repo(repo_id=repo, repo_type="dataset", exist_ok=True)
 
     from benchopt.results import read_results, save_results
-    from benchopt.results.process import merge_results
+    from benchopt.results.result_processing import merge_results
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)

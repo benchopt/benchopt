@@ -129,6 +129,11 @@ def get_solver_kwargs(
     """
     run_context = run_context or RunContext()
 
+    # Resolve inheritance now rather than at `_set_objective` run time: meta
+    # below feeds the cache key, so it must not depend on whether some other
+    # (solver, dataset) pair already triggered this resolution earlier on.
+    solver._inherit_stopping_criterion(objective)
+
     # get sampling strategy
     # for plotting purpose consider 'callback' as 'iteration'
     sampling_strategy = solver._solver_strategy
@@ -146,13 +151,14 @@ def get_solver_kwargs(
         repetition=0, base_seed=benchmark.seed,
     )
 
-    # Set objective and skip if necessary.
-    skip, reason = objective._set_dataset(dataset)
-    if skip:
-        terminal.skip(reason, objective=True)
-        return []
-
+    # Only load the data on the front node when the number of repetitions
+    # depends on it (CV splits). Otherwise, `skip` is checked by the worker.
     if n_repetitions is None:
+        skip, reason = objective._set_dataset(dataset)
+        if skip:
+            terminal.skip(reason, objective=True)
+            return []
+
         if hasattr(objective, "cv"):
             n_repetitions = objective.cv.get_n_splits(
                 **getattr(objective, "cv_metadata", {})
@@ -165,7 +171,6 @@ def get_solver_kwargs(
 
     for rep in range(n_repetitions):
         objective_rep = copy.copy(objective)
-        objective_rep._repetition = rep
 
         # Get meta
         meta = {
@@ -186,19 +191,17 @@ def get_solver_kwargs(
             **{f"p_dataset_{k}": v for k, v in dataset._parameters.items()},
         }
 
-        # Set dataset in objective for the repetition.
-        # We need to set the context here, used in get_data. No need to clone
-        # each components, they are cloned and reset for each run .
+        # Context for this repetition, used by get_seed() in run_one_to_cvg.
         run_ctx = run_context.set_run_context(
             objective=objective_rep, dataset=dataset, solver=solver,
             repetition=rep, base_seed=benchmark.seed,
         )
-        objective_rep._set_dataset(dataset)
 
         args_run_one_to_cvg = dict(
-            benchmark=benchmark, objective=objective_rep, solver=solver,
-            meta=meta, timeout=timeout, max_runs=max_runs, force=force,
-            terminal=terminal, run_context=run_ctx,
+            benchmark=benchmark, dataset=dataset, objective=objective_rep,
+            solver=solver, repetition=rep, meta=meta, timeout=timeout,
+            max_runs=max_runs, force=force, terminal=terminal,
+            run_context=run_ctx,
         )
 
         yield args_run_one_to_cvg

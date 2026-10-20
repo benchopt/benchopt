@@ -116,7 +116,7 @@ def merge(benchmark, filenames=None, keep='last', output=None):
         output = output.with_suffix(ext)
 
     # Merge the results.
-    from benchopt.results.process import merge as merge_helper
+    from benchopt.results.result_processing import merge as merge_helper
     merge_helper(result_filenames, keep=keep, output=output)
 
 

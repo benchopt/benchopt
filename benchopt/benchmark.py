@@ -15,9 +15,11 @@ from .config import get_setting
 from .base import BaseSolver, BaseDataset, _prepare_one
 
 from .utils.dynamic_modules import _load_class_from_module
+from .utils.dynamic_modules import FailedImport
 from .utils.parametrized_name_mixin import sanitize
 from .utils.parametrized_name_mixin import _get_used_parameters
-from .utils.parametrized_name_mixin import _check_patterns
+from .utils.parametrized_name_mixin import _check_patterns, _select_params
+from .utils.parametrized_name_mixin import _extract_options, is_file_selector
 
 from .utils.terminal_output import colorify
 from .utils.terminal_output import GREEN, YELLOW
@@ -218,8 +220,8 @@ class Benchmark:
 
     def check_solver_patterns(self, solver_patterns, class_only=False):
         "Check that the patterns are valid and return selected configurations."
-        return _check_patterns(
-            self.get_solvers(), solver_patterns, name_type='solver',
+        return self._select_classes(
+            self.get_solvers(), solver_patterns, "Solver", 'solver',
             class_only=class_only
         )
 
@@ -300,10 +302,54 @@ class Benchmark:
 
     def check_dataset_patterns(self, dataset_patterns, class_only=False):
         "Check that the patterns are valid and return selected configurations."
-        return _check_patterns(
-            self.get_datasets(), dataset_patterns, name_type='dataset',
+        return self._select_classes(
+            self.get_datasets(), dataset_patterns, "Dataset", 'dataset',
             class_only=class_only
         )
+
+    def _select_classes(self, all_classes, patterns, class_name, name_type,
+                        class_only=False):
+        """Resolve solver/dataset selectors into concrete classes.
+
+        A selector pointing to a ``.py`` file (optionally with a
+        ``file.py[param=value]`` bracket) loads the class directly from that
+        file, even outside the benchmark's ``solvers/`` / ``datasets/``
+        folders, and selects it by identity. Its own ``name`` is kept, so it
+        never collides with a benchmark class of the same name. Other selectors
+        match by name against the benchmark's classes as usual.
+        """
+        if patterns is not None and not isinstance(patterns, (list, tuple)):
+            patterns = [patterns]
+        patterns = list(patterns) if patterns else []
+        file_patterns = [p for p in patterns if is_file_selector(p)]
+
+        if not file_patterns:
+            return _check_patterns(
+                all_classes, patterns, name_type=name_type,
+                class_only=class_only
+            )
+
+        matched = []
+        for pattern in file_patterns:
+            filename, args, kwargs = _extract_options(pattern)
+            path = Path(filename)
+            if not path.is_file():
+                raise click.BadParameter(f"Could not find file: {path}")
+            cls = _load_class_from_module(self.benchmark_dir, path, class_name)
+            matched.append(
+                (cls, ([], {})) if isinstance(cls, FailedImport)
+                else (cls, (args, kwargs))
+            )
+        selected = _select_params(matched, name_type, class_only)
+
+        name_patterns = [p for p in patterns if not is_file_selector(p)]
+        if name_patterns:
+            named = _check_patterns(
+                all_classes, name_patterns, name_type=name_type,
+                class_only=class_only
+            )
+            selected = (selected | named) if class_only else selected + named
+        return selected
 
     def _get_plots_classes(self):
         "List all available custom plot classes for the benchmark"
@@ -505,47 +551,36 @@ class Benchmark:
 
         return Path(benchopt_cache_dir) / self.name
 
-    def cache(self, func, force=False, ignore=None, collect=False):
+    def cache(self, func, force=False, ignore=None):
         """Create a cached function for the given function.
 
         A special behavior is enforced for the 'force' kwargs. If it is present
-        and True, the function will always be recomputed.
-
-        If the collect flag is set to True, the function will return the result
-        if it exists, or None if it does not. This is useful to gather results
-        that are already in cache.
+        and True, the function will always be recomputed. The returned function
+        exposes `check_call_in_cache` to test for a cache hit without running.
         """
         if self.no_cache:
-            assert not collect, "Cannot collect when using `--no-cache`."
-            return func
+            # Wrap `func` to expose a cache lookup without mutating the
+            # shared module-level `func`.
+            def _func_no_cache(**kwargs):
+                return func(**kwargs)
+
+            _func_no_cache.check_call_in_cache = lambda **kwargs: False
+            return _func_no_cache
 
         # Create a cached version of `func` and handle cases where we force
         # the run.
         func_cached = self.mem.cache(func, ignore=ignore)
         if force:
-            assert not collect, "Cannot collect and force computation."
-
             def _func_cached(**kwargs):
                 return func_cached.call(**kwargs)[0]
-        elif collect:
-            def _func_cached(**kwargs):
-                assert not kwargs.get('force', False), (
-                    "Cannot collect and force computation."
-                )
-                if func_cached.check_call_in_cache(**kwargs):
-                    return func_cached(**kwargs)
-                key = (
-                    kwargs['meta']['dataset_name'],
-                    kwargs['meta']['objective_name'],
-                    kwargs['meta']['solver_name']
-                )
-                return ([], key, 'not run yet', "")
         else:
             def _func_cached(**kwargs):
                 if kwargs.get('force', False):
                     return func_cached.call(**kwargs)[0]
                 return func_cached(**kwargs)
 
+        # Expose the cache lookup to collect and avoid unneeded dispatch.
+        _func_cached.check_call_in_cache = func_cached.check_call_in_cache
         return _func_cached
 
     #####################################################
@@ -568,7 +603,7 @@ class Benchmark:
         )
 
     def get_plot_config(self, default_config=None):
-        params = ["plots", "plot_configs"]
+        params = ["plots", "hidden_plots", "plot_configs"]
         config = {}
         for param in params:
             options = self.get_setting(param, default_config=default_config)
@@ -715,7 +750,9 @@ class Benchmark:
         print('- Checking installed packages...', end='', flush=True)
         not_installed = set()
         for klass in set(check_installs + missings):
-            cls_success = klass.is_installed(env_name=env_name)
+            cls_success = klass.is_installed(
+                env_name=env_name, reload=True
+            )
             if cls_success and klass in missings:
                 # This class only depends on global requirements
                 missings.remove(klass)
@@ -843,7 +880,7 @@ class Benchmark:
             config=parallel_config,
         )
 
-        n_failed = sum(1 for _, err in results if err is not None)
+        n_failed = sum(1 for _, err, _ in results if err is not None)
         if n_failed:
             print(
                 f"Summary: {n_total - n_failed}/{n_total} datasets ready, "
@@ -863,7 +900,7 @@ class Benchmark:
         # Format the list of classes missing requirements.
         cls_types = {'Solver': [], 'Dataset': []}
         for klass in missings:
-            cls_type = klass.__base__.__name__.replace("Base", "")
+            cls_type = klass._base_class_name
             try:
                 # Check for invalid install_cmd
                 klass.install_cmd_

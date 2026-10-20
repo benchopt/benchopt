@@ -1,4 +1,4 @@
-import json
+import re
 import shutil
 import click
 from pathlib import Path
@@ -6,72 +6,84 @@ from importlib import resources
 
 from benchopt import __version__
 from benchopt.utils.terminal_output import colorify
-from benchopt.utils.terminal_output import GREEN, BLUE, RED, TICK, CROSS
+from benchopt.utils.terminal_output import GREEN, BLUE, TICK
 
 
-# Prefix that identifies a skill as managed (synced) by benchopt. Only folders
-# carrying this prefix are ever written or removed by ``sync-skills``; anything
-# else in the target directory (repo-specific skills) is left untouched.
-SKILL_PREFIX = "benchopt-"
+SKILL_NAME = "using-benchopt"
+
+# Placeholder in the packaged SKILL.md, replaced with the benchopt version at
+# sync time so the agent can detect a stale skill.
+VERSION_PLACEHOLDER = "__BENCHOPT_VERSION__"
+
+# Skill doc links ship pointing at the ``stable`` docs; at sync time we
+# retarget them at the installed version's docs (see ``_doc_url_version``).
+STABLE_DOC_PREFIX = "benchopt.github.io/stable/"
+
+# Only final releases (``X.Y`` / ``X.Y.Z``) publish version-specific docs; dev
+# builds and pre-releases only exist under ``/dev/``.
+_RELEASE_RE = re.compile(r"^\d+\.\d+(\.\d+)?$")
 
 # Canonical, cross-harness skills directory (Agent Skills open standard). Read
 # natively by Codex, Gemini CLI, Copilot/VS Code, Cursor, OpenCode, ...
 AGENTS_SKILLS_DIR = Path(".agents") / "skills"
 
 # Claude Code does not read .agents/skills yet (anthropics/claude-code#31005),
-# so we mirror each synced skill here via symlink (or copy as a fallback).
+# so we mirror the skill here via symlink (or copy as a fallback).
 CLAUDE_SKILLS_DIR = Path(".claude") / "skills"
 
-MANIFEST_NAME = ".benchopt-skills-manifest.json"
+
+def _source_skill():
+    """Return the path to the packaged using-benchopt skill."""
+    return resources.files("benchopt") / "skills" / SKILL_NAME
 
 
-def _source_skills_dir():
-    """Return the packaged source-of-truth skills directory."""
-    return resources.files("benchopt") / "skills"
+def _doc_url_version():
+    """Docs path segment matching the installed version.
 
-
-def _iter_source_skills():
-    """Yield (name, path) for each packaged ``benchopt-*`` skill folder."""
-    src = _source_skills_dir()
-    for entry in sorted(src.iterdir(), key=lambda p: p.name):
-        if not entry.name.startswith(SKILL_PREFIX):
-            continue
-        if (entry / "SKILL.md").is_file():
-            yield entry.name, entry
-
-
-def _read_manifest(agents_dir):
-    manifest_path = agents_dir / MANIFEST_NAME
-    if not manifest_path.exists():
-        return {"benchopt_version": None, "skills": []}
-    with open(manifest_path) as f:
-        return json.load(f)
-
-
-def _write_manifest(agents_dir, skills):
-    manifest = {"benchopt_version": __version__, "skills": sorted(skills)}
-    with open(agents_dir / MANIFEST_NAME, "w") as f:
-        json.dump(manifest, f, indent=2)
-        f.write("\n")
-
-
-def _link_or_copy(target, source):
-    """Symlink ``target`` -> ``source``; fall back to a recursive copy.
-
-    Returns the kind of mirror created: ``"symlink"`` or ``"copy"``. Used for
-    the Claude adapter where native .agents/skills support is missing.
+    Final releases publish their own docs (``/1.9.1/``); dev builds and
+    pre-releases only exist under ``/dev/``.
     """
-    if target.exists() or target.is_symlink():
-        if target.is_symlink() or target.is_file():
-            target.unlink()
-        else:
-            shutil.rmtree(target)
+    return __version__ if _RELEASE_RE.match(__version__) else "dev"
+
+
+def _finalize_skill(skill_dir):
+    """Stamp the version and point doc links at the matching docs, in place."""
+    doc_prefix = f"benchopt.github.io/{_doc_url_version()}/"
+    for md in skill_dir.rglob("*.md"):
+        text = md.read_text(encoding="utf-8")
+        new = text.replace(VERSION_PLACEHOLDER, __version__)
+        new = new.replace(STABLE_DOC_PREFIX, doc_prefix)
+        if new != text:
+            md.write_text(new, encoding="utf-8")
+
+
+def _link_or_copy(target, source, prefer_symlink=True):
+    """Mirror ``source`` -> ``target``, replacing any existing ``target``.
+
+    With ``prefer_symlink`` (default) try a symlink and fall back to a
+    recursive copy; with ``prefer_symlink=False`` always copy.
+    """
+    # Remove target whether it is a symlink, a file, or a directory.
+    if target.is_symlink() or target.is_file():
+        target.unlink()
+    elif target.exists():
+        shutil.rmtree(target)
+    if not prefer_symlink:
+        shutil.copytree(source, target)
+        return "copy"
     try:
         target.symlink_to(source.resolve(), target_is_directory=True)
         return "symlink"
-    except (OSError, NotImplementedError):
-        # e.g. Windows without developer mode: copy instead.
-        shutil.copytree(source, target)
+    except (OSError, NotImplementedError) as symlink_err:
+        # Symlinks may be unsupported (Windows without developer mode,
+        # FAT/exFAT, some network mounts); fall back to a plain copy.
+        try:
+            shutil.copytree(source, target)
+        except OSError as copy_err:
+            raise OSError(
+                f"Could not mirror skill to {target}: symlink failed "
+                f"({symlink_err}) and copy failed ({copy_err})."
+            ) from copy_err
         return "copy"
 
 
@@ -82,7 +94,7 @@ def skills():
 
 @skills.command(
     name="sync-skills",
-    help="Sync benchopt's shared agent skills into a benchmark (or globally).",
+    help="Sync the benchopt agent skill into a benchmark (or globally).",
 )
 @click.argument(
     "benchmark", default=".", type=click.Path(exists=True),
@@ -95,74 +107,31 @@ def skills():
     "--no-claude", is_flag=True,
     help="Do not create the .claude/skills mirror for Claude Code.",
 )
-@click.option(
-    "--dry-run", is_flag=True,
-    help="Show what would change without writing anything.",
-)
-def sync_skills(benchmark, global_, no_claude, dry_run):
+def sync_skills(benchmark, global_, no_claude):
+    if global_ and benchmark != ".":
+        raise click.UsageError(
+            "Cannot use --global with a benchmark path argument."
+        )
     base = Path.home() if global_ else Path(benchmark)
     agents_dir = base / AGENTS_SKILLS_DIR
     claude_dir = base / CLAUDE_SKILLS_DIR
 
-    source_skills = dict(_iter_source_skills())
-    if not source_skills:
-        click.echo(colorify("No packaged benchopt skills found.", RED))
-        return
-
-    prev = _read_manifest(agents_dir)
-    prev_skills = set(prev.get("skills", []))
-    new_skills = set(source_skills)
-
-    stale = sorted(prev_skills - new_skills)
-    added = sorted(new_skills - prev_skills)
-    updated = sorted(new_skills & prev_skills)
-
     dest = colorify(str(agents_dir), BLUE)
-    click.echo(f"Syncing {len(new_skills)} benchopt skill(s) into {dest}")
-    if dry_run:
-        for name in added:
-            click.echo(f"  + {name} (new)")
-        for name in updated:
-            click.echo(f"  ~ {name} (update)")
-        for name in stale:
-            click.echo(colorify(f"  - {name} (remove, deleted upstream)", RED))
-        click.echo("Dry run: nothing written.")
-        return
 
     agents_dir.mkdir(parents=True, exist_ok=True)
+    target = agents_dir / SKILL_NAME
+    # ``as_file`` materializes the packaged skill to a real path (extracting
+    # from a zip/wheel if needed) so ``copytree`` works for any install type.
+    with resources.as_file(_source_skill()) as src:
+        _link_or_copy(target, src, prefer_symlink=False)
+    _finalize_skill(target)
+    click.echo(f"Synced {colorify(SKILL_NAME, GREEN)} into {dest}")
 
-    # Remove skills that disappeared upstream (only our prefixed ones).
-    for name in stale:
-        target = agents_dir / name
-        if target.is_dir():
-            shutil.rmtree(target)
-        claude_target = claude_dir / name
-        if claude_target.is_symlink() or claude_target.exists():
-            if claude_target.is_dir() and not claude_target.is_symlink():
-                shutil.rmtree(claude_target)
-            else:
-                claude_target.unlink()
-        click.echo(colorify(f"  {CROSS} removed {name}", RED))
-
-    # Write/refresh current skills.
-    for name, src_path in source_skills.items():
-        target = agents_dir / name
-        if target.exists():
-            shutil.rmtree(target)
-        shutil.copytree(src_path, target)
-        click.echo(colorify(f"  {TICK} {name}", GREEN))
-
-    _write_manifest(agents_dir, new_skills)
-
-    # Claude adapter: mirror each skill under .claude/skills.
     if not no_claude:
         claude_dir.mkdir(parents=True, exist_ok=True)
-        kinds = set()
-        for name in source_skills:
-            kind = _link_or_copy(claude_dir / name, agents_dir / name)
-            kinds.add(kind)
-        how = "/".join(sorted(kinds)) if kinds else "none"
-        mirror = colorify(str(claude_dir), BLUE)
-        click.echo(f"Claude mirror ({how}) at {mirror}")
+        kind = _link_or_copy(claude_dir / SKILL_NAME, target)
+        click.echo(
+            f"Claude mirror ({kind}) at {colorify(str(claude_dir), BLUE)}"
+        )
 
     click.echo(colorify(f"{TICK} Done.", GREEN))

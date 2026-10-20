@@ -303,6 +303,44 @@ class TestInstallCmd:
                 ], 'benchopt', standalone_mode=False)
         out.check_output(re.escape(DUMMY_PACKAGE_REQ.split("::")[-1]))
 
+    def test_install_in_current_env_detects_fresh_package(
+            self, uninstall_dummy_package_current_env
+    ):
+        # Check that, when installing in the *current* environment, the
+        # install detection mechanism correctly detects the post-install
+        # status.
+        objective = f"""import dummy_package
+            from benchopt.utils.temp_benchmark import TempObjective
+
+            class Objective(TempObjective):
+                name = "requires_dummy"
+                requirements = ['{DUMMY_PACKAGE_REQ}']
+        """
+
+        # Dataset depends only on the global (objective) requirement, so it
+        # lands in `missings`; if it is still seen as "not importable" after
+        # the install, `check_missing` makes the command exit with an error.
+        dataset = """import dummy_package
+            from benchopt.utils.temp_benchmark import TempDataset
+
+            class Dataset(TempDataset):
+                name = 'test-dataset'
+        """
+
+        with temp_benchmark(
+                objective=objective, datasets=[dataset]
+        ) as bench, CaptureCmdOutput() as out:
+            install(
+                f'{bench.benchmark_dir} -d test-dataset -y'.split(),
+                'benchopt', standalone_mode=False
+            )
+
+        # Check that install reports for both direct install (no "missing
+        # deps") and indirect ones (no "not importable") have correct
+        # status.
+        out.check_output("missing deps", repetition=0)
+        out.check_output("not importable", repetition=0)
+
     def test_gpu_flag(self, no_debug_log):
 
         solver1 = """from benchopt.utils.temp_benchmark import TempSolver

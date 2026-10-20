@@ -212,6 +212,71 @@ class TestCache:
         # when using multiple repetitions
         out.check_output("#RUN_SOLVER", repetition=n_reps)
 
+    def test_cached_runs_not_dispatched(self, no_debug_log, monkeypatch):
+        # A cached run must be detected on the frontal node (the main process)
+        # and not dispatched to a worker.
+        import os
+        from benchopt.benchmark import Benchmark
+
+        main_pid = os.getpid()
+        orig_cache = Benchmark.cache
+
+        def cache_reporting_pid(self, func, *args, **kwargs):
+            cached = orig_cache(self, func, *args, **kwargs)
+            check = cached.check_call_in_cache
+
+            def check_call_in_cache(**kw):
+                print(f"#CHECK_PID:{os.getpid()}")
+                return check(**kw)
+
+            cached.check_call_in_cache = check_call_in_cache
+            return cached
+
+        monkeypatch.setattr(Benchmark, "cache", cache_reporting_pid)
+
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
+        import os
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            sampling_strategy = 'run_once'
+            def run(self, _): print(f"#RUN_PID:{os.getpid()}")
+        """
+
+        with temp_benchmark(solvers=solver, datasets=self.dataset) as bench:
+            cmd = f"{bench.benchmark_dir} --no-plot -r 2 -j 2"
+            with CaptureCmdOutput() as out_first:
+                run(cmd.split(), standalone_mode=False)
+            with CaptureCmdOutput() as out_second:
+                run(cmd.split(), standalone_mode=False)
+            with CaptureCmdOutput() as out_forced:
+                run(f"{cmd} -f test-solver".split(), standalone_mode=False)
+
+        # First run: nothing cached, so the solver runs in dispatched worker
+        # processes, not in the main one.
+        run_pids = {int(p) for p in out_first.check_output(r"#RUN_PID:(\d+)")}
+        assert run_pids and main_pid not in run_pids, run_pids
+
+        # The cache check always runs on the frontal (main) process.
+        check_pids = {
+            int(p) for p in out_second.check_output(r"#CHECK_PID:(\d+)")
+        }
+        assert check_pids == {main_pid}, check_pids
+
+        # Second run: everything is cached, so the solver is not run (nothing
+        # is dispatched) and the status is displayed as cached.
+        out_second.check_output(r"#RUN_PID", repetition=0)
+        out_second.check_output(r"done \(cached\)", repetition=1)
+
+        # --force-solver must bypass the skip even when cached: the solver is
+        # dispatched to a worker (not the main process) and re-run, and its
+        # status is no longer reported as cached.
+        forced_pids = {
+            int(p) for p in out_forced.check_output(r"#RUN_PID:(\d+)")
+        }
+        assert forced_pids and main_pid not in forced_pids, forced_pids
+        out_forced.check_output(r"done \(cached\)", repetition=0)
+
     @pytest.mark.parametrize('n_reps', [1, 4])
     def test_no_cache(self, no_debug_log, n_reps):
         with temp_benchmark(
@@ -438,8 +503,30 @@ class TestSeed:
                     run(cmd_str.split(),
                         standalone_mode=False)
 
-        seeds = out.check_output(r"(?m)^#SEED-obj=.*", repetition=2)
-        assert seeds[0] == seeds[1], "Seeds should be equal"
+                # Check that get_seed() works with parallel runs.
+                run((cmd_str + " -j 2").split(), standalone_mode=False)
+
+        seeds = out.check_output(r"(?m)^#SEED-obj=.*", repetition=3)
+        assert len(set(seeds)) == 1, "Seeds should be equal"
+
+    def test_solver_simple(self, no_debug_log):
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset()
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                cmd_str = f"{bench.benchmark_dir} --no-cache "
+                cmd_str += "--no-plot"
+                for it in range(2):
+                    run(cmd_str.split(),
+                        standalone_mode=False)
+
+                # Check that get_seed() works with parallel runs.
+                run((cmd_str + " -j 2").split(), standalone_mode=False)
+
+        seeds = out.check_output(r"(?m)^#SEED-sol=.*", repetition=3)
+        assert len(set(seeds)) == 1, "Seeds should be equal"
 
     def test_dataset_simple(self, no_debug_log):
         with temp_benchmark(
@@ -454,8 +541,13 @@ class TestSeed:
                     run(cmd_str.split(),
                         standalone_mode=False)
 
-        seeds = out.check_output(r"(?m)^#SEED-data=.*", repetition=2)
-        assert seeds[0] == seeds[1], "Seeds are not equal"
+                # Check that get_seed() works with parallel runs.
+                run((cmd_str + " -j 2").split(), standalone_mode=False)
+
+        # get_data() runs once per -j1 call, and twice for the -j2 call (once
+        # during dispatch, once more in the worker).
+        seeds = out.check_output(r"(?m)^#SEED-data=.*", repetition=4)
+        assert len(set(seeds)) == 1, "Seeds are not equal"
 
     def test_seed_different(self, no_debug_log):
         with temp_benchmark(
@@ -571,11 +663,11 @@ class TestSeed:
                     .split(), standalone_mode=False,
                 )
 
-        # With n_jobs=1, the dataset is loaded once regardless the numbe
+        # With n_jobs=1, the dataset is loaded once regardless the number
         # of repetitions.
-        # With n_jobs>1, the dataset is loaded once per repetition, plus once
-        # when creating loading the dataset in the main process, so 1 + n_reps.
-        n_match = 1 if n_jobs == 1 else 4
+        # With n_jobs>1, the dataset is loaded once per repetition. The main
+        # process does not load it as n_repetitions is given.
+        n_match = 1 if n_jobs == 1 else 3
         out.check_output("#DATA-LOAD", repetition=n_match)
 
 

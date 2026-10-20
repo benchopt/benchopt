@@ -6,6 +6,7 @@ from .stopping_criterion import SingleRunCriterion
 from .stopping_criterion import SufficientProgressCriterion
 
 from .utils.misc import NamedTemporaryFile
+from .utils.terminal_output import colorify, CYAN
 from .utils.class_property import classproperty
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
@@ -437,6 +438,32 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             dataset.get_data()
 
 
+def _cached_prepare(benchmark, dataset, force=False):
+    """Cache wrapper for each dataset as ignore depends on each dataset.
+
+    Datasets whose preparation does not depend on the seed can drop it
+    from the cache key by listing 'base_seed' in prepare_cache_ignore.
+    """
+    cache_ignore = getattr(dataset, 'prepare_cache_ignore', ())
+    ignore = (
+        ['base_seed'] if cache_ignore == "all" or 'base_seed' in cache_ignore
+        else None
+    )
+    return benchmark.cache(
+        BaseDataset._prepare, ignore=ignore, force=force,
+    )
+
+
+def _check_prepare_in_cache(benchmark, dataset, force=False):
+    """Frontal-node cache lookup for a dataset preparation.
+
+    `force` is ignored as `parallel_run` already handles it.
+    """
+    return _cached_prepare(benchmark, dataset).check_call_in_cache(
+        dataset=dataset, base_seed=benchmark.seed
+    )
+
+
 def _prepare_one(benchmark, dataset, force=False):
     """Prepare one dataset instance; used as the unit of work in parallel_run.
 
@@ -446,20 +473,14 @@ def _prepare_one(benchmark, dataset, force=False):
     success or the caught exception on failure.
     """
     exc = None
-    # Datasets whose preparation does not depend on the seed can drop it from
-    # the cache key by listing 'base_seed' in prepare_cache_ignore,
-    # handle this separately.
-    cache_ignore = getattr(type(dataset), 'prepare_cache_ignore', ())
-    ignore = ['base_seed'] if (
-        cache_ignore == "all" or 'base_seed' in cache_ignore
-    ) else None
-    cached_prepare = benchmark.cache(
-        BaseDataset._prepare, ignore=ignore, force=force
+    cached_prepare = _cached_prepare(benchmark, dataset, force=force)
+    cached = not force and cached_prepare.check_call_in_cache(
+        dataset=dataset, base_seed=benchmark.seed
     )
     print(f"Preparing {dataset} ...", end=' ', flush=True)
     try:
         cached_prepare(dataset=dataset, base_seed=benchmark.seed)
-        print("done")
+        print("done" + (colorify(" (cached)", CYAN) if cached else ""))
     except Exception as e:
         print("FAILED")
         print_exc()
@@ -467,6 +488,9 @@ def _prepare_one(benchmark, dataset, force=False):
     finally:
         print(end='', flush=True)
         return (str(dataset), exc)
+
+
+_prepare_one.check_call_in_cache = _check_prepare_in_cache
 
 
 class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
@@ -517,7 +541,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     **Installation:**
 
     - ``requirements``: the minimal requirements to be able to run the
-       benchmark.
+      benchmark.
     - ``min_benchopt_version``: the minimal version of benchopt required to run
       this benchmark.
     - ``python_version``: a specific version of Python required to run
@@ -535,6 +559,13 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
       benchmark.
     """
     _base_class_name = 'Objective'
+
+    # Set by `_set_dataset`, e.g. once run through `_generate_runs.py` or
+    # (post-unpickle) `run_one_to_cvg`. `_dataset_ready` guards re-running it.
+    _dataset = None
+    _dataset_ready = False
+    # Set directly by `run_one_to_cvg` for each repetition.
+    _repetition = 0
 
     # All class attributes that need to be parsed when we cannot import
     # the objective must be listed here. name is a special case as it is
@@ -679,6 +710,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
     def _set_dataset(self, dataset):
+        if self._dataset_ready and self._dataset is dataset:
+            return False, None
+
         self._dataset = dataset
         assert self.is_installed(raise_on_not_installed=True)
         data = dataset._get_data()
@@ -705,6 +739,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
                     "Parameters of Objective should not be "
                     "modified by 'set_data'."
                 )
+
+        self._dataset_ready = True
 
         return False,  None
 
@@ -753,19 +789,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         self.get_objective()
         return self.get_one_result()
 
-    def _get_state(self):
-        """Return the state of the objective for pickling."""
-        return dict(
-            dataset=getattr(self, '_dataset', None),
-            repetition=getattr(self, '_repetition', 0)
-        )
-
-    def __setstate__(self, state):
-        self._repetition = state['repetition']
-        dataset = state['dataset']
-        if dataset is not None:
-            self._set_dataset(dataset)
-
     def _default_split(self, cv_fold, *arrays):
         train_index, test_index = cv_fold
         res = ()
@@ -810,7 +833,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         cv_fold_generator = repeat()
         # Perform the split with default split function if it is not defined by
         # the user.
-        rep = getattr(self, "_repetition", 0)
+        rep = self._repetition
         for _ in range(rep + 1):
             cv_fold = next(cv_fold_generator)
 

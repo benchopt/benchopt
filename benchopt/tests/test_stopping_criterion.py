@@ -2,8 +2,10 @@ import pytest
 import numpy as np
 
 from benchopt.cli.main import run
+from benchopt._generate_runs import get_solver_kwargs
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.utils.terminal_output import TerminalOutput
 
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.stopping_criterion import SingleRunCriterion
@@ -338,6 +340,81 @@ def test_global_sampling_strategy(no_debug_log):
     with temp_benchmark(objective=objective) as bench:
         run(f'{bench.benchmark_dir} -s test-solver -d test-dataset -n 1 '
             "--no-plot".split(), standalone_mode=False)
+
+
+def test_sampling_strategy_meta_independent_of_execution_order(no_debug_log):
+    # Non-regression test: `Solver.sampling_strategy` is a *class* attribute
+    # that `_inherit_stopping_criterion` only resolves from `None` to the
+    # objective's value as a side effect of actually running `_set_objective`.
+    # `meta['sampling_strategy']`, part of the joblib cache key, must not
+    # depend on whether some *other* (solver, dataset) pair already ran in
+    # this process -- otherwise a second process (e.g. `--collect`) computes
+    # a different cache key and reports valid cache entries as missing.
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
+        name = "test_obj"
+        sampling_strategy = "run_once"
+    """
+
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        name = "test-solver"
+    """
+
+    dataset1 = """from benchopt.utils.temp_benchmark import TempDataset
+
+    class Dataset(TempDataset):
+        name = "dataset1"
+    """
+
+    dataset2 = """from benchopt.utils.temp_benchmark import TempDataset
+
+    class Dataset(TempDataset):
+        name = "dataset2"
+    """
+
+    with temp_benchmark(
+        objective=objective, solvers=[solver],
+        datasets=[dataset1, dataset2], no_default=True,
+    ) as bench:
+        solver_class = bench.get_solvers()[0]
+        objective_instance = bench.get_benchmark_objective().get_instance()
+        datasets = {d.name: d for d in bench.get_datasets()}
+
+        def sampling_strategy_for(dataset_name):
+            dataset = datasets[dataset_name].get_instance()
+            terminal = TerminalOutput(1, False)
+            terminal.set(
+                solver=solver_class, dataset=dataset,
+                objective=objective_instance, i_solver=0
+            )
+            kwargs = next(get_solver_kwargs(
+                benchmark=bench, dataset=dataset, objective=objective_instance,
+                solver=solver_class.get_instance(), n_repetitions=1,
+                max_runs=1, terminal=terminal,
+            ))
+            return kwargs['meta']['sampling_strategy']
+
+        # Computed while `Solver.sampling_strategy` is still pristine (`None`)
+        # -- mirrors what a fresh process (e.g. `benchopt run --collect`)
+        # would see.
+        strategy_pristine = sampling_strategy_for("dataset2")
+
+        # Actually run the solver against `dataset1`. This mutates the
+        # *class* attribute `Solver.sampling_strategy` as a side effect.
+        solver_instance = solver_class.get_instance()
+        dataset1_instance = datasets["dataset1"].get_instance()
+        objective_instance._set_dataset(dataset1_instance)
+        solver_instance._set_objective(objective_instance)
+
+        # Recomputing for `dataset2` must give the same, correct value --
+        # unaffected by the unrelated `dataset1` run that happened in between.
+        strategy_after_other_run = sampling_strategy_for("dataset2")
+
+        assert strategy_pristine == "Run_once"
+        assert strategy_after_other_run == "Run_once"
 
 
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)

@@ -24,16 +24,17 @@ DEFAULT_SHELL = (
 DEFAULT_GLOBAL_CONFIG = {
     'debug': False,
     'raise_install_error': False,
+    'raise_on_error': False,
     'github_token': None,
     'hf_token': None,
-    'data_dir': './data/',
-    'conda_cmd': 'conda' if sys.platform != 'win32' else 'call conda',
-    'shell': os.environ.get('SHELL', DEFAULT_SHELL),
+    'conda_cmd': 'conda',
+    'shell': (
+        os.environ.get('SHELL', DEFAULT_SHELL)
+        if sys.platform != 'win32' else DEFAULT_SHELL
+    ),
     'cache': None,
     'default_timeout': 100,
     'warn_nonunique_files': True,
-    '_g_config_check': False,
-    '_bench_config_check': False,
 }
 """
 These are the config options available globally for benchopt, that can be set
@@ -43,14 +44,23 @@ particular for logging, warnings and errors. The available options are:
 * ``debug``, **bool**: If set to true, enable debug logs.
 * ``raise_install_error``, *boolean*: If set to true, raise error when
   install fails.
+* ``raise_on_error``, *boolean*: If set to true, re-raise the first error
+  raised by a solver/dataset/objective instead of catching it and continuing.
+  The run aborts with the traceback and a non-zero exit code. Unlike
+  ``debug``, this does not enable any extra logging, which is useful to make a
+  run fail fast (e.g. in CI or a competition worker) without polluting the
+  logs.
 * ``github_token``, *str*: token to publish results on ``benchopt/results``
   via github.
 * ``hf_token``, *str*: token to publish results on Hugging Face.
 * ``conda_cmd``, *str*: can be used to give the path to ``conda`` if it is
   not directly installed on ``$PATH``. This can also be used to use ``mamba``
   to install benchmarks instead of conda. See :ref:`config_mamba`.
-* ``shell``, *str*: can be used to specify the shell to use. Default to
-  `SHELL` from env if it exists and ``'bash'`` otherwise.
+* ``shell``, *str*: can be used to specify the shell to use. On POSIX systems
+  it defaults to the ``SHELL`` env var if it exists and
+  ``'bash --norc --noprofile'`` otherwise. On Windows it defaults to
+  ``'cmd /c'``. The ``SHELL`` env var is ignored as it is an less reliable
+  default (running conda with it often fails).
 * ``cache``, *str*: can be used to specify where the cache for the benchmarks
   should be stored. By default, the cache files are stored in the benchmark
   directory, under the folder __cache__. Setting this configuration would
@@ -64,6 +74,7 @@ particular for logging, warnings and errors. The available options are:
 
 DEFAULT_BENCHMARK_CONFIG = {
     "plots": None,
+    "hidden_plots": None,
     "plot_configs": {},
     "data_home": None,
     "data_paths": {},
@@ -87,6 +98,16 @@ The available options are:
     - suboptimality_curve
     - relative_suboptimality_curve
     - bar_chart
+
+* ``hidden_plots``, *list*: Plot kinds to hide from the results, e.g. to drop
+  some of the default plots while keeping all the others. It is ignored when
+  plot kinds are explicitly selected with ``--kind`` in ``benchopt plot``.
+
+  .. code-block:: yaml
+
+    hidden_plots:
+    - boxplot
+    - table
 
 .. _plot_configs:
 
@@ -196,6 +217,12 @@ def get_global_config_file():
     return config_file
 
 
+# Internal state to run each config validation only once. Kept out of
+# DEFAULT_GLOBAL_CONFIG so it does not leak into the option list of warnings or
+# into the documented settings.
+_CONFIG_CHECK_STATE = {"global": False, "bench": False}
+
+
 def _check_bench_config(config, config_file_id):
     """Check the config of a benchmark."""
     for k in config:
@@ -211,7 +238,7 @@ def _check_settings(config_file=None, benchmark_name=None):
     """Check a config, either global or for one benchmark."""
     if config_file is None:
         # only check the global config once
-        if DEFAULT_GLOBAL_CONFIG["_g_config_check"]:
+        if _CONFIG_CHECK_STATE["global"]:
             return
 
         global_config_file = get_global_config_file()
@@ -236,21 +263,27 @@ def _check_settings(config_file=None, benchmark_name=None):
                             + "\n-".join(DEFAULT_GLOBAL_CONFIG)
                         )
 
-        # Check for option set with environment variables
+        # Check for option set with environment variables.
+        # Env var can be set for both global and benchmark configs.
         for var in os.environ:
             if var.startswith("BENCHOPT_"):
                 key = var.replace("BENCHOPT_", "").lower()
-                if key not in DEFAULT_GLOBAL_CONFIG and key != "config":
+                if (key not in DEFAULT_GLOBAL_CONFIG
+                        and key not in DEFAULT_BENCHMARK_CONFIG
+                        and key != "config"):
+                    options = "\n-".join(
+                        [*DEFAULT_GLOBAL_CONFIG, *DEFAULT_BENCHMARK_CONFIG]
+                    )
                     warnings.warn(
-                        f"{key} is set in {global_config_file} but is not a "
-                        "valid config option for benchopt. Options are:\n-"
-                        + "\n-".join(DEFAULT_GLOBAL_CONFIG)
+                        f"{var} is set as an environment variable but is not "
+                        f"a valid config option for benchopt. Options are:\n-"
+                        f"{options}"
                     )
 
-        DEFAULT_GLOBAL_CONFIG["_g_config_check"] = True
+        _CONFIG_CHECK_STATE["global"] = True
         return
 
-    if DEFAULT_GLOBAL_CONFIG["_bench_config_check"]:
+    if _CONFIG_CHECK_STATE["bench"]:
         return
     if config_file.exists():
         with open(config_file, "r") as f:
@@ -456,3 +489,4 @@ class BooleanFlag(object):
 
 DEBUG = BooleanFlag('debug')
 RAISE_INSTALL_ERROR = BooleanFlag('raise_install_error')
+RAISE_ON_ERROR = BooleanFlag('raise_on_error')

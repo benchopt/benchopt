@@ -1,4 +1,5 @@
 import yaml
+from collections import deque
 from joblib import parallel_config
 from joblib import Parallel, delayed
 
@@ -16,6 +17,27 @@ def is_distributed_frontal():
     return _DISTRIBUTED_FRONTAL
 
 
+def _dispatch(backend, benchmark, run, run_kwargs_iter, config):
+    """Run ``run(**kwargs)`` for each kwargs on the chosen backend, yielding
+    results as they complete.
+    """
+    if backend == 'submitit':
+        from .slurm_executor import run_on_slurm
+        yield from run_on_slurm(benchmark, config, run, run_kwargs_iter)
+    else:
+        if backend == 'dask':
+            from .dask_backend import check_dask_config
+            config = check_dask_config(config)
+        # `batch_size` is a `Parallel` argument, not a `parallel_config` one.
+        batch_size = config.pop('batch_size', 'auto')
+        with parallel_config(backend, **config):
+            yield from Parallel(
+                return_as="generator_unordered", batch_size=batch_size
+            )(
+                delayed(run)(**run_kwargs) for run_kwargs in run_kwargs_iter
+            )
+
+
 def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
     config = config or {}
     backend = config.pop('backend', 'loky')
@@ -24,22 +46,38 @@ def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
     assert backend in DISTRIBUTED_BACKENDS, (
         f"Unknown backend {backend}. Valid backends: {DISTRIBUTED_BACKENDS}."
     )
-    if backend == 'submitit':
-        from .slurm_executor import run_on_slurm
-        results_generator = run_on_slurm(
-            benchmark, config, run, run_kwargs_generator
-        )
-    else:
-        if backend == 'dask':
-            from .dask_backend import check_dask_config
-            config = check_dask_config(config)
-        with parallel_config(backend, **config):
-            results_generator = Parallel(return_as="generator_unordered")(
-                delayed(run)(**run_kwargs)
-                for run_kwargs in run_kwargs_generator
-            )
 
-    return results_generator
+    # Load cache hits directly on the front node, and only dispatch
+    # necessary configs. Use `ready` to park items that are collected
+    # and merged back when consuming the iterator.
+    # Append cache status at the end of the tuple result.
+    ready = deque()
+    check_in_cache = getattr(run, "check_call_in_cache", None)
+
+    def _to_dispatch():
+        for run_kwargs in run_kwargs_generator:
+            if (check_in_cache is not None
+                    and not run_kwargs.get('force', False)
+                    and check_in_cache(**run_kwargs)):
+                ready.append((*run(**run_kwargs), True))
+            elif collect:
+                # Skip non-cache configs in collect mode.
+                meta = run_kwargs['meta']
+                key = (
+                    meta['dataset_name'],
+                    meta['objective_name'],
+                    meta['solver_name'],
+                )
+                ready.append(([], key, 'not run yet', "", False))
+            else:
+                yield run_kwargs
+
+    for item in _dispatch(backend, benchmark, run, _to_dispatch(), config):
+        while ready:
+            yield ready.popleft()
+        yield (*item, False)
+    while ready:
+        yield ready.popleft()
 
 
 def check_parallel_config(parallel_config_file, n_jobs):
