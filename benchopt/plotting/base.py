@@ -47,7 +47,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                 optional: 'label'.
 
         Solver/dataset/objective names are shortened for display upstream, so
-        ``label`` (and boxplot ``x``) already carry short labels; the full name
+        ``label`` (and boxplot ``x``) only carry varying params; the full name
         stays available in the ``*_full_name`` columns of ``df`` and their
         hover HTML in the ``*_tooltip`` columns.
 
