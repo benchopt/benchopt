@@ -46,14 +46,6 @@ def compute_short_labels(names):
     Short labels include only the parameters that *vary* within a group of
     names sharing the same base class name.  Parameters that are constant
     across all instances of a class are dropped from the label.
-
-    When a class appears only once in *names* the full name is kept so that
-    relevant context is not lost.
-
-    The returned labels are display-only and relative to *names*; do not use
-    them as stable identifiers or write them back into persisted results (see
-    the module docstring).
-
     Parameters
     ----------
     names : sequence of str
