@@ -311,7 +311,7 @@ def test_objective_cv_splitter(no_debug_log):
 
 
 @pytest.mark.parametrize("n_reps", [None, 2])
-def test_dispatch_loads_data_only_if_needed(n_reps, capsys):
+def test_dispatch_loads_data_only_if_needed(n_reps):
     # The front node only loads the data when needed to count repetitions.
     from benchopt._generate_runs import generate_run_kwargs
     from benchopt.utils.terminal_output import TerminalOutput
@@ -326,7 +326,7 @@ def test_dispatch_loads_data_only_if_needed(n_reps, capsys):
             return dict(X=None, y=None)
     """
 
-    with temp_benchmark(datasets=dataset) as bench:
+    with temp_benchmark(datasets=dataset) as bench, CaptureCmdOutput() as out:
         all_kwargs = list(generate_run_kwargs(
             bench, solvers=bench.check_solver_patterns([]),
             datasets=bench.check_dataset_patterns(["test-dataset"]),
@@ -335,8 +335,7 @@ def test_dispatch_loads_data_only_if_needed(n_reps, capsys):
         ))
 
     assert len(all_kwargs) == 2 * (n_reps or 1)
-    n_calls = capsys.readouterr().out.count("GET_DATA")
-    assert n_calls == (2 if n_reps is None else 0)
+    out.check_output("GET_DATA", repetition=2 if n_reps is None else 0)
 
 
 def test_objective_save_final_results(no_debug_log):
