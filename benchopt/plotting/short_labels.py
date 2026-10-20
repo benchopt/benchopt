@@ -133,7 +133,7 @@ def _compute_params_info(names):
 
 
 def _format_description(params, description=""):
-    """Render an object's hover-icon HTML (empty when there is nothing to show).
+    """Render an object's hover-icon HTML (empty when nothing to show).
 
     Combines an optional free-text ``description`` (e.g. a solver docstring)
     with a table of the object's ``{param: value}`` parameters.
