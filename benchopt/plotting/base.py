@@ -34,17 +34,22 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         The plot data structure, depending on the plot type:
         - scatter: list of dict for each trace, requires: 'x', 'y',
                 'label', optional: 'marker', 'color', 'x_low', 'x_high'.
+                'label' can be a ``(label, tooltip)`` tuple to add a hover
+                icon showing the ``tooltip`` HTML in the legend.
         - bar_chart: list of dict for each bar, requires: 'y',
                 'label', optional: 'color', 'text'.
         - boxplot: list of dict for each box, requires: 'x', 'y',
                 'label', optional: 'color'.
-        - table: list of list, each inner list is a row of the table.
+        - table: list of list, each inner list is a row of the table. A
+                cell can be a ``(label, tooltip)`` tuple to add a hover icon
+                showing the ``tooltip`` HTML.
         - image: list of dict for each image, requires: 'image',
                 optional: 'label'.
 
         Solver/dataset/objective names are shortened for display upstream, so
         ``label`` (and boxplot ``x``) already carry short labels; the full name
-        stays available in the ``*_full_name`` columns of ``df``.
+        stays available in the ``*_full_name`` columns of ``df`` and their
+        hover HTML in the ``*_tooltip`` columns.
 
         Please refer to :ref:`add_custom_plot` for a complete description
         of the plot data.
@@ -155,9 +160,14 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                 if k in ["dataset", "solver", "objective"]:
                     options[k] = df[f'{k}_name'].unique().tolist()
                 elif k == "objective_column":
+                    # Skip the name columns added by `shorten_names`.
+                    not_metrics = (
+                        'objective_name', 'objective_full_name',
+                        'objective_tooltip'
+                    )
                     options["objective_column"] = [
                         c for c in df.columns
-                        if c.startswith('objective_') and c != 'objective_name'
+                        if c.startswith('objective_') and c not in not_metrics
                     ]
                 else:
                     options[k] = df[k].unique().tolist()
@@ -169,6 +179,12 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             data = self.get_metadata(df, **kwargs)
             data["type"] = self.type
             data["data"] = self.plot(df, **kwargs)
+            if self.type == "scatter":
+                # Split `(label, tooltip)` labels: the label stays the curve
+                # key (styles, hidden curves), the tooltip feeds the legend.
+                for trace in data["data"]:
+                    if isinstance(trace["label"], (tuple, list)):
+                        trace["label"], trace["tooltip"] = trace["label"]
             key_list = (
                 [self._get_name()] + list(kwargs.values())
             )

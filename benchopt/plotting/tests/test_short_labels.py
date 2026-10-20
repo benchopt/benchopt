@@ -137,13 +137,16 @@ def test_shorten_names_replaces_and_keeps_full():
     # b=2 is constant → dropped; the full name moves to `*_full_name`.
     assert set(short_df["solver_name"]) == {"S[a=1]", "S[a=3]"}
     assert list(short_df["solver_full_name"]) == ["S[a=1,b=2]", "S[a=3,b=2]"]
+    # The hover HTML is also available per row, for table cells.
+    assert ">b<" in short_df["solver_tooltip"].iloc[0]
     # Single dataset/objective → shortened to the bare base name.
     assert set(short_df["dataset_name"]) == {"d1"}
 
-    # descriptions keyed by the short label, with the full param table.
-    assert "<table>" in descriptions["S[a=1]"]
+    # descriptions keyed by type then short label, with the full param table.
+    assert set(descriptions) == {"solver", "dataset", "objective"}
+    assert "<table>" in descriptions["solver"]["S[a=1]"]
     # full params (including constant b), not only the varying ones
-    assert ">b<" in descriptions["S[a=1]"]
+    assert ">b<" in descriptions["solver"]["S[a=1]"]
 
 
 def test_shorten_names_merges_solver_description():
@@ -153,8 +156,8 @@ def test_shorten_names_merges_solver_description():
     })
     _, descriptions = shorten_names(df)
     # The docstring is folded into the same hover as the params table.
-    assert "docstring one" in descriptions["S[a=1]"]
-    assert "<table>" in descriptions["S[a=1]"]
+    assert "docstring one" in descriptions["solver"]["S[a=1]"]
+    assert "<table>" in descriptions["solver"]["S[a=1]"]
 
 
 def test_shorten_names_merges_dataset_description():
@@ -163,8 +166,19 @@ def test_shorten_names_merges_dataset_description():
         "dataset_description": ["first dataset", "second dataset"],
     })
     _, descriptions = shorten_names(df)
-    assert "first dataset" in descriptions["D[n=1]"]
-    assert "second dataset" in descriptions["D[n=2]"]
+    assert "first dataset" in descriptions["dataset"]["D[n=1]"]
+    assert "second dataset" in descriptions["dataset"]["D[n=2]"]
+
+
+def test_shorten_names_same_label_different_types():
+    df = pd.DataFrame({
+        "solver_name": ["Lasso[a=1]"],
+        "objective_name": ["Lasso[b=2]"],
+    })
+    _, descriptions = shorten_names(df)
+    # Both shorten to "Lasso": each type keeps its own tooltip.
+    assert ">a<" in descriptions["solver"]["Lasso"]
+    assert ">b<" in descriptions["objective"]["Lasso"]
 
 
 def test_shorten_names_is_a_copy():
