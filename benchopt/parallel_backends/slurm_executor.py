@@ -1,4 +1,5 @@
 from contextlib import ExitStack
+from itertools import islice
 
 try:
     import submitit
@@ -84,41 +85,51 @@ def hashable_pytree(pytree):
 def run_on_slurm(
     benchmark, slurm_config, run_one_solver, run_kwargs_generator
 ):
+    # Global cap on jobs in the SLURM queue (pending + running), across all
+    # executors. New jobs are submitted as previous ones finish.
+    max_jobs = slurm_config.pop("max_submitted_jobs", None)
+    run_kwargs_generator = iter(run_kwargs_generator)
 
     executors = {}
     tasks = []
 
-    with ExitStack() as stack:
-        for kwargs in run_kwargs_generator:
-            solver = kwargs.get("solver")
-            if solver is not None:
-                job_slurm_config = get_solver_slurm_config(
-                    solver, slurm_config
-                )
-            else:
-                job_slurm_config = slurm_config
-            executor_config = hashable_pytree(job_slurm_config)
+    def submit_jobs():
+        n_free = None if max_jobs is None else max_jobs - len(tasks)
+        # Pack the jobs submitted in this round in one array per executor.
+        with ExitStack() as stack:
+            in_batch = set()
+            for kwargs in islice(run_kwargs_generator, n_free):
+                solver = kwargs.get("solver")
+                if solver is not None:
+                    job_slurm_config = get_solver_slurm_config(
+                        solver, slurm_config
+                    )
+                else:
+                    job_slurm_config = slurm_config
+                executor_config = hashable_pytree(job_slurm_config)
 
-            if executor_config not in executors:
-                executor = get_slurm_executor(
-                    benchmark,
-                    job_slurm_config,
-                    timeout=kwargs.get("timeout"),
-                )
-                stack.enter_context(executor.batch())
-                executors[executor_config] = executor
+                if executor_config not in executors:
+                    executors[executor_config] = get_slurm_executor(
+                        benchmark,
+                        job_slurm_config,
+                        timeout=kwargs.get("timeout"),
+                    )
+                executor = executors[executor_config]
+                if executor_config not in in_batch:
+                    stack.enter_context(executor.batch())
+                    in_batch.add(executor_config)
 
-            future = executors[executor_config].submit(
-                run_one_solver, **kwargs
-            )
-            tasks.append(future)
-            # Jobs reload the data: don't keep it on the front node while the
-            # batch holds the kwargs.
-            if "dataset" in kwargs:
-                kwargs["dataset"]._data = None
+                tasks.append(executor.submit(run_one_solver, **kwargs))
+                # Jobs reload the data: don't keep it on the front node while
+                # the batch holds the kwargs.
+                if "dataset" in kwargs:
+                    kwargs["dataset"]._data = None
 
-    # Yield results as jobs finish (unordered)
-    for t in as_completed(tasks):
+    submit_jobs()
+    while tasks:
+        # Yield results as jobs finish (unordered)
+        t = next(as_completed(tasks))
+        tasks.remove(t)
         exc = t.exception()
         if exc is not None:
             # Cancel remaining tasks and raise error
@@ -126,4 +137,7 @@ def run_on_slurm(
                 tt.cancel()
             raise exc
 
-        yield t.results()[0]
+        result = t.results()[0]
+        # Fill the freed slot before handing back the result.
+        submit_jobs()
+        yield result

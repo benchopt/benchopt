@@ -45,7 +45,9 @@ slurm_additional_parameters:
 - Every `slurm_*` key is forwarded to `submitit.AutoExecutor.update_parameters`,
   so any submitit/SLURM parameter is available.
 - By default there is **no cap** on simultaneous jobs; set
-  `slurm_array_parallelism: N` to limit concurrency when the scheduler requires it.
+  `slurm_array_parallelism: N` to limit running jobs per job array, or
+  `max_submitted_jobs: N` to cap jobs in the queue (pending + running) across
+  all arrays, e.g. on clusters with a per-user job quota.
 
 ### Dask
 

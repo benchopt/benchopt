@@ -95,7 +95,10 @@ the `submitit documentation <https://github.com/facebookincubator/submitit>`_.
 Note that by default, no limitation is used on the number of
 simultaneous jobs that are run, leaving the cluster to adjust this. The
 ``slurm_array_parallelism`` parameter can be set to limit the number of
-simultaneous jobs that are run when necessary.
+simultaneous jobs that are run in each job array. To cap the total number of
+jobs in the SLURM queue (pending and running) across all job arrays, e.g. when
+the cluster limits the number of submitted jobs per user, set
+``max_submitted_jobs``: benchopt then submits new jobs as previous ones finish.
 
 If ``slurm_time`` is not set in the config file, benchopt uses by default
 the value of ``--timeout`` multiplied by ``1.5`` for each job.
