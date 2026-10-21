@@ -50,6 +50,30 @@ def test_pickling_dynamic_module():
             )
 
 
+def test_get_module_from_file_no_duplicate(tmp_path):
+    # Loading the same file twice reuses the cached module (no duplicate),
+    # while two different files with the same stem get distinct modules.
+    from benchopt.utils.dynamic_modules import _get_module_from_file
+
+    bench_dir = tmp_path / f"bench_{uuid.uuid4().hex}"
+    bench_dir.mkdir()
+    # Both files live outside the benchmark and share the stem "ext", so they
+    # map to the same semantic package name and exercise the collision guard.
+    file_a, file_b = tmp_path / "a" / "ext.py", tmp_path / "b" / "ext.py"
+    for path, value in [(file_a, 1), (file_b, 2)]:
+        path.parent.mkdir()
+        path.write_text(f"VALUE = {value}\n")
+
+    mod_a1 = _get_module_from_file(file_a, bench_dir, subpkg="solvers")
+    mod_a2 = _get_module_from_file(file_a, bench_dir, subpkg="solvers")
+    mod_b = _get_module_from_file(file_b, bench_dir, subpkg="solvers")
+
+    # Same file -> same module, loaded once (no duplicate).
+    assert mod_a1 is mod_a2 and mod_a1.VALUE == 1
+    # Different file, same stem -> distinct module, not a wrong reuse.
+    assert mod_b is not mod_a1 and mod_b.VALUE == 2
+
+
 def test_ast_replacement_no_name():
     # Test that the AST replacement works when a dynamic module is not
     # importable. In particular, this makes sure that the module filename

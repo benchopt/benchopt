@@ -177,8 +177,10 @@ def _run_meta(benchmark, dataset, objective, solver, rep, sampling_strategy,
 
 def _prepare_objective(benchmark, run_context, dataset, objective, solver,
                        n_repetitions, terminal):
-    """Set the objective's data and resolve its repetition count.
+    """Resolve the repetition count, setting the objective's data if needed.
 
+    The data is only loaded here when ``n_repetitions`` is None (it may come
+    from ``objective.cv``); otherwise each run loads it with its own context.
     Called with the run's ``solver`` on the default (rep-innermost) path, where
     each run reseeds with its own solver. When ``repetition`` is a group_by
     level the fold is shared across solvers, so it is called with
@@ -190,22 +192,27 @@ def _prepare_objective(benchmark, run_context, dataset, objective, solver,
         objective=objective, dataset=dataset, solver=solver, repetition=0,
         base_seed=benchmark.seed,
     )
-    try:
-        skip, reason = objective._set_dataset(dataset)
-    except SeedContextError as e:
-        if e.component != 'solver':
-            raise
-        raise ValueError(
-            "`group_by` with 'repetition' shares each fold across solvers, so "
-            "the data must not depend on the solver -- but `get_data`/"
-            "`set_data` called `get_seed(use_solver=True)`. Remove "
-            "'repetition' from `group_by` or make the data solver-independent."
-        ) from e
-    if skip:
-        terminal.skip(reason, objective=True)
-        return None
 
+    # Only load the data on the front node when the number of repetitions
+    # depends on it (CV splits). Otherwise, `skip` is checked by the worker.
     if n_repetitions is None:
+        try:
+            skip, reason = objective._set_dataset(dataset)
+        except SeedContextError as e:
+            if e.component != 'solver':
+                raise
+            raise ValueError(
+                "`group_by` with 'repetition' shares each fold across "
+                "solvers, so the data must not depend on the solver -- but "
+                "`get_data`/"
+                "`set_data` called `get_seed(use_solver=True)`. Remove "
+                "'repetition' from `group_by` or make the data "
+                "solver-independent."
+            ) from e
+        if skip:
+            terminal.skip(reason, objective=True)
+            return None
+
         if hasattr(objective, "cv"):
             n_repetitions = objective.cv.get_n_splits(
                 **getattr(objective, "cv_metadata", {})
@@ -241,8 +248,8 @@ def generate_run_kwargs(
     def _leaf(chosen):
         dataset, objective = chosen['dataset'], chosen['objective']
         solver, rep = chosen['solver'], chosen['repetition']
-        # A shallow copy carries the already-set data (reused in-process,
-        # reloaded on a worker via `_set_dataset`).
+        # A shallow copy carries the data if already set (reused in-process),
+        # else `_set_dataset` loads it at run time.
         objective_rep = copy.copy(objective)
         # Resolve inheritance now: `meta` feeds the cache key and must not
         # depend on which solver ran first in the process.

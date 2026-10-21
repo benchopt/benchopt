@@ -371,6 +371,14 @@
             </div>
         </div>
 
+        <!-- Enlarged image modal: click anywhere, the cross or press Esc to close -->
+        <dialog id="image-modal" onclick="this.close()">
+            <button type="button" aria-label="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+            <figure><img alt=""><figcaption></figcaption></figure>
+        </dialog>
+
         <!-- System information modal -->
         <div id="system-modal" class="hidden relative z-10" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>

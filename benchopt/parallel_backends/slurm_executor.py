@@ -146,6 +146,11 @@ def run_on_slurm(
                 tasks.append(executors[executor_config].submit(
                     run_batch, run_group,
                 ))
+                # Jobs reload the data: don't keep it on the front node while
+                # the batch holds the kwargs.
+                for kwargs in run_group:
+                    if "dataset" in kwargs:
+                        kwargs["dataset"]._data = None
 
     # Yield results as jobs finish (unordered)
     for t in as_completed(tasks):

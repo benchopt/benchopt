@@ -85,6 +85,11 @@ def mocked_submitit(monkeypatch):
     submissions = []
 
     def submit(self, func, *args, **kwargs):
+        # The front node must release the data of already submitted jobs.
+        assert all(
+            run["dataset"]._data is None
+            for sub in submissions for run in sub["args"][0]
+        )
         config = self._executor.parameters
         submissions.append(
             dict(func=func, args=args, kwargs=kwargs, config=config)
@@ -184,7 +189,7 @@ def test_run_on_slurm(mocked_submitit, dummy_slurm_config):
                     "solver_all_params[p=2]",
                     "solver_all_params[p=2,slurm_nodes=4]"
                 ], dataset_names=["test-dataset"],
-                max_runs=0,
+                max_runs=0, n_repetitions=None,  # load data on front node
                 timeout=None,
                 parallel_config=parallel_config,
                 plot_result=False,
@@ -194,6 +199,7 @@ def test_run_on_slurm(mocked_submitit, dummy_slurm_config):
         df = read_results(out.result_files[0]).set_index("solver_name")
 
     assert len(df) == 6
+    assert len(mocked_submitit) == 6
 
     # Default parameter from global config is never overidden
     assert (df['s_gres'] == "gpu:1").all()
