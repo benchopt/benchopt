@@ -199,10 +199,9 @@ def test_dask_backend():
 
 def test_submitit_backend(monkeypatch):
     pytest.importorskip("submitit")
-    # Make as_completed fast, as default is to wait 10 secs between checks
-    monkeypatch.setattr(
-        "submitit.helpers.as_completed.__defaults__", (None, 0.1)
-    )
+    from benchopt.parallel_backends import slurm_executor
+    # Poll the jobs fast, as default is to wait 5 secs between checks
+    monkeypatch.setattr(slurm_executor, "POLL_INTERVAL", 0.1)
 
     parallel_config = "backend: submitit"
     solver1 = """from benchopt.utils.temp_benchmark import TempSolver
@@ -230,3 +229,61 @@ def test_submitit_backend(monkeypatch):
             ], standalone_mode=False)
 
     out.check_output("Distributed run with backend: submitit", repetition=1)
+
+
+@pytest.mark.parametrize("config, match", [
+    ({"backend": "submitit", "group_by": "invalid"}, "Unknown"),
+    # 'repetition' present but not nested inside dataset/objective (ordering).
+    (
+        {"backend": "submitit",
+         "group_by": ["repetition", "dataset", "objective"]},
+        "must nest inside",
+    ),
+    ({"backend": "submitit", "batch_n_jobs": 2}, "requires `group_by`"),
+    (
+        {"backend": "loky", "group_by": "dataset", "batch_n_jobs": 2},
+        "only supported with the `submitit`",
+    ),
+    (
+        {"backend": "dask", "group_by": "dataset", "batch_n_jobs": 2},
+        "only supported with the `submitit`",
+    ),
+    (
+        {"backend": "submitit", "group_by": "dataset", "batch_n_jobs": 0},
+        "positive integer",
+    ),
+    (
+        {"backend": "submitit", "group_by": "dataset", "batch_n_jobs": True},
+        "positive integer",
+    ),
+])
+def test_invalid_parallel_config(config, match):
+    with pytest.raises((AssertionError, ValueError), match=match):
+        check_parallel_config(config, None)
+
+
+def test_group_by_cli_overrides_parallel_config():
+    # CLI `--group-by` (comma-separated) overrides the parallel-config file.
+    cfg = check_parallel_config(
+        {"backend": "loky", "group_by": "solver"}, None,
+        group_by="dataset,objective",
+    )
+    assert cfg["group_by"] == ["dataset", "objective"]
+    # Without a CLI value, the file's `group_by` is kept.
+    cfg = check_parallel_config(
+        {"backend": "loky", "group_by": "solver"}, None,
+    )
+    assert cfg["group_by"] == ["solver"]
+    # CLI `--group-by` works with no parallel-config file at all.
+    cfg = check_parallel_config(None, None, group_by="dataset")
+    assert cfg["group_by"] == ["dataset"]
+
+
+@pytest.mark.parametrize("backend", ["loky", "dask", "submitit"])
+def test_group_by_allowed_on_all_backends(backend):
+    # `group_by`/`batch_n_jobs` reduce per-run overhead (shared in-process
+    # state) on any backend, not just submitit.
+    cfg = check_parallel_config(
+        {"backend": backend, "group_by": "dataset"}, None
+    )
+    assert cfg["group_by"] == ["dataset"]
