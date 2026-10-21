@@ -1,15 +1,22 @@
 import math
+import pickle
+import shutil
+import time
+import uuid
 from contextlib import ExitStack
+from functools import partial
 
 try:
     import submitit
-    from submitit.helpers import as_completed
 except ImportError:
     raise ImportError(
         "To run benchopt with the submitit backend, please install "
         "the `submitit` package: `pip install benchopt[submitit]` or "
         "`pip install submitit`."
     )
+
+# Seconds between two checks of the running jobs and their streamed results.
+POLL_INTERVAL = 5
 
 
 def get_slurm_executor(benchmark, config, timeout=100):
@@ -117,9 +124,13 @@ def run_on_slurm(
     job runs its group in ``ceil(len / batch_n_jobs)`` waves). A batch is
     further split by SLURM config (`_split_by_slurm_config`), since it can span
     several solvers with different `slurm_params`.
+
+    Each job writes its runs' results to its own folder as they finish, so
+    they are reported without waiting for the whole job (see `_iter_results`).
     """
     executors = {}
-    tasks = []
+    jobs = []
+    results_folder = benchmark.get_slurm_folder() / "results"
     with ExitStack() as stack:
         for batch in batches:
             for job_slurm_config, run_group in _split_by_slurm_config(
@@ -143,24 +154,59 @@ def run_on_slurm(
                     stack.enter_context(executor.batch())
                     executors[executor_config] = executor
 
-                tasks.append(executors[executor_config].submit(
+                result_dir = results_folder / uuid.uuid4().hex
+                result_dir.mkdir(parents=True)
+                task = executors[executor_config].submit(
                     run_batch, run_group,
-                ))
+                    on_result=partial(_write_result, result_dir),
+                )
+                jobs.append((task, result_dir, len(run_group)))
                 # Jobs reload the data: don't keep it on the front node while
                 # the batch holds the kwargs.
                 for kwargs in run_group:
                     if "dataset" in kwargs:
                         kwargs["dataset"]._data = None
 
-    # Yield results as jobs finish (unordered)
-    for t in as_completed(tasks):
-        exc = t.exception()
-        if exc is not None:
-            # Cancel remaining tasks and raise error
-            for tt in tasks:
-                tt.cancel()
-            raise exc
+    yield from _iter_results(jobs)
 
-        # A job returns the list of its batch's results; yield each in turn.
-        for res in t.results()[0]:
-            yield res
+
+def _write_result(result_dir, i, result):
+    """Save the ``i``-th run result of a job (called in the job)."""
+    tmp = result_dir / f"{i}.tmp"
+    with open(tmp, "wb") as f:
+        pickle.dump(result, f)
+    # Atomic rename: the front node never reads a half-written file.
+    tmp.rename(result_dir / f"{i}.pkl")
+
+
+def _iter_results(jobs):
+    """Yield each run result as soon as its job has written it (unordered).
+
+    ``jobs`` holds ``(task, result_dir, n_runs)``. A job writes its results in
+    run order, so only the next expected file needs to be checked for.
+    """
+    n_read = dict.fromkeys(range(len(jobs)), 0)  # pending job -> results read
+    while n_read:
+        for j in list(n_read):
+            task, result_dir, n_runs = jobs[j]
+            # Check before reading: a done job has written all its results.
+            done = task.done()
+            if done and task.exception() is not None:
+                for k in n_read:
+                    jobs[k][0].cancel()
+                raise task.exception()
+
+            while n_read[j] < n_runs:
+                path = result_dir / f"{n_read[j]}.pkl"
+                if not (done or path.exists()):
+                    break
+                with open(path, "rb") as f:
+                    result = pickle.load(f)
+                n_read[j] += 1
+                yield result
+
+            if done:
+                shutil.rmtree(result_dir, ignore_errors=True)
+                del n_read[j]
+        if n_read:
+            time.sleep(POLL_INTERVAL)

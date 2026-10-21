@@ -199,10 +199,9 @@ def test_dask_backend():
 
 def test_submitit_backend(monkeypatch):
     pytest.importorskip("submitit")
-    # Make as_completed fast, as default is to wait 10 secs between checks
-    monkeypatch.setattr(
-        "submitit.helpers.as_completed.__defaults__", (None, 0.1)
-    )
+    from benchopt.parallel_backends import slurm_executor
+    # Poll the jobs fast, as default is to wait 5 secs between checks
+    monkeypatch.setattr(slurm_executor, "POLL_INTERVAL", 0.1)
 
     parallel_config = "backend: submitit"
     solver1 = """from benchopt.utils.temp_benchmark import TempSolver

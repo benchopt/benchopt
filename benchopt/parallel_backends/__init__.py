@@ -27,13 +27,21 @@ def run_batch(run, n_jobs=1):
     else across ``n_jobs`` sub-processes. Returning the batched function lets
     it be passed to every backend -- including ``run_on_slurm`` -- without the
     backend importing it back from this package.
+
+    If ``on_result`` is given, ``on_result(i, result)`` is called as soon as
+    the ``i``-th run finishes, in order, instead of returning the results.
     """
-    def _run_batch(batch):
+    def _run_batch(batch, on_result=None):
         if n_jobs <= 1:
-            return [run(**run_kwargs) for run_kwargs in batch]
-        return Parallel(n_jobs=n_jobs)(
-            delayed(run)(**run_kwargs) for run_kwargs in batch
-        )
+            results = (run(**run_kwargs) for run_kwargs in batch)
+        else:
+            results = Parallel(n_jobs=n_jobs, return_as="generator")(
+                delayed(run)(**run_kwargs) for run_kwargs in batch
+            )
+        if on_result is None:
+            return list(results)
+        for i, res in enumerate(results):
+            on_result(i, res)
     return _run_batch
 
 

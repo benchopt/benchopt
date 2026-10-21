@@ -11,7 +11,9 @@ submitit = pytest.importorskip("submitit")
 
 from submitit.slurm.test_slurm import mocked_slurm  # noqa: E402
 from benchopt.parallel_backends.slurm_executor import (  # noqa: E402
+    _iter_results,
     _split_by_slurm_config,
+    _write_result,
     get_slurm_executor,
     get_solver_slurm_config,
 )
@@ -67,14 +69,20 @@ class MockedTask:
         self.args = args
         self.kwargs = kwargs
         self.config = config
+        self.ran = False
 
-    def done(self): return True
+    def done(self):
+        # Run the job the first time it is polled, annotating its results.
+        if not self.ran:
+            self.ran = True
+            on_result = self.kwargs["on_result"]
+            self.func(*self.args, on_result=lambda i, res: on_result(
+                i, _annotate_task_result(res, self.config)
+            ))
+        return True
+
     def exception(self): return None
     def cancel(self): return None
-
-    def results(self):
-        result = self.func(*self.args, **self.kwargs)
-        return [_annotate_task_result(result, self.config)]
 
 
 @pytest.fixture
@@ -98,7 +106,7 @@ def mocked_submitit(monkeypatch):
 
     monkeypatch.setattr("submitit.AutoExecutor.submit", submit)
     monkeypatch.setattr(
-        "submitit.helpers.as_completed.__defaults__", (None, 0.1)
+        "benchopt.parallel_backends.slurm_executor.POLL_INTERVAL", 0.1
     )
     return submissions
 
@@ -254,6 +262,34 @@ def test_split_by_slurm_config():
     groups = _split_by_slurm_config(prepare, {})
     assert len(groups) == 1
     assert len(groups[0][1]) == 2
+
+
+def test_iter_results_before_job_ends(tmp_path, monkeypatch):
+    # A run's result is yielded as soon as its job writes it, while the job is
+    # still running.
+    monkeypatch.setattr(
+        "benchopt.parallel_backends.slurm_executor.POLL_INTERVAL", 0
+    )
+
+    class RunningTask:
+        n_done_calls = 0
+
+        def done(self):
+            # The 2nd run finishes between the 1st and 2nd poll.
+            self.n_done_calls += 1
+            if self.n_done_calls == 2:
+                _write_result(tmp_path, 1, "r1")
+            return self.n_done_calls > 1
+
+        def exception(self): return None
+
+    _write_result(tmp_path, 0, "r0")
+    task = RunningTask()
+    it = _iter_results([(task, tmp_path, 2)])
+    assert next(it) == "r0"
+    assert task.n_done_calls == 1  # yielded while the job was still running
+    assert list(it) == ["r1"]
+    assert not tmp_path.exists()  # result dir cleaned once the job is done
 
 
 @pytest.mark.parametrize("batch_n_jobs, waves", [(1, 2), (2, 1)])
