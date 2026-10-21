@@ -93,7 +93,7 @@ def run_on_slurm(
     executors = {}
     tasks = []
 
-    while True:
+    def submit_jobs():
         n_free = None if max_jobs is None else max_jobs - len(tasks)
         # Pack the jobs submitted in this round in one array per executor.
         with ExitStack() as stack:
@@ -125,9 +125,8 @@ def run_on_slurm(
                 if "dataset" in kwargs:
                     kwargs["dataset"]._data = None
 
-        if not tasks:
-            return
-
+    submit_jobs()
+    while tasks:
         # Yield results as jobs finish (unordered)
         t = next(as_completed(tasks))
         tasks.remove(t)
@@ -138,4 +137,7 @@ def run_on_slurm(
                 tt.cancel()
             raise exc
 
-        yield t.results()[0]
+        result = t.results()[0]
+        # Fill the freed slot before handing back the result.
+        submit_jobs()
+        yield result
