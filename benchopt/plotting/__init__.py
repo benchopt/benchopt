@@ -10,6 +10,7 @@ from .generate_html import plot_benchmark_html
 from .generate_matplotlib import get_figures
 
 from ..benchmark import Benchmark
+from ..utils.parametrized_name_mixin import sanitize
 
 
 BACKWARD_COMPAT_PLOTS = {
@@ -112,13 +113,20 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
     if "plots" not in plot_config or plot_config["plots"] is None:
         plot_config["plots"] = valid_kinds
 
-    for kind in plot_config["plots"]:
+    plot_config["plots"] = [sanitize(k) for k in plot_config["plots"]]
+    hidden = [sanitize(k) for k in plot_config.get("hidden_plots") or []]
+    if kinds is None or len(kinds) == 0:
+        plot_config["plots"] = [
+            k for k in plot_config["plots"] if k not in hidden
+        ]
+
+    for kind in [*plot_config["plots"], *hidden]:
         if kind not in valid_kinds:
             raise ValueError(
                 f"Invalid plot kind '{kind}' specified in plot config. "
                 "This config is either set in the config.yml file in the "
-                "benchmark directory or in the {benchmark.name} section of "
-                "global benchopt config."
+                f"benchmark directory or in the {benchmark.name} section of "
+                "global benchopt config. "
                 "Available kinds are:\n-" + "\n-".join(valid_kinds)
             )
 

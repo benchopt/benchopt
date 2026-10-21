@@ -616,7 +616,7 @@ class Benchmark:
         )
 
     def get_plot_config(self, default_config=None):
-        params = ["plots", "plot_configs"]
+        params = ["plots", "hidden_plots", "plot_configs"]
         config = {}
         for param in params:
             options = self.get_setting(param, default_config=default_config)
