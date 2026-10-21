@@ -103,7 +103,12 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
 
     # Fake submit to allow running as on a slurm cluster and
     # get the configuration back
+    submitted = []
+
     def submit(self, func, *args, **kwargs):
+        # The front node must release the data of already submitted jobs.
+        assert all(kw["dataset"]._data is None for kw in submitted)
+        submitted.append(kwargs)
         # Mock submit to return a mocked task, with the executor's parameters
         return MockedTask((func, args, kwargs), self._executor.parameters)
 
@@ -161,7 +166,7 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
                     "solver_all_params[p=2]",
                     "solver_all_params[p=2,slurm_nodes=4]"
                 ], dataset_names=["test-dataset"],
-                max_runs=0,
+                max_runs=0, n_repetitions=None,  # load data on front node
                 timeout=None,
                 parallel_config=parallel_config,
                 plot_result=False,
@@ -171,6 +176,7 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
         df = read_results(out.result_files[0]).set_index("solver_name")
 
     assert len(df) == 6
+    assert len(submitted) == 6
 
     # Default parameter from global config is never overidden
     assert (df['s_gres'] == "gpu:1").all()

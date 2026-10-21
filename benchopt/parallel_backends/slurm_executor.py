@@ -120,6 +120,10 @@ def run_on_slurm(
                     in_batch.add(executor_config)
 
                 tasks.append(executor.submit(run_one_solver, **kwargs))
+                # Jobs reload the data: don't keep it on the front node while
+                # the batch holds the kwargs.
+                if "dataset" in kwargs:
+                    kwargs["dataset"]._data = None
 
         if not tasks:
             return

@@ -10,12 +10,24 @@ What's new
 Version 1.10.1 -- in developement
 ---------------------------------
 
+FIX
+~~~
+
+- The front node no longer calls ``Dataset.get_data`` before dispatching runs
+  when ``-r`` is set, and the ``submitit`` backend no longer keeps every
+  dataset in memory while submitting jobs. By `Hippolyte Verninas`_
+  (:gh:`1020`)
+
 API
 ~~~
 
 - Add ``max_submitted_jobs`` to the ``submitit`` parallel config, to cap the
   number of jobs in the SLURM queue across all job arrays.
   By `Hippolyte Verninas`_ (:gh:`1021`)
+
+- Add a ``hidden_plots`` benchmark config option to hide some plot kinds,
+  e.g. some of the default plots. By `Hippolyte Verninas`_ (:gh:`1019`)
+
 
 PLOT
 ~~~~

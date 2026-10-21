@@ -221,6 +221,19 @@ can be passed directly::
 
 Custom plot classes (see :ref:`add_custom_plot`) are also applied.
 
+By default, all available plot kinds are displayed. The benchmark config file
+(see :ref:`config_benchopt`) can restrict them with ``plots``, or hide some of
+them with ``hidden_plots`` while keeping all the others:
+
+.. code-block:: yaml
+
+    hidden_plots:
+    - boxplot
+    - table
+
+Both settings are ignored when plot kinds are explicitly selected with
+``benchopt plot --kind``.
+
 
 .. _visualize_benchmark:
 
