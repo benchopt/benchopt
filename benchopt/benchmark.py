@@ -386,19 +386,42 @@ class Benchmark:
         for plot in self.get_plots():
             plot._check()
 
-    def get_plot_data(self, df, kinds):
+    def get_plot_data(self, df, kinds, n_jobs=1):
         "Get the data to plot for the benchmark."
-        all_plots = self.get_plots()
+        from joblib import Parallel, delayed, effective_n_jobs
+        from .plotting.base import BasePlot, _compute_plots
+        from .utils.parametrized_name_mixin import product_param
+
         self.check_plots()
-        all_data = {}
-        all_options = {}
-        for plot in all_plots:
-            plot_name = plot._get_name()
-            if plot_name not in kinds:
+        all_options, tasks = {}, []
+        for plot in self.get_plots():
+            if plot._get_name() not in kinds:
                 continue
-            data, options = plot._get_all_plots(df)
-            all_data[plot_name] = data
-            all_options[plot_name] = options
+            options = plot._get_options(df)
+            all_options[plot._get_name()] = options
+            tasks += [(plot, kwargs) for kwargs in product_param(options)]
+
+        n_jobs = max(1, min(effective_n_jobs(n_jobs), len(tasks)))
+        # Fix solver styles upfront, as workers cannot share them. Use sorted
+        # names, the order in which the default plots style them.
+        label_dict = BasePlot._label_dict
+        for solver in sorted(df['solver_name'].unique()):
+            label_dict.setdefault(solver, len(label_dict))
+
+        # One batch per worker, so that df is only sent once to each of them.
+        # Round-robin batches, to balance the different plot kinds.
+        batches = [tasks[i::n_jobs] for i in range(n_jobs)]
+        styles = dict(BasePlot._label_dict)
+        results = Parallel(n_jobs=n_jobs)(
+            delayed(_compute_plots)(df, batch, styles) for batch in batches
+        )
+        ordered = [None] * len(tasks)
+        for i, res in enumerate(results):
+            ordered[i::n_jobs] = res
+
+        all_data = {name: {} for name in all_options}
+        for (plot, kwargs), data in zip(tasks, ordered):
+            all_data[plot._get_name()][plot._get_key(kwargs)] = data
         return all_data, all_options
 
     def _list_benchmark_classes(self, base_class):

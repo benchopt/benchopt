@@ -1,5 +1,6 @@
 import re
 from inspect import cleandoc
+from unittest.mock import patch
 from pathlib import Path
 
 import click
@@ -116,6 +117,24 @@ class TestRunCmd:
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out
+
+    @pytest.mark.parametrize('args, expected', [
+        (["-j", "2"], 2),
+        (["-j", "2", "--n-jobs-plots", "3"], 3),
+        (["--n-jobs-plots", "3"], 3),
+        ([], 1),
+    ])
+    @patch("benchopt.plotting.plot_benchmark")
+    def test_n_jobs_plots(self, plot_benchmark, args, expected):
+        # --n-jobs-plots wins, otherwise the run's n_jobs is reused
+        with temp_benchmark() as bench, CaptureCmdOutput():
+            run([
+                str(bench.benchmark_dir), "-r", "1", "-n", "1",
+                "-d", "test-dataset", "--no-display", *args
+            ], 'benchopt', standalone_mode=False)
+
+        plot_benchmark.assert_called_once()
+        assert plot_benchmark.call_args.kwargs['n_jobs'] == expected
 
     @pytest.mark.parametrize('cv', [True, False])
     def test_n_rep_display(self, cv):

@@ -63,6 +63,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "display",
         "html",
         "n_jobs",
+        "n_jobs_plots",
         "parallel_config",
         "pdb",
         "profile",
@@ -151,7 +152,12 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
 @click.option("--n-jobs", "-j",
               metavar="<int>", default=None, show_default=True, type=int,
               help="Maximal number of workers to run the benchmark in "
-              "parallel.")
+              "parallel. Also used to compute the plots, unless running "
+              "on a distributed backend or `--n-jobs-plots` is set.")
+@click.option("--n-jobs-plots",
+              metavar="<int>", default=None, show_default=True, type=int,
+              help="Number of processes used to compute the plots. Defaults "
+              "to `--n-jobs` for local runs, and to 1 otherwise.")
 @click.option("--parallel-config",
               metavar="<parallel_config.yml>", default=None,
               help="Run in parallel with the specified backend configuration. "
@@ -215,7 +221,8 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, no_timeout,
-        collect, plot, display, html, n_jobs, parallel_config, pdb,
+        collect, plot, display, html, n_jobs, n_jobs_plots,
+        parallel_config, pdb,
         do_profile, env_name, no_cache, output, seed
     ) = _get_run_args(kwargs, config)
 
@@ -313,7 +320,8 @@ def run(config_file=None, **kwargs):
             max_runs=max_runs, n_repetitions=n_repetitions,
             timeout=timeout, output_file=output, plot_result=plot,
             display=display, html=html, collect=collect,
-            parallel_config=parallel_config, pdb=pdb
+            parallel_config=parallel_config, n_jobs_plots=n_jobs_plots,
+            pdb=pdb
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -378,6 +386,8 @@ def run(config_file=None, **kwargs):
     parallel_args = ""
     if n_jobs:
         parallel_args += f"--n-jobs {n_jobs} "
+    if n_jobs_plots:
+        parallel_args += f"--n-jobs-plots {n_jobs_plots} "
     if parallel_config:
         parallel_args += rf"--parallel-config {parallel_config} "
     cmd = (

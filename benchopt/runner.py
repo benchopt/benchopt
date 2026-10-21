@@ -219,7 +219,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
                    n_repetitions=1, timeout=100,
                    plot_result=True, display=True, html=True, collect=False,
                    output_file="None", parallel_config=None,
-                   show_progress=True, pdb=False):
+                   n_jobs_plots=None, show_progress=True, pdb=False):
     """Run full benchmark.
 
     Parameters
@@ -249,6 +249,9 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         If not None, launch the job in parallel. The provided config serves to
         set up parallelism using ``joblib.parallel_backend`` or ``submitit``.
         See :ref:`parallel_run` for detailed description.
+    n_jobs_plots : int | None
+        Number of processes used to compute the plots. If None, use
+        ``n_jobs`` for local runs and 1 for distributed ones.
     plot_result : bool
         If set to True (default), generate the result plot and save them in
         the benchmark directory.
@@ -281,6 +284,13 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     """
     exit_code = 0
     terminal = TerminalOutput(n_repetitions, show_progress)
+
+    # Default to the run's workers for plotting, if they are local. Read it
+    # now as the run pops the backend from parallel_config.
+    plot_n_jobs = n_jobs_plots or 1
+    if (n_jobs_plots is None and parallel_config
+            and parallel_config.get('backend') == 'loky'):
+        plot_n_jobs = parallel_config.get('n_jobs') or 1
 
     # Resolve the output path before runs start so that run_output_base is
     # stable across all workers. A value containing a path separator is an
@@ -365,7 +375,10 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     if plot_result:
         try:
             from benchopt.plotting import plot_benchmark
-            plot_benchmark(output_file, benchmark, html=html, display=display)
+            plot_benchmark(
+                output_file, benchmark, html=html, display=display,
+                n_jobs=plot_n_jobs
+            )
         except Exception as e:
             print(f"Failed to plot the benchmark results: {e}")
             exit_code = 1
@@ -376,7 +389,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
 def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
                   dataset_names=None, objective_filters=None, max_runs=10,
                   n_repetitions=1, timeout=None,
-                  n_jobs=None, parallel_config=None,
+                  n_jobs=None, parallel_config=None, n_jobs_plots=None,
                   plot_result=True, display=True, html=True,  collect=False,
                   show_progress=True, pdb=False, no_cache=False,
                   output_file="None"):
@@ -411,6 +424,9 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         If not None, launch the job in parallel. The provided config serves to
         set up parallelism using ``joblib.parallel_backend`` or ``submitit``.
         See :ref:`parallel_run` for detailed description.
+    n_jobs_plots : int | None
+        Number of processes used to compute the plots. If None, use
+        ``n_jobs`` for local runs and 1 for distributed ones.
     plot_result : bool
         If set to True (default), generate the result plot and save them in
         the benchmark directory.
@@ -472,6 +488,7 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         collect=collect,
         show_progress=show_progress,
         parallel_config=parallel_config,
+        n_jobs_plots=n_jobs_plots,
         pdb=pdb,
         output_file=output_file
     )

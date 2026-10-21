@@ -16,6 +16,9 @@ This is the easiest way to run the benchmark in parallel.
 It relies on ``joblib`` and it can be used by simply specifying the number of parallel runs that can be computed simultaneously with ``--n-jobs X`` or ``-j X`` when calling ``benchopt run``.
 This will run all computations on the local machine where the command is invoked.
 
+The plots generated at the end of the run are also computed in parallel with the same number of workers.
+Use ``--n-jobs-plots X`` to set this number independently, for instance to plot in parallel after a sequential run.
+
 Note that ``joblib`` tries to mitigate oversubscription by reducing the number of threads that are used in C-level parallelism -- such as in BLAS calls.
 This means that these parallel runs might be slower than their sequential counterpart on the same machine, and shouldn't be compared to each other.
 

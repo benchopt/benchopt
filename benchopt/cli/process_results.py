@@ -41,8 +41,12 @@ process_results = click.Group(
 @click.option('--all', 'all_files', is_flag=True,
               help="If this flag is set, generate the plot for all existing "
               "runs of a benchmark at once.")
+@click.option('--n-jobs', '-j', metavar="<int>", default=1,
+              show_default=True, type=int,
+              help="Number of processes used to compute the plots, with "
+              "joblib. Use -1 for all CPUs.")
 def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
-         display=True, html=True, plotly=False, all_files=False):
+         display=True, html=True, plotly=False, all_files=False, n_jobs=1):
 
     if all_files:
         assert filename is None, (
@@ -64,7 +68,7 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
     from benchopt.plotting import plot_benchmark
     return plot_benchmark(
         result_filename, benchmark, kinds=kinds, display=display,
-        plotly=plotly, html=html
+        plotly=plotly, html=html, n_jobs=n_jobs
     )
 
 

@@ -12,6 +12,9 @@ benchopt run . -j 4      # 4 local workers via joblib/loky
 ```
 
 - Default is sequential (`n_jobs=1`). `-j/--n-jobs N` runs N tasks at once.
+- The final plots reuse `-j` for local runs. `--n-jobs-plots N` overrides it
+  (also with a cluster backend, where plots are otherwise sequential).
+  `benchopt plot -j N` does the same for existing results.
 - joblib caps C-level (BLAS) threads to avoid oversubscription, so an individual
   parallel run can be **slower** than the same run sequentially. Do **not**
   compare wall-times measured under different `-j` values against each other —
