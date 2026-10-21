@@ -241,7 +241,14 @@ def test_submitit_backend(monkeypatch):
         "must nest inside",
     ),
     ({"backend": "submitit", "batch_n_jobs": 2}, "requires `group_by`"),
-    ({"backend": "loky", "batch_n_jobs": 2}, "requires `group_by`"),
+    (
+        {"backend": "loky", "group_by": "dataset", "batch_n_jobs": 2},
+        "only supported with the `submitit`",
+    ),
+    (
+        {"backend": "dask", "group_by": "dataset", "batch_n_jobs": 2},
+        "only supported with the `submitit`",
+    ),
     (
         {"backend": "submitit", "group_by": "dataset", "batch_n_jobs": 0},
         "positive integer",

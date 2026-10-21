@@ -69,7 +69,7 @@ slurm_additional_parameters:
 - By default there is **no cap** on simultaneous jobs; set
   `slurm_array_parallelism: N` to limit concurrency when the scheduler requires it.
 - `group_by` (see "Grouping runs" above) collapses runs into single jobs to cut
-  scheduling overhead. `batch_n_jobs: N` (parallel config only) then runs each
+  scheduling overhead. `batch_n_jobs: N` (parallel config, `submitit` only) then runs each
   batch on N workers inside its job — request the matching CPUs (e.g.
   `slurm_cpus_per_task`) or they oversubscribe. Runs with different SLURM configs
   are never grouped together.

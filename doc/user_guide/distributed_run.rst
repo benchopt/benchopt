@@ -45,7 +45,7 @@ unit, so the shared setup is paid once and reused across the batch.
     batch_n_jobs: 4               # 4 workers inside each batch (submitit)
 
 ``batch_n_jobs`` runs a batch's runs on several workers; it is set only in the
-parallel config and is mainly useful with ``submitit`` (pair it with
+parallel config and is only supported with ``submitit`` (pair it with
 ``slurm_cpus_per_task``). It defaults to ``1`` (sequential in one process),
 which maximises the reuse above. Grouping never changes the results, only how
 runs are scheduled.

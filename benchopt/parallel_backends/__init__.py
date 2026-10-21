@@ -181,6 +181,12 @@ def check_parallel_config(parallel_config_file, n_jobs, group_by=None):
         # so both sides of the run stream agree on the nesting order.
         parallel_config['group_by'] = _normalize_group_by(group_by)
     if 'batch_n_jobs' in parallel_config:
+        # On loky/dask a batch runs sequentially in its worker: a nested
+        # `Parallel` there uses threads sharing the batch's solver instances.
+        assert backend == 'submitit', (
+            "`batch_n_jobs` is only supported with the `submitit` backend. "
+            f"Got backend={backend!r}."
+        )
         assert group_by is not None, (
             "`batch_n_jobs` requires `group_by` to be set."
         )
