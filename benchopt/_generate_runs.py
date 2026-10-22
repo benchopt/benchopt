@@ -49,6 +49,10 @@ def _get_all_runs(benchmark, solvers=None, forced_solvers=None,
     """
     from .benchmark import _list_parametrized_classes
 
+    terminal.set_n_configs(
+        benchmark.get_n_configs(solvers, datasets, objectives)
+    )
+
     all_datasets = _list_parametrized_classes(*datasets)
     all_solvers, solvers_buffer = buffer_iterator(
         _list_parametrized_classes(*solvers)
@@ -82,6 +86,7 @@ def _get_all_runs(benchmark, solvers=None, forced_solvers=None,
                     dataset=dataset, objective=objective, solver=solver,
                     force=force, terminal=terminal
                 )
+
             all_solvers = solvers_buffer
 
 

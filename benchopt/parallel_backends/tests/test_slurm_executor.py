@@ -207,3 +207,44 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
             p_all_params[f"s_{p}"].fillna("") ==
             slurm_params.get(f"slurm_{p}", "")
         )
+
+
+def test_run_on_slurm_cancels_jobs(monkeypatch):
+    from contextlib import nullcontext
+    from unittest.mock import MagicMock
+    from benchopt.parallel_backends import slurm_executor
+
+    executor = MagicMock()
+    executor.batch.return_value = nullcontext()
+    monkeypatch.setattr(slurm_executor, "get_slurm_executor",
+                        lambda *args, **kwargs: executor)
+
+    def interrupted(tasks):
+        raise KeyboardInterrupt
+
+    # An interrupted run, e.g. from `benchopt monitor`, cancels its jobs.
+    monkeypatch.setattr(slurm_executor, "as_completed", interrupted)
+    cancelled = []
+    monkeypatch.setattr(slurm_executor, "cancel_jobs", cancelled.extend)
+    results = slurm_executor.run_on_slurm(None, {}, None, [{}, {}])
+    with pytest.raises(KeyboardInterrupt):
+        next(results)
+    assert len(cancelled) == 2
+
+
+def test_cancel_jobs(monkeypatch):
+    from unittest.mock import MagicMock
+    from benchopt.parallel_backends import slurm_executor
+
+    calls = []
+    monkeypatch.setattr(slurm_executor.subprocess, "call", calls.append)
+
+    def job(job_id, command="scancel"):
+        return MagicMock(job_id=job_id, _cancel_command=command)
+
+    jobs = [job("12_0"), job("12_1"), job("7_0"), job("9"), job("42", None)]
+    slurm_executor.cancel_jobs(jobs)
+    # A single `scancel` for all the arrays, whatever their number of jobs.
+    assert calls == [["scancel", "12", "7", "9"]]
+    # The jobs not handled by `scancel` are cancelled one by one.
+    assert [j.cancel.called for j in jobs] == [False] * 4 + [True]
