@@ -26,9 +26,9 @@ def test_monitor(tmp_path, monkeypatch):
     out.check_output("monitored_run")
     out.check_output("done")
 
-    # A run is selected by its number or the start of its name, and its
+    # A run is selected by `last` or the start of its name, and its
     # results are printed.
-    for name in ["1", "monitored"]:
+    for name in ["last", "monitored"]:
         with CaptureCmdOutput() as out:
             monitor([name], "benchopt", standalone_mode=False)
         out.check_output("Results")

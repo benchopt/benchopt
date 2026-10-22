@@ -412,30 +412,31 @@ def test_monitor_select_run(tmp_path, monkeypatch):
             yield lambda timeout: next(it)
         monkeypatch.setattr(monitor, "_read_key", read_key)
 
-    press("\x1b[B", "\x1b[B", "\x1b[A", None, "x", "\r")
-    assert monitor.select_run(runs, console)['run_name'] == "run1"
+    # The selection starts on the most recent run, at the bottom.
+    press("\x1b[A", "\x1b[A", "\x1b[B", None, "x", "\r")
+    assert monitor.select_run(runs, console)['run_name'] == "run28"
 
     # The selection wraps around, and the list scrolls to show it.
     console.file = io.StringIO()
-    press("\x1b[A", "\r")
-    assert monitor.select_run(runs, console)['run_name'] == "run29"
-    assert "run29" in console.file.getvalue()
+    press("\x1b[B", "\r")
+    assert monitor.select_run(runs, console)['run_name'] == "run0"
+    assert "run0" in console.file.getvalue()
 
     press("q")
     assert monitor.select_run(runs, console) is None
 
     # `d` deletes the files of a run, once confirmed.
     press("d", "n", "d", "y", "\r")
-    assert monitor.select_run(runs, console)['run_name'] == "run1"
-    assert not (tmp_path / "run0.json").exists()
-    assert (tmp_path / "run1.json").exists()
+    assert monitor.select_run(runs, console)['run_name'] == "run28"
+    assert not (tmp_path / "run29.json").exists()
+    assert (tmp_path / "run28.json").exists()
 
     # A running run must be killed first.
-    runs[0]['finished'], runs[0]['updated'] = None, time.time()
-    Path(runs[0]['path']).write_text(json.dumps(runs[0]))
+    runs[-1]['finished'], runs[-1]['updated'] = None, time.time()
+    Path(runs[-1]['path']).write_text(json.dumps(runs[-1]))
     press("d", "y", "\r")
-    assert monitor.select_run(runs, console)['run_name'] == "run0"
-    assert (tmp_path / "run0.json").exists()
+    assert monitor.select_run(runs, console)['run_name'] == "run29"
+    assert (tmp_path / "run29.json").exists()
 
 
 def test_monitor_follow_run(tmp_path, monkeypatch):

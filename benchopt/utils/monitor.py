@@ -43,9 +43,9 @@ def read_results(run, offset=0):
 
 
 def load_runs():
-    "Snapshots of the last runs, the most recent first."
+    "Snapshots of the last runs, the most recent last, as in a terminal."
     runs = filter(None, map(_load, get_runs_dir().glob("*.json")))
-    return sorted(runs, key=lambda run: run['started'], reverse=True)
+    return sorted(runs, key=lambda run: run['started'])
 
 
 def run_state(run, now=None):
@@ -101,7 +101,8 @@ def select_run(runs, console):
     from rich.markup import escape
 
     keys = "[dim]↑/↓ select · enter monitor · d delete · q quit[/]"
-    i, top, hint = 0, 0, keys
+    # Start on the most recent run, at the bottom.
+    i, top, hint = len(runs) - 1, 0, keys
     with _read_key() as read, Live(
             console=console, screen=True, auto_refresh=False) as live:
         while runs:
@@ -284,8 +285,8 @@ def follow_run(run, console):
 def monitor(name=None):
     """Pick one of the last runs, or the one matching `name`, and follow it.
 
-    `name` is either the number of the run in the table or the start of its
-    name. Without a terminal, the matching runs are only listed.
+    `name` is either the start of the run's name or `last` for the most
+    recent run. Without a terminal, the matching runs are only listed.
     """
     import click
     from rich.console import Console
@@ -294,8 +295,8 @@ def monitor(name=None):
         runs = load_runs()
         if name is None:
             return runs
-        if name.isdigit() and 1 <= int(name) <= len(runs):
-            return [runs[int(name) - 1]]
+        if name == 'last':
+            return runs[-1:]
         return [run for run in runs if run['run_name'].startswith(name)]
 
     console = Console(highlight=False)

@@ -204,7 +204,7 @@ for a run launched in a SLURM job or without a terminal:
 .. code-block:: bash
 
     benchopt monitor        # pick one of the last runs with the arrow keys
-    benchopt monitor 1      # follow the most recent run
+    benchopt monitor last   # follow the most recent run
 
 In the list of runs, press ``d`` to delete the snapshot of a finished run.
 The selected run is displayed live, finished or not: press ``esc`` to go

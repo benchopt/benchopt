@@ -407,8 +407,8 @@ def run(config_file=None, **kwargs):
 
 @main.command(
     help="Monitor the benchmark runs, in progress or finished. Without RUN, "
-    "pick one of the last runs with the arrow keys. RUN is the number of a "
-    "run in this list, or the start of its name.",
+    "pick one of the last runs with the arrow keys. RUN is the start of a "
+    "run name, or `last` for the most recent run.",
     epilog="This works for runs without a terminal, e.g. on SLURM, and from "
     "another machine sharing the home folder. See the `runs_dir` config."
 )
