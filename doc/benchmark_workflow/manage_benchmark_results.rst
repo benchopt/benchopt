@@ -15,6 +15,9 @@ directory, with a ``.parquet`` file.
 By default, the name of the file include the date and time of the run,
 as ``benchopt_run_<date>_<time>.parquet`` but a custom name can be given using
 the :option:`--output` option of ``benchopt run``.
+A bare name is stored in ``./outputs``, while a value containing a path
+separator (e.g. ``--output /tmp/results.parquet``) is treated as an explicit
+path and written exactly there, leaving the benchmark directory untouched.
 The DataFrame contains the following columns:
 
 - ``objective_name|solver_name|dataset_name``: the names of the different benchopt
@@ -217,6 +220,19 @@ can be passed directly::
     $ benchopt plot path/to/benchopt_run_<date>_<time>.parquet
 
 Custom plot classes (see :ref:`add_custom_plot`) are also applied.
+
+By default, all available plot kinds are displayed. The benchmark config file
+(see :ref:`config_benchopt`) can restrict them with ``plots``, or hide some of
+them with ``hidden_plots`` while keeping all the others:
+
+.. code-block:: yaml
+
+    hidden_plots:
+    - boxplot
+    - table
+
+Both settings are ignored when plot kinds are explicitly selected with
+``benchopt plot --kind``.
 
 
 .. _visualize_benchmark:

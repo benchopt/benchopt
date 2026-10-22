@@ -156,13 +156,14 @@ def get_solver_kwargs(
         repetition=0, base_seed=benchmark.seed,
     )
 
-    # Set objective and skip if necessary.
-    skip, reason = objective._set_dataset(dataset)
-    if skip:
-        terminal.skip(reason, objective=True)
-        return []
-
+    # Only load the data on the front node when the number of repetitions
+    # depends on it (CV splits). Otherwise, `skip` is checked by the worker.
     if n_repetitions is None:
+        skip, reason = objective._set_dataset(dataset)
+        if skip:
+            terminal.skip(reason, objective=True)
+            return []
+
         if hasattr(objective, "cv"):
             n_repetitions = objective.cv.get_n_splits(
                 **getattr(objective, "cv_metadata", {})

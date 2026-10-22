@@ -173,7 +173,9 @@ set `name` and `type` (`scatter`/`bar_chart`/`boxplot`/`table`/`image`),
 implement `plot(df, **options)` (returns data shaped by `type`) and
 `get_metadata` (title/labels/scale), and use `self.get_style(label)` for a
 consistent color/marker per solver. The `name` then appears in the HTML menu and
-works as a `plot_kind` in `plot_configs` (above). For the per-type return schema
+works as a `plot_kind` in `plot_configs` (above). Table cells accept
+`**bold**`, `*italic*` and `__underlined__` markers, rendered in the HTML
+report and in the LaTeX export; escape a literal marker with `r"a \* b"`. For the per-type return schema
 and a full example, see the custom-plot doc:
 https://benchopt.github.io/stable/user_guide/add_custom_plot.html
 

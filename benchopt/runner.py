@@ -1,3 +1,4 @@
+import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -273,8 +274,10 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     pdb : bool
         If pdb is set to True, open a debugger on error.
     output_file : str
-        Filename for the parquet output. If given, the results will
-        be stored at <BENCHMARK>/outputs/<filename>.parquet.
+        Name or path for the result output. A bare name is stored at
+        <BENCHMARK>/outputs/<name>.parquet. A value containing a path separator
+        is treated as an explicit path and written exactly there, leaving the
+        benchmark folder untouched.
 
     Returns
     -------
@@ -290,16 +293,28 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         n_jobs=_get_n_workers(parallel_config),
     )
 
-    # Resolve the output filename stem before runs start so that
-    # run_output_base is stable across all workers.
+    # Resolve the output path before runs start so that run_output_base is
+    # stable across all workers. A value containing a path separator is an
+    # explicit path, written exactly as given; a bare name lands in
+    # <BENCHMARK>/outputs/. Only touch the benchmark outputs folder when it is
+    # actually used, to keep the benchmark directory read-only for explicit
+    # output paths.
     output_dir = benchmark.get_output_folder()
     if output_file == "None":
         timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
-        output_file = f'benchopt_run_{timestamp}.parquet'
+        output_path = (
+            output_dir
+            / f'benchopt_run_{timestamp}.parquet'
+        )
+    elif os.sep in output_file or (os.altsep and os.altsep in output_file):
+        output_path = Path(output_file)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        output_path = output_dir / output_file
     from .utils.run_context import RunContext
     base_run_context = RunContext(
         pdb=pdb,
-        run_output_base=output_dir / Path(output_file).stem,
+        run_output_base=output_path.parent / output_path.stem,
     )
 
     run_one_to_cvg_cached = benchmark.cache(
@@ -338,6 +353,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         benchmark, run_one_to_cvg_final, total_cvg_kwargs_generator,
         config=parallel_config, collect=collect
     )
+
     log_file = output_dir / f'{Path(output_file).stem}.log'
     try:
         # The generator drives the run enumeration, so the whole display is
@@ -363,9 +379,9 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         terminal.savefile_status()
         return 1, None
 
-    # Save output in parquet file in the benchmark folder
+    # Save output in parquet file at the resolved output path.
     with terminal.step("Saving results"):
-        output_file = save_results(df, output_dir / output_file)
+        output_file = save_results(df, output_path)
 
     html_files = None
     if plot_result:

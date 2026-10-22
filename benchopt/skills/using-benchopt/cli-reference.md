@@ -10,6 +10,7 @@ Run a benchmark. See [run.md](./run.md) for full usage.
 
 ```bash
 benchopt run . -s my-solver -d Simulated -n 5 -r 3 --timeout 60
+benchopt run . -s /path/to/solver.py            # load a solver from a file
 benchopt run . --config config.yml
 ```
 
@@ -38,8 +39,8 @@ Key flags: `-s/--solver`, `-d/--dataset`, `--env-name`, `--recreate`, `--gpu`,
 ---
 
 ### `benchopt test`
-Run the built-in benchmark test suite (exercises `test_parameters` /
-`test_config`, validates `get_data` → `set_data` → `evaluate_result` chain).
+Run the built-in benchmark test suite (exercises `test_config`, validates
+`get_data` → `set_data` → `evaluate_result` chain).
 
 ```bash
 benchopt test .                         # full suite in a temp env

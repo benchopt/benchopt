@@ -118,6 +118,25 @@ This dataset has parameters ``n_samples`` and ``n_features`` that we set to ``10
 
     If a parameter of a solver/dataset is not explicitly set via CLI, benchopt uses all its values specified in the code.
 
+Selecting a solver or dataset from a file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``-s`` and ``-d`` also accept a path to a ``.py`` file. The ``Solver`` /
+``Dataset`` class is then loaded directly from that file and added to the run,
+even if the file lives outside the benchmark's ``solvers/`` / ``datasets/``
+folders. This is handy to run a solver that is not part of the benchmark
+repository, e.g. a submission file, without copying it into the benchmark.
+
+.. prompt:: bash $
+
+    benchopt run . -s /path/to/my_solver.py -d /path/to/my_dataset.py
+
+The loaded class keeps its own ``name`` (used to identify it in the results),
+and is selected exactly, so it never clashes with a benchmark class of the same
+name. The file is loaded as a regular solver, so it can still
+``import benchmark_utils``, and parameter sub-selection works as usual with the
+bracket syntax, e.g. ``-s "/path/to/my_solver.py[p1=1]"``.
+
 .. _run_with_config_file:
 
 Using a configuration file

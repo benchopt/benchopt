@@ -117,6 +117,10 @@ def run_on_slurm(
                 run_one_solver, **kwargs
             )
             tasks.append(future)
+            # Jobs reload the data: don't keep it on the front node while the
+            # batch holds the kwargs.
+            if "dataset" in kwargs:
+                kwargs["dataset"]._data = None
 
     if terminal is not None and len(keys) == len(tasks):
         terminal.set_running_probe(lambda: [

@@ -105,10 +105,10 @@ repetition. Add `use_dataset=True` / `use_solver=True` to further differentiate 
 
 ## Testing
 
-`test_config` (same shape as `parameters`) selects a tiny, fast config so
-`benchopt test` runs quickly; it can also carry `dataset`/`objective` keys to
-pick fast test data (including the dataset name). See [debug.md](./debug.md) for
-what the suite checks.
+`test_config` (a flat dict of single values, not a grid) selects a tiny, fast
+config so `benchopt test` runs quickly; it can also carry `dataset`/`objective`
+keys to pick fast test data (including the dataset name). See
+[debug.md](./debug.md) for what the suite checks.
 
 ## Validate
 

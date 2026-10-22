@@ -87,8 +87,9 @@ are deterministic and need no seeding.
 
 ## Testing
 
-`test_config` (same shape as `parameters`) selects a tiny, fast config and can
-name the test dataset (`{'dataset': {'name': 'simulated', 'n_samples': 50}}`);
+`test_config` (a flat dict of single values, not a grid) selects a tiny, fast
+config and can name the test dataset
+(`{'reg': 0.9, 'dataset': {'name': 'simulated', 'n_samples': 50}}`);
 `test_dataset_name` picks it directly, and `get_one_result()` lets the suite
 validate `evaluate_result` without a real solver. See [debug.md](./debug.md) for
 what the suite checks.
