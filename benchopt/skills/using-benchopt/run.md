@@ -133,6 +133,13 @@ run expensive preprocessing once before any benchmarking run.
   pipe the output, for the plain line-by-line display.
   Once the runs are over, the screen is restored and the results, then where
   the result file, the HTML report and the log are, are printed.
+- `benchopt monitor` shows the same display for a run started elsewhere, e.g.
+  with `nohup`, in `sbatch` or on SLURM, from any shell sharing the home
+  folder. Without argument, pick one of the last runs with the arrow keys,
+  with its state (running/done/interrupted/stale) and duration;
+  `benchopt monitor <RUN>` takes its number or the start of its name. The
+  snapshots of the runs are stored in `~/.cache/benchopt/runs` (`runs_dir`
+  config option).
 - The name of the output can be controlled with the `--output` option.
   If the name already exist, the new result is postfixed with `-1` or
   `-X` the X-th time.

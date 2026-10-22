@@ -240,6 +240,8 @@ https://benchopt.github.io/stable/benchmark_workflow/test_benchmark.html
   workers — to `outputs/<run_name>.log`. That is where your `print` calls and
   the traceback of a run marked `error` end up. `BENCHOPT_NO_RICH=1`, the
   `no_rich` config option, or piping the output falls back to plain output.
+  `benchopt monitor` shows the progress of a run started without a terminal;
+  a run shown as `stale` stopped without finishing, e.g. it was killed.
 - Everything here uses the installed benchmark code in the current environment;
   no conda env, caching or parallelism is involved, so edits to the benchmark's
   `.py` files take effect on the next `Benchmark(".")` / re-import.

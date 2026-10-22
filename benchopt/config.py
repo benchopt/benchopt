@@ -36,6 +36,7 @@ DEFAULT_GLOBAL_CONFIG = {
     'default_timeout': 100,
     'warn_nonunique_files': True,
     'no_rich': False,
+    'runs_dir': '~/.cache/benchopt/runs',
     '_g_config_check': False,
     '_bench_config_check': False,
 }
@@ -69,6 +70,9 @@ particular for logging, warnings and errors. The available options are:
   already exists. Mostly useful to deactivate this warning in tests.
 * ``no_rich``, *bool*: If set to True, disable the live display of
   ``benchopt run`` and fall back on the plain line by line output.
+* ``runs_dir``, *str*: folder where ``benchopt run`` stores a small snapshot
+  of the progress of the last runs, displayed by ``benchopt monitor``.
+  Default is ``~/.cache/benchopt/runs``.
 """
 
 DEFAULT_BENCHMARK_CONFIG = {

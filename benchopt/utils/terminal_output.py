@@ -203,7 +203,7 @@ class TerminalOutput:
         """Register a probe for the running runs. Only used by `RichOutput`."""
 
     @contextmanager
-    def live(self, log_file=None):
+    def live(self, log_file=None, benchmark=None):
         """Context manager wrapping the run. Only used by `RichOutput`."""
         yield
 

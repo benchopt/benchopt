@@ -2,6 +2,7 @@ import os
 import sys
 import uuid
 import pathlib
+import tempfile
 import pytest
 from collections import defaultdict
 
@@ -17,6 +18,8 @@ DUMMY_PACKAGE_REQ = f"pip::{_DUMMY_PACKAGE_DIR.as_posix()}"
 os.environ['BENCHOPT_DEBUG'] = '1'
 os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '1'
 os.environ['BENCHOPT_WARN_NONUNIQUE_FILES'] = '0'
+# Keep the snapshots of the test runs out of the user's `benchopt monitor`.
+os.environ['BENCHOPT_RUNS_DIR'] = tempfile.mkdtemp(prefix="benchopt_runs_")
 
 _TEST_ENV_NAME = None
 _EMPTY_ENV_NAME = None

@@ -342,7 +342,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     try:
         # The generator drives the run enumeration, so the whole display is
         # held while the results are consumed.
-        with terminal.live(log_file=log_file):
+        with terminal.live(log_file=log_file, benchmark=benchmark.name):
             for result, key, status, reason, cached in results_generator:
                 run_statistics.extend(result)
                 terminal.set(dataset=key[0], objective=key[1], solver=key[2])

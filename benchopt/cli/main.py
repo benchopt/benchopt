@@ -398,6 +398,19 @@ def run(config_file=None, **kwargs):
 
 
 @main.command(
+    help="Monitor the benchmark runs, in progress or finished. Without RUN, "
+    "pick one of the last runs with the arrow keys. RUN is the number of a "
+    "run in this list, or the start of its name.",
+    epilog="This works for runs without a terminal, e.g. on SLURM, and from "
+    "another machine sharing the home folder. See the `runs_dir` config."
+)
+@click.argument('run', required=False, metavar='[RUN]')
+def monitor(run=None):
+    from benchopt.utils.monitor import monitor
+    monitor(run)
+
+
+@main.command(
     help="Prepare datasets for a benchmark by running Dataset.prepare().",
     epilog="To install the required packages for a benchmark, "
     "see the command `benchopt install`."

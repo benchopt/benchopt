@@ -1,9 +1,11 @@
 "Live progress display for `benchopt run`, based on `rich`."
 import os
 import sys
+import json
 import threading
 from time import time
-from collections import Counter, deque
+from pathlib import Path
+from collections import Counter, defaultdict, deque
 from itertools import islice
 from contextlib import contextmanager
 
@@ -18,6 +20,14 @@ BRANCH = "[dim]\u251c\u2500\u2500 [/]"
 # Asking a scheduler which runs are running spawns a process, so keep it
 # way slower than the refresh rate of the display.
 PROBE_PERIOD = 30
+
+# The state of the run is dumped in a snapshot for `benchopt monitor`, at most
+# every second on progress and every `HEARTBEAT` seconds otherwise. A run whose
+# snapshot is not updated for `STALE_AFTER` seconds is considered dead.
+HEARTBEAT = 10
+STALE_AFTER = 60
+# ponytail: fixed retention, make it a config option if anyone asks.
+MAX_SNAPSHOTS = 20
 
 # (style, glyph) for each benchopt status. The human readable label is
 # reused from `STATUS` in terminal_output.
@@ -83,6 +93,12 @@ def _rule(title):
     return Rule(f"[bold]{title}[/]", style="dim")
 
 
+def get_runs_dir():
+    "Folder holding the snapshots of the runs, read by `benchopt monitor`."
+    from ..config import get_setting
+    return Path(os.path.expandvars(get_setting('runs_dir'))).expanduser()
+
+
 @contextmanager
 def _redirect_fds(log_file, mode="w"):
     """Send fd 1 and 2 to `log_file`, yielding a file on the original stdout.
@@ -118,11 +134,17 @@ class RichOutput(TerminalOutput):
     live display. The pickled copy sets `_worker` and falls back to the plain
     `TerminalOutput` behavior, writing to the redirected stdout, i.e. the log
     file.
+
+    Without `display`, e.g. when the output is not a terminal, the main
+    process prints the plain output too, but still tracks the state of the
+    run so that `benchopt monitor` can display it.
     """
 
-    def __init__(self, n_repetitions=None, show_progress=None, n_jobs=1):
+    def __init__(self, n_repetitions=None, show_progress=None, n_jobs=1,
+                 display=True):
         super().__init__(n_repetitions, show_progress)
         self._worker = False
+        self.display = display
         self.log_file = None
         self.n_jobs = n_jobs
 
@@ -150,38 +172,85 @@ class RichOutput(TerminalOutput):
         self._live = None
         self._progress = None
         self._task = None
+        # Line added below the counters, used by `benchopt monitor`.
+        self._footer = None
+
+        self._meta = {}
+        self._snapshot_file = None
+        self._dump_time = 0
+        self._dump_lock = threading.Lock()
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        for k in ['console', '_tty_fd', '_live', '_progress',
-                  '_task', '_probe', '_probe_lock']:
+        for k in ['console', '_tty_fd', '_live', '_progress', '_task',
+                  '_probe', '_probe_lock', '_snapshot_file', '_dump_lock']:
             state[k] = None
         state['_worker'] = True
-        state['show_progress'] = False
+        state['display'] = False
+        # With the display, the progress of the workers would only clutter
+        # the log. Without it, they print it as the plain output does.
+        state['show_progress'] = self.show_progress and not self.display
         return state
 
     # Display life cycle ####################################################
 
     @contextmanager
-    def live(self, log_file=None):
-        from rich.console import Console
-        from rich.live import Live
+    def live(self, log_file=None, benchmark=None):
+        if self.display:
+            self.log_file = log_file
+        self._start_snapshot(log_file, benchmark)
+
+        # Keep the snapshot fresh, and the scheduler probed, while no run
+        # finishes: `benchopt monitor` tells a long run from a dead one.
+        stop = threading.Event()
+
+        def heartbeat():
+            while not stop.wait(HEARTBEAT):
+                self._dump()
+
+        threading.Thread(target=heartbeat, daemon=True).start()
+        finished = 'interrupted'
+        try:
+            if self.display:
+                with self._live_display(log_file):
+                    yield
+            else:
+                yield
+            finished = 'done'
+        finally:
+            stop.set()
+            self._meta['finished'] = finished
+            self._dump()
+
+    def _make_progress(self, started=None, stopped=None):
+        """Progress bar of the runs, timed from `started` if given."""
         from rich.progress import (
             BarColumn, MofNCompleteColumn, Progress, SpinnerColumn,
             TextColumn, TimeElapsedColumn
         )
+        # Wall clock time, so that `benchopt monitor` can time the bar from
+        # the start of the run, in another process.
+        self._progress = Progress(
+            SpinnerColumn(), TextColumn("[bold]Runs"), BarColumn(),
+            MofNCompleteColumn(), TimeElapsedColumn(),
+            console=self.console, get_time=time,
+        )
+        self._task = self._progress.add_task("runs", total=None)
+        task = self._progress.tasks[0]
+        if started is not None:
+            task.start_time = started
+        task.stop_time = stopped
 
-        self.log_file = log_file
+    @contextmanager
+    def _live_display(self, log_file):
+        from rich.console import Console
+        from rich.live import Live
+
         try:
             with _redirect_fds(log_file) as tty:
                 self._tty_fd = tty.fileno()
                 self.console = Console(file=tty, highlight=False)
-                self._progress = Progress(
-                    SpinnerColumn(), TextColumn("[bold]Runs"), BarColumn(),
-                    MofNCompleteColumn(), TimeElapsedColumn(),
-                    console=self.console,
-                )
-                self._task = self._progress.add_task("runs", total=None)
+                self._make_progress()
                 try:
                     # The display runs on the alternate screen, so that the
                     # terminal redraws it on a resize and the output of the
@@ -208,7 +277,7 @@ class RichOutput(TerminalOutput):
     @contextmanager
     def step(self, label):
         """Run a post-run step under a spinner, its output going to the log."""
-        if self._worker or self.log_file is None:
+        if not self.display or self.log_file is None:
             yield
             return
 
@@ -228,11 +297,14 @@ class RichOutput(TerminalOutput):
 
     def show_outputs(self, **files):
         """Report where the outputs of the run are available."""
-        if self._worker or self.console is None:
-            return
-
         files = {k: v for k, v in files.items() if v is not None}
-        if not files:
+        if self.log_file is None:
+            # Without the display, the output went to stdout, not to a log.
+            files.pop('log', None)
+        if not self._worker:
+            self._meta['outputs'] = {k: str(v) for k, v in files.items()}
+            self._dump()
+        if not self.display or self.console is None or not files:
             return
         self.console.print(_rule("Outputs"))
         width = max(len(name) for name in files)
@@ -266,6 +338,8 @@ class RichOutput(TerminalOutput):
         if self._progress is not None:
             totals.append(self._progress)
         totals.append(_line(self._counters()))
+        if self._footer is not None:
+            totals.append(_line(self._footer))
 
         # The screen does not scroll, so the sections share what is left
         # once the two titles and the totals, which always fit, are placed.
@@ -408,7 +482,7 @@ class RichOutput(TerminalOutput):
     def show_interrupted(self):
         # Nothing to report: the interrupted runs produced no result, and
         # they are already accounted for in the progress bar.
-        if self._worker:
+        if not self.display:
             super().show_interrupted()
 
     def start_run(self, meta):
@@ -457,9 +531,10 @@ class RichOutput(TerminalOutput):
         self._refresh()
 
     def _emit_status(self, status, reason, dataset, objective, cached):
-        if self._worker or self.console is None:
-            return super()._emit_status(status, reason, dataset, objective,
-                                        cached)
+        if not self.display:
+            super()._emit_status(status, reason, dataset, objective, cached)
+        if self._worker:
+            return
 
         from rich.markup import escape
 
@@ -493,35 +568,122 @@ class RichOutput(TerminalOutput):
             objectives.setdefault(obj, []).extend(lines)
 
     def _refresh(self):
-        if self._live is not None:
+        if self._progress is not None:
             self._progress.update(
                 self._task, completed=self.n_finished, total=self._total()
             )
+        if self._live is not None:
             self._live.refresh()
+        if time() - self._dump_time > 1:
+            self._dump()
 
     # In the main process, these are subsumed by the live display. In the
-    # workers, they keep printing to the log file.
+    # workers or without display, they keep printing.
     def progress(self, progress, key):
-        if self._worker:
+        if not self.display:
             super().progress(progress, key)
 
     def debug(self, msg):
-        if self._worker:
+        if not self.display:
             super().debug(msg)
 
     def display_dataset(self):
-        if self._worker:
+        if not self.display:
             super().display_dataset()
 
     def display_objective(self):
-        if self._worker:
+        if not self.display:
             super().display_objective()
+
+    # Snapshots for `benchopt monitor` ######################################
+
+    def _start_snapshot(self, log_file, benchmark):
+        """Create the snapshot file of this run, pruning the oldest ones."""
+        if self._worker:
+            return
+        run_name = Path(log_file).stem if log_file else "benchopt_run"
+        self._meta = dict(
+            run_name=run_name, benchmark=benchmark, pid=os.getpid(),
+            log_file=str(log_file) if self.log_file else None,
+            started=time(), finished=None,
+        )
+        try:
+            runs_dir = get_runs_dir()
+            runs_dir.mkdir(parents=True, exist_ok=True)
+            old = sorted(runs_dir.glob("*.json"), key=os.path.getmtime)
+            for f in old[:max(0, len(old) - MAX_SNAPSHOTS + 1)]:
+                f.unlink(missing_ok=True)
+            self._snapshot_file = runs_dir / f"{run_name}-{os.getpid()}.json"
+        except OSError:
+            self._snapshot_file = None
+        self._dump()
+
+    def _snapshot(self):
+        """State of the run needed by `_render`, as a JSON-able dict."""
+        return dict(
+            self._meta, updated=time(), total=self._total(),
+            n_repetitions=self.n_repetitions, n_jobs=self.n_jobs,
+            n_configs=self.n_configs, n_dispatched=self.n_dispatched,
+            n_finished=self.n_finished, all_dispatched=self._all_dispatched,
+            counts=self.counts, in_flight=list(self.in_flight),
+            running=self._running_keys(),
+            rep=[[list(map(str, k)), n] for k, n in self.rep.items()],
+            tree=self._tree,
+            labels=[[list(k), lines] for k, lines in self._labels.items()],
+        )
+
+    def _dump(self):
+        if self._worker or self._snapshot_file is None:
+            return
+        with self._dump_lock:
+            self._dump_time = time()
+            tmp = self._snapshot_file.with_suffix(".tmp")
+            try:
+                tmp.write_text(json.dumps(self._snapshot()))
+                # Atomic, so that `benchopt monitor` never reads half a file.
+                os.replace(tmp, self._snapshot_file)
+            except Exception:
+                # Monitoring is never worth taking the run down for, e.g. on
+                # a full disk. A state changed mid-dump is fixed by the next.
+                pass
+
+    @classmethod
+    def from_snapshot(cls, snapshot, console, stopped=None):
+        """Rebuild the display of a run from its snapshot.
+
+        `stopped` is the time the run stopped at, if it is over.
+        """
+        self = cls(snapshot['n_repetitions'], False,
+                   n_jobs=snapshot['n_jobs'])
+        self._meta = snapshot
+        self.log_file = snapshot['log_file']
+        self.console = console
+        self.n_configs = snapshot['n_configs']
+        self.n_dispatched = snapshot['n_dispatched']
+        self.n_finished = snapshot['n_finished']
+        self._all_dispatched = snapshot['all_dispatched']
+        self.counts = Counter(snapshot['counts'])
+        self.in_flight = deque(map(tuple, snapshot['in_flight']))
+        running = list(map(tuple, snapshot['running']))
+        # The run already probed the scheduler: use its answer as is.
+        self._running_keys = lambda: running
+        self.rep = defaultdict(
+            int, {tuple(k): n for k, n in snapshot['rep']}
+        )
+        self._tree = snapshot['tree']
+        self._labels = {tuple(k): lines for k, lines in snapshot['labels']}
+        self._make_progress(started=snapshot['started'], stopped=stopped)
+        self._refresh()
+        return self
 
 
 def make_terminal_output(n_repetitions=None, show_progress=None, pdb=False,
                          n_jobs=1):
-    """Rich live display if running in an interactive terminal, plain else."""
+    """Rich live display if running in an interactive terminal, plain else.
+
+    The state of the run is tracked in both cases, for `benchopt monitor`.
+    """
     from ..config import get_setting
-    if pdb or get_setting('no_rich') or not sys.stdout.isatty():
-        return TerminalOutput(n_repetitions, show_progress)
-    return RichOutput(n_repetitions, show_progress, n_jobs=n_jobs)
+    display = not (pdb or get_setting('no_rich') or not sys.stdout.isatty())
+    return RichOutput(n_repetitions, show_progress, n_jobs=n_jobs,
+                      display=display)

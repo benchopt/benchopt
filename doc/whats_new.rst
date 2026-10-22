@@ -17,7 +17,9 @@ Version 1.10.0 -- in development
 CLI
 ~~~
 
-- ``benchopt run`` now displays a live ``rich`` interface
+- ``benchopt run`` now displays a live ``rich`` interface, and the new
+  ``benchopt monitor`` command displays it for the runs in progress or the last
+  ones, e.g. for runs launched on SLURM or without a terminal.
   By `Hippolyte Verninas`_
 
 - Add ``benchopt info -f <result_file>`` (repeatable, or ``-f all``) to

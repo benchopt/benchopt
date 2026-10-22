@@ -5,7 +5,6 @@ import sys
 
 from rich.console import Console
 
-from benchopt.utils.terminal_output import TerminalOutput
 from benchopt.utils.rich_output import RichOutput, _redirect_fds
 from benchopt.utils.rich_output import make_terminal_output
 
@@ -182,17 +181,18 @@ def test_rich_output_unordered_results():
 
 
 def test_make_terminal_output(monkeypatch):
-    # stdout is captured by pytest, hence not a terminal.
-    assert type(make_terminal_output(1, True)) is TerminalOutput
+    # stdout is captured by pytest, hence not a terminal. The state of the
+    # run is still tracked, for `benchopt monitor`.
+    assert not make_terminal_output(1, True).display
 
     # The display can be turned off, from the config file or the environment.
     monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
-    assert type(make_terminal_output(1, True)) is RichOutput
+    assert make_terminal_output(1, True).display
     monkeypatch.setenv("BENCHOPT_NO_RICH", "true")
-    assert type(make_terminal_output(1, True)) is TerminalOutput
+    assert not make_terminal_output(1, True).display
     # Unlike a bare environment variable check, `0` does not disable it.
     monkeypatch.setenv("BENCHOPT_NO_RICH", "0")
-    assert type(make_terminal_output(1, True)) is RichOutput
+    assert make_terminal_output(1, True).display
 
 
 def test_rich_output_steps(tmp_path):
@@ -274,3 +274,102 @@ def test_rich_output_running_probe():
     display = _render_to_str(terminal)
     assert "solver[lr=1e-3]" in display
     assert terminal._probe is None
+
+
+def test_rich_output_snapshot():
+    import json
+    from time import time
+
+    terminal = RichOutput(n_repetitions=2, show_progress=False, n_jobs=2)
+    terminal.console = Console(file=io.StringIO(), width=120, height=30,
+                               highlight=False)
+    terminal._meta = dict(started=time(), log_file=None)
+    terminal._make_progress()
+    terminal.set_n_configs(3)
+    other = dict(META, solver_name="other[lr=1]")
+    for meta in [META, META, other]:
+        terminal.start_run(meta)
+    terminal.set(dataset=KEY[0], objective=KEY[1], solver=KEY[2])
+    terminal.show_status(status='done')
+    terminal.show_status(status='error')
+
+    # `benchopt monitor` displays the run as `benchopt run` does, from the
+    # JSON snapshot of its state.
+    snapshot = json.loads(json.dumps(terminal._snapshot()))
+    view = RichOutput.from_snapshot(snapshot, terminal.console)
+
+    def lines(terminal):
+        # The spinner of the progress bar moves with time.
+        return [line for line in _render_to_str(terminal).splitlines()
+                if "Runs" not in line]
+
+    assert lines(view) == lines(terminal)
+    assert "error 1" in "".join(lines(view))
+    assert "2/6" in _render_to_str(view)
+
+
+def test_rich_output_writes_snapshots(tmp_path, monkeypatch):
+    import json
+    monkeypatch.setenv("BENCHOPT_RUNS_DIR", str(tmp_path))
+    for i in range(25):
+        (tmp_path / f"old{i}.json").write_text("{}")
+
+    # Without a terminal, the output stays plain but the state is tracked.
+    terminal = make_terminal_output(1, False)
+    with terminal.live(log_file=tmp_path / "my_run.log", benchmark="bench"):
+        terminal.start_run(META)
+        terminal.set(dataset=KEY[0], objective=KEY[1], solver=KEY[2])
+        terminal.show_status(status='done')
+    terminal.show_outputs(results="res.parquet", report=None,
+                          log=tmp_path / "my_run.log")
+
+    snapshots = list(tmp_path.glob("*.json"))
+    # The oldest snapshots are pruned.
+    assert len(snapshots) == 20
+    snapshot = json.loads(
+        next(tmp_path.glob("my_run-*.json")).read_text()
+    )
+    assert snapshot['run_name'] == "my_run"
+    assert snapshot['benchmark'] == "bench"
+    assert snapshot['finished'] == "done"
+    assert snapshot['n_finished'] == 1
+    assert snapshot['outputs'] == {"results": "res.parquet"}
+    # No log without the display: the output went to stdout.
+    assert snapshot['log_file'] is None
+
+
+def test_monitor_run_state():
+    from benchopt.utils.monitor import duration, run_state
+
+    run = dict(started=0, updated=3700, finished=None)
+    assert run_state(run, now=3710) == 'running'
+    assert duration(run, now=3710) == "1h 01m 50s"
+    # A run that stopped updating its snapshot is dead, e.g. killed.
+    assert run_state(run, now=4000) == 'stale'
+    assert duration(run, now=4000) == "1h 01m 40s"
+    run['finished'] = 'done'
+    assert run_state(run, now=4000) == 'done'
+    assert duration(dict(run, updated=65), now=4000) == "1m 05s"
+
+
+def test_monitor_select_run(monkeypatch):
+    import click
+    from benchopt.utils.monitor import select_run
+
+    runs = [
+        dict(path=f"missing{i}.json", run_name=f"run{i}", benchmark="b",
+             started=0, updated=0, finished='done', n_finished=1, total=1)
+        for i in range(3)
+    ]
+    console = Console(file=io.StringIO(), width=120)
+
+    keys = iter(["\x1b[B", "\x1b[B", "\x1b[A", "x", "\r"])
+    monkeypatch.setattr(click, "getchar", lambda: next(keys))
+    assert select_run(runs, console)['run_name'] == "run1"
+
+    # The selection wraps around.
+    keys = iter(["\x1b[A", "\r"])
+    assert select_run(runs, console)['run_name'] == "run2"
+
+    keys = iter(["q"])
+    assert select_run(runs, console) is None
