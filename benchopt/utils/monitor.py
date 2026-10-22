@@ -204,12 +204,13 @@ def _view(run, results, console, hint=None, progress=None):
         stopped=None if state == 'running' else run['updated']
     )
     view._footer = (
-        f"[bold]{escape(run['run_name'])}[/] · "
-        f"[{STATE_STYLE[state]}]{state}[/] · {duration(run)}"
+        f"[bold {STATE_STYLE[state]}]{state}[/] · "
+        f"{escape(run['run_name'])} · {duration(run)}"
     )
     if hint is not None:
         view._footer += f" · {hint}"
-    if run['log_file']:
+    # Once the run is over, the log is listed with its outputs.
+    if run['log_file'] and 'log' not in (view._outputs or {}):
         view._footer += f" · log: [cyan]{escape(run['log_file'])}[/]"
     return view
 

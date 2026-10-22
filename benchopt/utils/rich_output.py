@@ -95,6 +95,14 @@ def _rule(title):
     return Rule(f"[bold]{title}[/]", style="dim")
 
 
+def _output_lines(files):
+    """One line per output file, its name aligned before its path."""
+    from rich.markup import escape
+    width = max(map(len, files), default=0)
+    return [f"[bold]{name:{width}}[/]  [cyan]{escape(str(path))}[/]"
+            for name, path in files.items()]
+
+
 def get_runs_dir():
     "Folder holding the snapshots of the runs, read by `benchopt monitor`."
     from ..config import get_setting
@@ -178,6 +186,9 @@ class RichOutput(TerminalOutput):
         self._task = None
         # Line added below the counters, used by `benchopt monitor`.
         self._footer = None
+        # Outputs of a run that is over, shown by `benchopt monitor` in place
+        # of the runs in flight.
+        self._outputs = None
 
         self._meta = {}
         self._snapshot_file = None
@@ -247,8 +258,11 @@ class RichOutput(TerminalOutput):
                 self._results_file.close()
                 self._results_file = None
 
-    def _make_progress(self, started=None, stopped=None):
-        """Progress bar of the runs, timed from `started` if given."""
+    def _make_progress(self, started=None, stopped=None, mark=None):
+        """Progress bar of the runs, timed from `started` if given.
+
+        A `mark`, e.g. telling how the run ended, replaces the spinner.
+        """
         from rich.progress import (
             BarColumn, MofNCompleteColumn, Progress, SpinnerColumn,
             TextColumn, TimeElapsedColumn
@@ -256,7 +270,8 @@ class RichOutput(TerminalOutput):
         # Wall clock time, so that `benchopt monitor` can time the bar from
         # the start of the run, in another process.
         self._progress = Progress(
-            SpinnerColumn(), TextColumn("[bold]Runs"), BarColumn(),
+            SpinnerColumn() if mark is None else TextColumn(mark),
+            TextColumn("[bold]Runs"), BarColumn(),
             MofNCompleteColumn(), TimeElapsedColumn(),
             console=self.console, get_time=time,
         )
@@ -333,11 +348,8 @@ class RichOutput(TerminalOutput):
         if not self.display or self.console is None or not files:
             return
         self.console.print(_rule("Outputs"))
-        width = max(len(name) for name in files)
-        for name, path in files.items():
-            self.console.print(
-                f"[bold]{name:{width}}[/]  [cyan]{path}[/]"
-            )
+        for line in _output_lines(files):
+            self.console.print(line)
 
     def _render(self):
         with self._lock:
@@ -379,11 +391,18 @@ class RichOutput(TerminalOutput):
         # The runs in flight get half of the space when the results fill it.
         # With a scheduler, thousands of runs can be in flight, so the lines
         # that do not fit are not built at all.
-        running = self._running_lines(max(free - len(results), free // 2))
-        results = _crop(results, free - len(running), tail=True)
+        if self._outputs is None:
+            running = self._running_lines(
+                max(free - len(results), free // 2)
+            )
+            middle = [_rule("Running"), *map(_line, running)]
+        else:
+            # The run is over: nothing runs, show where its outputs are.
+            outputs = list(map(_line, _output_lines(self._outputs)))
+            middle = [_rule("Outputs"), *outputs] if outputs else []
+        results = _crop(results, free + 1 - len(middle), tail=True)
 
-        return Group(_rule("Results"), *map(_line, results),
-                     _rule("Running"), *map(_line, running), *totals)
+        return Group(_rule("Results"), *map(_line, results), *middle, *totals)
 
     def _running_lines(self, max_lines=None):
         """One line per dataset, objective and solver of the runs in flight."""
@@ -726,7 +745,8 @@ class RichOutput(TerminalOutput):
         """Rebuild the display of a run from its snapshot and results.
 
         `results` are the lines of its results file, and `stopped` the time
-        the run stopped at, if it is over. Passing the `progress` of the
+        the run stopped at, if it is over: a mark then replaces the spinner,
+        and its outputs the runs in flight. Passing the `progress` of the
         previous display keeps its spinner going.
         """
         self = cls(snapshot['n_repetitions'], False,
@@ -748,7 +768,15 @@ class RichOutput(TerminalOutput):
         )
         for result in results:
             self._add_result(*result)
-        if progress is None:
+        if stopped is not None:
+            self._outputs = snapshot.get('outputs', {})
+            mark = {'done': "[green]\u2713[/]",
+                    'interrupted': "[yellow]\u2717[/]"}
+            self._make_progress(
+                started=snapshot['started'], stopped=stopped,
+                mark=mark.get(snapshot['finished'], "[red]\u2717[/]"),
+            )
+        elif progress is None:
             self._make_progress(started=snapshot['started'], stopped=stopped)
         else:
             self._progress, self._task = progress, progress.task_ids[0]

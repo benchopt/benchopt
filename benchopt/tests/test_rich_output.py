@@ -326,6 +326,15 @@ def test_rich_output_snapshot():
                                     progress=view._progress)
     assert spinner(view) != first
 
+    # Once the run is over, a mark replaces the spinner, and its outputs the
+    # runs in flight.
+    snapshot.update(finished='done', outputs={"results": "res.parquet"})
+    view = RichOutput.from_snapshot(snapshot, results, terminal.console,
+                                    stopped=time())
+    assert spinner(view) == "✓"
+    out = _render_to_str(view)
+    assert "Running" not in out and "res.parquet" in out
+
 
 def test_rich_output_writes_snapshots(tmp_path, monkeypatch):
     monkeypatch.setenv("BENCHOPT_RUNS_DIR", str(tmp_path))
