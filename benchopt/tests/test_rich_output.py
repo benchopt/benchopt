@@ -429,6 +429,37 @@ def test_monitor_select_run(tmp_path, monkeypatch):
     assert (tmp_path / "run0.json").exists()
 
 
+def test_monitor_follow_run(tmp_path, monkeypatch):
+    from contextlib import contextmanager
+    from benchopt.utils import monitor
+
+    monkeypatch.setenv("BENCHOPT_RUNS_DIR", str(tmp_path))
+    with make_terminal_output(1, False).live(benchmark="b"):
+        pass
+    run = monitor.load_runs()[0]
+    console = Console(file=io.StringIO(), width=120, force_terminal=True)
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    printed = []
+    monkeypatch.setattr(RichOutput, "_print_results",
+                        lambda view: printed.append(view))
+
+    def press(*keys):
+        @contextmanager
+        def read_key():
+            it = iter(keys)
+            yield lambda timeout: next(it)
+        monkeypatch.setattr(monitor, "_read_key", read_key)
+
+    # A finished run stays on screen until the user quits, and its results
+    # are only printed on demand.
+    press(None, "k", "y", "q")
+    monitor.follow_run(run, console)
+    assert not printed and not list(tmp_path.glob("*.kill"))
+    press(None, "p")
+    monitor.follow_run(run, console)
+    assert len(printed) == 1
+
+
 def test_monitor_kill_run(tmp_path, monkeypatch):
     from benchopt.utils.monitor import kill_run
 

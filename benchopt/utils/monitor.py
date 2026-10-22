@@ -215,15 +215,17 @@ def _view(run, results, console, hint=None, progress=None):
 
 
 def follow_run(run, console):
-    """Live display of `run` until it stops, then print its results."""
+    """Live display of `run`, until the user quits or asks for its results.
+
+    Without a terminal, its results are printed right away.
+    """
     from rich.live import Live
 
     results, offset = [], 0
-    keys = "[dim]q quit · p print results · k kill[/]"
     hint = view = None
     updated = 0
 
-    def update():
+    def update(hint=None):
         nonlocal run, offset, view, updated
         # The file can be gone, e.g. pruned by a new run: keep the last one.
         run = _load(run['path']) or run
@@ -237,36 +239,35 @@ def follow_run(run, console):
     def render():
         # Redraw often for the spinner, but only read the files every second.
         if view is None or time() - updated > 1:
-            update()
+            kill = " · k kill" if run_state(run) == 'running' else ""
+            update(hint or f"[dim]q quit · p print results{kill}[/]")
         return view._render()
 
-    interactive = console.is_terminal and sys.stdin.isatty()
-    if interactive and run_state(run) == 'running':
-        hint = keys
+    if console.is_terminal and sys.stdin.isatty():
         try:
             with _read_key() as read, Live(
                     get_renderable=render, console=console, screen=True,
                     refresh_per_second=8):
-                while run_state(run) == 'running':
+                while True:
                     key = read(1)
                     if key == 'q':
                         # Detach: the run itself goes on.
                         return
                     if key == 'p':
                         break
-                    if hint.startswith("[red]Kill"):
-                        if key == 'y':
+                    if hint is not None:
+                        # Confirming a kill, or showing its outcome.
+                        if key == 'y' and hint.startswith("[red]Kill"):
                             hint = kill_run(run)
                         elif key is not None:
-                            hint = keys
-                    elif key == 'k':
+                            hint = None
+                    elif key == 'k' and run_state(run) == 'running':
                         hint = "[red]Kill the run? y to confirm[/]"
                     if key is not None:
                         # Show the new hint right away.
                         updated = 0
         except KeyboardInterrupt:
             pass
-        hint = None
 
     view = update()
     view._print_results()
