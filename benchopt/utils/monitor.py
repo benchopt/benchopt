@@ -74,7 +74,7 @@ def runs_table(runs, selected=None, rows=None):
     from rich.table import Table
 
     table = Table(box=None, header_style="bold")
-    for column in ["#", "Run", "Benchmark", "State", "Progress", "Duration",
+    for column in ["Run", "Benchmark", "State", "Progress", "Duration",
                    "Started"]:
         # The end of the names, e.g. their timestamp, tells the runs apart:
         # wrap them rather than crop them.
@@ -84,7 +84,7 @@ def runs_table(runs, selected=None, rows=None):
         run = runs[i]
         state = run_state(run, now)
         table.add_row(
-            str(i + 1), escape(run['run_name']), escape(str(run['benchmark'])),
+            escape(run['run_name']), escape(str(run['benchmark'])),
             f"[{STATE_STYLE[state]}]{state}[/]",
             f"{run['n_finished']}/{run['total']}", duration(run, now),
             datetime.fromtimestamp(run['started']).strftime("%Y-%m-%d %H:%M"),
