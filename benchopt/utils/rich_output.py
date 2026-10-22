@@ -2,6 +2,7 @@
 import os
 import sys
 import json
+import socket
 import threading
 from time import time
 from pathlib import Path
@@ -623,6 +624,7 @@ class RichOutput(TerminalOutput):
         run_name = Path(log_file).stem if log_file else "benchopt_run"
         self._meta = dict(
             run_name=run_name, benchmark=benchmark, pid=os.getpid(),
+            host=socket.gethostname(),
             log_file=str(log_file) if self.log_file else None,
             started=time(), finished=None,
         )
@@ -676,11 +678,13 @@ class RichOutput(TerminalOutput):
                 pass
 
     @classmethod
-    def from_snapshot(cls, snapshot, results, console, stopped=None):
+    def from_snapshot(cls, snapshot, results, console, stopped=None,
+                      progress=None):
         """Rebuild the display of a run from its snapshot and results.
 
         `results` are the lines of its results file, and `stopped` the time
-        the run stopped at, if it is over.
+        the run stopped at, if it is over. Passing the `progress` of the
+        previous display keeps its spinner going.
         """
         self = cls(snapshot['n_repetitions'], False,
                    n_jobs=snapshot['n_jobs'])
@@ -702,7 +706,11 @@ class RichOutput(TerminalOutput):
         )
         for result in results:
             self._add_result(*result)
-        self._make_progress(started=snapshot['started'], stopped=stopped)
+        if progress is None:
+            self._make_progress(started=snapshot['started'], stopped=stopped)
+        else:
+            self._progress, self._task = progress, progress.task_ids[0]
+            progress.tasks[0].stop_time = stopped
         self._refresh()
         return self
 

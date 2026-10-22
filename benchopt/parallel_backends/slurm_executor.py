@@ -128,12 +128,16 @@ def run_on_slurm(
         ])
 
     # Yield results as jobs finish (unordered)
-    for t in as_completed(tasks):
-        exc = t.exception()
-        if exc is not None:
-            # Cancel remaining tasks and raise error
-            for tt in tasks:
-                tt.cancel()
-            raise exc
+    try:
+        for t in as_completed(tasks):
+            exc = t.exception()
+            if exc is not None:
+                raise exc
 
-        yield t.results()[0]
+            yield t.results()[0]
+    except BaseException:
+        # A job failed, or the run was interrupted, e.g. with Ctrl-C or from
+        # `benchopt monitor`: do not leave the remaining jobs running.
+        for tt in tasks:
+            tt.cancel(check=False)
+        raise

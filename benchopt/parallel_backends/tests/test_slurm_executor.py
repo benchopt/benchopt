@@ -207,3 +207,24 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
             p_all_params[f"s_{p}"].fillna("") ==
             slurm_params.get(f"slurm_{p}", "")
         )
+
+
+def test_run_on_slurm_cancels_jobs(monkeypatch):
+    from contextlib import nullcontext
+    from unittest.mock import MagicMock
+    from benchopt.parallel_backends import slurm_executor
+
+    executor = MagicMock()
+    executor.batch.return_value = nullcontext()
+    monkeypatch.setattr(slurm_executor, "get_slurm_executor",
+                        lambda *args, **kwargs: executor)
+
+    def interrupted(tasks):
+        raise KeyboardInterrupt
+
+    # An interrupted run, e.g. from `benchopt monitor`, cancels its jobs.
+    monkeypatch.setattr(slurm_executor, "as_completed", interrupted)
+    results = slurm_executor.run_on_slurm(None, {}, None, [{}, {}])
+    with pytest.raises(KeyboardInterrupt):
+        next(results)
+    assert executor.submit.return_value.cancel.call_count == 2

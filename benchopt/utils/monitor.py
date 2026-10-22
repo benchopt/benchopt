@@ -1,9 +1,13 @@
 "`benchopt monitor`: display the runs from the snapshots they leave behind."
+import os
 import sys
 import json
+import signal
+import socket
 from time import sleep, time
 from pathlib import Path
 from datetime import datetime
+from contextlib import contextmanager
 
 from .rich_output import STALE_AFTER, RichOutput, get_runs_dir
 
@@ -112,19 +116,74 @@ def select_run(runs, console):
             i = (i + MOVES.get(key, 0)) % len(runs)
 
 
-def _view(run, results, console):
+@contextmanager
+def _read_key():
+    """Yield a `read(timeout)` returning the key pressed, or None.
+
+    Unlike `click.getchar`, the terminal is not put in raw mode, which would
+    garble the live display, and the keys are read with a timeout.
+    """
+    if sys.platform == 'win32':
+        import msvcrt
+
+        def read(timeout):
+            end = time() + timeout
+            while time() < end:
+                if msvcrt.kbhit():
+                    return msvcrt.getwch()
+                sleep(0.05)
+        yield read
+        return
+
+    import termios
+    import tty
+    from select import select
+
+    fd = sys.stdin.fileno()
+    old = termios.tcgetattr(fd)
+    try:
+        # Keys are read one by one, without echo, Ctrl-C still interrupts.
+        tty.setcbreak(fd)
+        yield lambda timeout: (
+            os.read(fd, 32).decode(errors='replace')
+            if select([fd], [], [], timeout)[0] else None
+        )
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
+
+
+def kill_run(run):
+    """Interrupt `run` as Ctrl-C would. Return a message telling the outcome.
+
+    The run saves its results and stops, cancelling its SLURM jobs if any.
+    """
+    host = run.get('host')
+    if host != socket.gethostname():
+        return f"[red]The run is on {host}: kill it from there.[/]"
+    try:
+        # ponytail: on Windows, os.kill terminates the process, without
+        # saving the results: the run shows as stale.
+        os.kill(run['pid'], signal.SIGINT)
+    except OSError as e:
+        return f"[red]Could not kill the run: {e}[/]"
+    return "[yellow]Interrupting the run...[/]"
+
+
+def _view(run, results, console, hint=None, progress=None):
     "Display of `run`, as `benchopt run` shows it, with its state below."
     from rich.markup import escape
 
     state = run_state(run)
     view = RichOutput.from_snapshot(
-        run, results, console,
+        run, results, console, progress=progress,
         stopped=None if state == 'running' else run['updated']
     )
     view._footer = (
         f"[bold]{escape(run['run_name'])}[/] · "
         f"[{STATE_STYLE[state]}]{state}[/] · {duration(run)}"
     )
+    if hint is not None:
+        view._footer += f" · {hint}"
     if run['log_file']:
         view._footer += f" · log: [cyan]{escape(run['log_file'])}[/]"
     return view
@@ -135,27 +194,51 @@ def follow_run(run, console):
     from rich.live import Live
 
     results, offset = [], 0
+    keys = "[dim]q quit · k kill[/]"
+    hint = view = None
+    updated = 0
 
     def update():
-        nonlocal run, offset
+        nonlocal run, offset, view, updated
         # The file can be gone, e.g. pruned by a new run: keep the last one.
         run = _load(run['path']) or run
         new, offset = read_results(run, offset)
         results.extend(new)
-        return _view(run, results, console)
+        view = _view(run, results, console, hint,
+                     progress=view and view._progress)
+        updated = time()
+        return view
 
     def render():
-        return update()._render()
+        # Redraw often for the spinner, but only read the files every second.
+        if view is None or time() - updated > 1:
+            update()
+        return view._render()
 
     if console.is_terminal and run_state(run) == 'running':
+        hint = keys
         try:
-            with Live(get_renderable=render, console=console, screen=True,
-                      refresh_per_second=1):
+            with _read_key() as read, Live(
+                    get_renderable=render, console=console, screen=True,
+                    refresh_per_second=8):
                 while run_state(run) == 'running':
-                    sleep(1)
+                    key = read(1)
+                    if key == 'q':
+                        # Detach: the run itself goes on.
+                        break
+                    if hint.startswith("[red]Kill"):
+                        if key == 'y':
+                            hint = kill_run(run)
+                        elif key is not None:
+                            hint = keys
+                    elif key == 'k':
+                        hint = "[red]Kill the run? y to confirm[/]"
+                    if key is not None:
+                        # Show the new hint right away.
+                        updated = 0
         except KeyboardInterrupt:
-            # Detach: the run itself goes on.
             pass
+        hint = None
 
     view = update()
     view._print_results()

@@ -278,7 +278,7 @@ def test_rich_output_running_probe():
 
 def test_rich_output_snapshot():
     import json
-    from time import time
+    from time import sleep, time
 
     terminal = RichOutput(n_repetitions=2, show_progress=False, n_jobs=2)
     terminal.console = Console(file=io.StringIO(), width=120, height=30,
@@ -309,6 +309,18 @@ def test_rich_output_snapshot():
     assert lines(view) == lines(terminal)
     assert "error 1" in "".join(lines(view))
     assert "2/6" in _render_to_str(view)
+
+    # The display is rebuilt on each refresh: reusing the progress of the
+    # previous one keeps the spinner moving.
+    def spinner(view):
+        return next(line for line in _render_to_str(view).splitlines()
+                    if "Runs" in line)[0]
+
+    first = spinner(view)
+    sleep(0.25)
+    view = RichOutput.from_snapshot(snapshot, results, terminal.console,
+                                    progress=view._progress)
+    assert spinner(view) != first
 
 
 def test_rich_output_writes_snapshots(tmp_path, monkeypatch):
@@ -383,3 +395,22 @@ def test_monitor_select_run(monkeypatch):
 
     keys = iter(["q"])
     assert select_run(runs, console) is None
+
+
+def test_monitor_kill_run():
+    import socket
+    import subprocess
+    from benchopt.utils.monitor import kill_run
+
+    proc = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(30)"]
+    )
+    run = dict(pid=proc.pid, host="another-host")
+    # A pid only means something on the machine of the run.
+    assert "kill it from there" in kill_run(run)
+    assert proc.poll() is None
+
+    run['host'] = socket.gethostname()
+    assert "Interrupting" in kill_run(run)
+    assert proc.wait(timeout=10) != 0
+    assert "Could not kill" in kill_run(run)
