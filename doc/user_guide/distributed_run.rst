@@ -207,8 +207,8 @@ for a run launched in a SLURM job or without a terminal:
     benchopt monitor 1      # follow the most recent run
 
 In the list of runs, press ``d`` to delete the snapshot of a finished run.
-The selected run is displayed live, finished or not: press ``q`` to quit,
-``p`` to quit and print its results, or ``k`` to interrupt a run in progress
+The selected run is displayed live, finished or not: press ``esc`` to go
+back to the list, ``q`` to quit, ``p`` to quit and print its results, or ``k`` to interrupt a run in progress
 as Ctrl-C would: its results are saved and its SLURM jobs are cancelled. This
 works from any machine sharing the ``runs_dir`` folder, e.g. another login
 node of the cluster. Without a terminal, ``benchopt monitor`` only prints the

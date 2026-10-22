@@ -462,8 +462,11 @@ def test_monitor_follow_run(tmp_path, monkeypatch):
     # A finished run stays on screen until the user quits, and its results
     # are only printed on demand.
     press(None, "k", "y", "q")
-    monitor.follow_run(run, console)
+    assert not monitor.follow_run(run, console)
     assert not printed and not list(tmp_path.glob("*.kill"))
+    # Escape goes back to the list of runs.
+    press(None, "\x1b")
+    assert monitor.follow_run(run, console)
     press(None, "p")
     monitor.follow_run(run, console)
     assert len(printed) == 1

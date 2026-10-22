@@ -218,7 +218,8 @@ def _view(run, results, console, hint=None, progress=None):
 def follow_run(run, console):
     """Live display of `run`, until the user quits or asks for its results.
 
-    Without a terminal, its results are printed right away.
+    Without a terminal, its results are printed right away. Return True if
+    the user asked to go back to the list of runs.
     """
     from rich.live import Live
 
@@ -241,7 +242,8 @@ def follow_run(run, console):
         # Redraw often for the spinner, but only read the files every second.
         if view is None or time() - updated > 1:
             kill = " · k kill" if run_state(run) == 'running' else ""
-            update(hint or f"[dim]q quit · p print results{kill}[/]")
+            update(hint or f"[dim]esc back · q quit · p print results"
+                           f"{kill}[/]")
         return view._render()
 
     if console.is_terminal and sys.stdin.isatty():
@@ -254,6 +256,9 @@ def follow_run(run, console):
                     if key == 'q':
                         # Detach: the run itself goes on.
                         return
+                    if key == '\x1b' and hint is None:
+                        # Escape dismisses the hint first, if any.
+                        return True
                     if key == 'p':
                         break
                     if hint is not None:
@@ -285,26 +290,31 @@ def monitor(name=None):
     import click
     from rich.console import Console
 
-    console = Console(highlight=False)
-    runs = load_runs()
-    if name is not None:
+    def find_runs():
+        runs = load_runs()
+        if name is None:
+            return runs
         if name.isdigit() and 1 <= int(name) <= len(runs):
-            runs = [runs[int(name) - 1]]
-        else:
-            runs = [run for run in runs if run['run_name'].startswith(name)]
-        if not runs:
-            raise click.BadParameter(f"No run matching '{name}'.")
+            return [runs[int(name) - 1]]
+        return [run for run in runs if run['run_name'].startswith(name)]
+
+    console = Console(highlight=False)
+    runs = find_runs()
     if not runs:
+        if name is not None:
+            raise click.BadParameter(f"No run matching '{name}'.")
         console.print(f"No benchmark run found in {get_runs_dir()}.")
         return
 
-    if len(runs) > 1 or name is None:
-        if not sys.stdin.isatty() or not console.is_terminal:
-            console.print(runs_table(runs))
-            return
+    if len(runs) == 1 and name is not None:
+        follow_run(runs[0], console)
+        return
+    if not sys.stdin.isatty() or not console.is_terminal:
+        console.print(runs_table(runs))
+        return
+    # Escape goes back to the list, read again to show the new runs.
+    while runs:
         run = select_run(runs, console)
-        if run is None:
+        if run is None or not follow_run(run, console):
             return
-    else:
-        run = runs[0]
-    follow_run(run, console)
+        runs = find_runs()
