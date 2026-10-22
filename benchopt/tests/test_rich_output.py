@@ -328,6 +328,9 @@ def test_rich_output_writes_snapshots(tmp_path, monkeypatch):
     monkeypatch.setenv("BENCHOPT_RUNS_DIR", str(tmp_path))
     for i in range(25):
         (tmp_path / f"old{i}.json").write_text("{}")
+        os.utime(tmp_path / f"old{i}.json", (0, i))
+    # A run updated recently may still be going: it is never pruned.
+    (tmp_path / "live.json").write_text("{}")
 
     # Without a terminal, the output stays plain but the state is tracked.
     terminal = make_terminal_output(1, False)
@@ -341,6 +344,8 @@ def test_rich_output_writes_snapshots(tmp_path, monkeypatch):
     snapshots = list(tmp_path.glob("*.json"))
     # The oldest snapshots are pruned.
     assert len(snapshots) == 20
+    assert (tmp_path / "live.json").exists()
+    assert not (tmp_path / "old0.json").exists()
     snapshot = json.loads(
         next(tmp_path.glob("my_run-*.json")).read_text()
     )

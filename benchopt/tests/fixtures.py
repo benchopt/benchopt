@@ -1,5 +1,7 @@
 import os
 import sys
+import atexit
+import shutil
 import uuid
 import pathlib
 import tempfile
@@ -20,6 +22,7 @@ os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '1'
 os.environ['BENCHOPT_WARN_NONUNIQUE_FILES'] = '0'
 # Keep the snapshots of the test runs out of the user's `benchopt monitor`.
 os.environ['BENCHOPT_RUNS_DIR'] = tempfile.mkdtemp(prefix="benchopt_runs_")
+atexit.register(shutil.rmtree, os.environ['BENCHOPT_RUNS_DIR'], True)
 
 _TEST_ENV_NAME = None
 _EMPTY_ENV_NAME = None

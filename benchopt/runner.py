@@ -396,7 +396,8 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
 
     terminal.show_outputs(
         results=output_file,
-        report=html_files[0] if html_files else None,
+        # Without `html`, `plot_benchmark` returns the matplotlib figures.
+        report=html_files[0] if html and html_files else None,
         log=log_file,
     )
 

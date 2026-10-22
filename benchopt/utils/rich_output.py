@@ -6,7 +6,7 @@ import socket
 import threading
 from time import time
 from pathlib import Path
-from collections import Counter, defaultdict, deque
+from collections import Counter, defaultdict
 from itertools import islice
 from contextlib import contextmanager
 
@@ -150,15 +150,17 @@ class RichOutput(TerminalOutput):
         self.n_jobs = n_jobs
 
         self.counts = Counter()
-        # Dispatched runs that are not finished yet, in dispatch order. Only
-        # the first `n_jobs` of them are actually running, the others are
-        # waiting for a free worker.
-        self.in_flight = deque()
+        # Number of dispatched runs that are not finished yet per key, in
+        # dispatch order. Only the first `n_jobs` of them are actually
+        # running, the others are waiting for a free worker.
+        self.in_flight = Counter()
         self.n_configs = None
         # Set by a backend that knows which runs are actually running.
         self._probe = None
         self._probe_keys, self._probe_time = [], 0
-        self._probe_lock = threading.Lock()
+        # The display is rendered and dumped from other threads: the state
+        # they read is only changed while holding this lock.
+        self._lock = threading.RLock()
         # Result tree: dataset -> objective -> lines of its finished runs,
         # in the order they first appeared.
         self._tree = {}
@@ -187,7 +189,7 @@ class RichOutput(TerminalOutput):
     def __getstate__(self):
         state = self.__dict__.copy()
         for k in ['console', '_tty_fd', '_live', '_progress', '_task',
-                  '_probe', '_probe_lock', '_snapshot_file', '_dump_lock',
+                  '_probe', '_lock', '_snapshot_file', '_dump_lock',
                   '_results_file']:
             state[k] = None
         state['_worker'] = True
@@ -310,7 +312,8 @@ class RichOutput(TerminalOutput):
             # Without the display, the output went to stdout, not to a log.
             files.pop('log', None)
         if not self._worker:
-            self._meta['outputs'] = {k: str(v) for k, v in files.items()}
+            with self._lock:
+                self._meta['outputs'] = {k: str(v) for k, v in files.items()}
             self._dump()
         if not self.display or self.console is None or not files:
             return
@@ -322,6 +325,10 @@ class RichOutput(TerminalOutput):
             )
 
     def _render(self):
+        with self._lock:
+            return self._render_locked()
+
+    def _render_locked(self):
         from rich.console import Group
 
         # `rich` looks up the size on fd 0, 1 and 2, which are redirected, so
@@ -399,7 +406,7 @@ class RichOutput(TerminalOutput):
                 f"{suffix}"
             )
 
-        n_hidden = len(self.in_flight) - n_shown
+        n_hidden = self.n_dispatched - self.n_finished - n_shown
         if n_hidden > 0:
             # The hidden runs are queued ones, plus the ones left out above.
             label = "queued" if n_shown == sum(running.values()) else "more"
@@ -408,7 +415,7 @@ class RichOutput(TerminalOutput):
 
     def _running_keys(self):
         """The runs holding a worker, as told by the backend or guessed."""
-        with self._probe_lock:
+        with self._lock:
             if self._probe is not None and time() - self._probe_time > (
                     PROBE_PERIOD):
                 self._probe_time = time()
@@ -420,9 +427,9 @@ class RichOutput(TerminalOutput):
             if self._probe is not None:
                 return self._probe_keys
 
-        # Without a probe, the runs are dispatched in order, so the oldest
-        # unfinished ones are the ones actually holding a worker.
-        return list(islice(self.in_flight, self.n_jobs))
+            # Without a probe, the runs are dispatched in order, so the
+            # oldest unfinished ones are the ones actually holding a worker.
+            return list(islice(self.in_flight.elements(), self.n_jobs))
 
     def _lines(self):
         """The whole result tree, as one markup line per node."""
@@ -499,8 +506,9 @@ class RichOutput(TerminalOutput):
         key = (
             meta['dataset_name'], meta['objective_name'], meta['solver_name']
         )
-        self.in_flight.append(key)
-        self.n_dispatched += 1
+        with self._lock:
+            self.in_flight[key] += 1
+            self.n_dispatched += 1
         self._refresh()
 
     def set_n_configs(self, n_configs):
@@ -527,15 +535,23 @@ class RichOutput(TerminalOutput):
             return super().show_status(status, reason, dataset, objective,
                                        cached)
 
-        if not (dataset or objective):
-            key = (str(self.dataset), str(self.objective), str(self.solver))
-            self.n_finished += 1
-            bucket = 'cached' if _is_cached(status, cached) else status
-            self.counts[bucket] += 1
-            if key in self.in_flight:
-                self.in_flight.remove(key)
+        with self._lock:
+            if not (dataset or objective):
+                key = (
+                    str(self.dataset), str(self.objective), str(self.solver)
+                )
+                bucket = 'cached' if _is_cached(status, cached) else status
+                self.counts[bucket] += 1
+                # Only the dispatched runs move the progress bar, e.g. not a
+                # solver that is not installed.
+                if self.in_flight[key] > 0:
+                    self.in_flight[key] -= 1
+                    self.n_finished += 1
+                    if self.in_flight[key] == 0:
+                        del self.in_flight[key]
 
-        super().show_status(status, reason, dataset, objective, cached)
+            super().show_status(status, reason, dataset, objective, cached)
+        # Outside of the lock, as the refresh renders the display.
         self._refresh()
 
     def _emit_status(self, status, reason, dataset, objective, cached):
@@ -631,8 +647,20 @@ class RichOutput(TerminalOutput):
         try:
             runs_dir = get_runs_dir()
             runs_dir.mkdir(parents=True, exist_ok=True)
-            old = sorted(runs_dir.glob("*.json"), key=os.path.getmtime)
-            for f in old[:max(0, len(old) - MAX_SNAPSHOTS + 1)]:
+            snapshots = []
+            for f in runs_dir.glob("*.json"):
+                try:
+                    snapshots.append((f.stat().st_mtime, f))
+                except OSError:
+                    pass  # Pruned by another run in the meantime.
+            # Only prune the runs that are not updated anymore: other runs,
+            # e.g. on other nodes sharing the home folder, may be going on.
+            now = time()
+            old = sorted(
+                (mtime, f) for mtime, f in snapshots
+                if now - mtime > STALE_AFTER
+            )
+            for _, f in old[:max(0, len(snapshots) - MAX_SNAPSHOTS + 1)]:
                 f.unlink(missing_ok=True)
                 f.with_suffix(".jsonl").unlink(missing_ok=True)
             self._snapshot_file = runs_dir / f"{run_name}-{os.getpid()}.json"
@@ -650,15 +678,16 @@ class RichOutput(TerminalOutput):
         Its size only depends on the number of runs in flight, so that it is
         cheap to rewrite every second.
         """
-        running = self._running_keys()
-        return dict(
-            self._meta, updated=time(), total=self._total(),
-            n_repetitions=self.n_repetitions, n_jobs=self.n_jobs,
-            n_configs=self.n_configs, n_dispatched=self.n_dispatched,
-            n_finished=self.n_finished, all_dispatched=self._all_dispatched,
-            counts=self.counts, n_in_flight=len(self.in_flight),
-            running=[[list(k), self.rep[k]] for k in running],
-        )
+        with self._lock:
+            running = self._running_keys()
+            return dict(
+                self._meta, updated=time(), total=self._total(),
+                n_repetitions=self.n_repetitions, n_jobs=self.n_jobs,
+                n_configs=self.n_configs, n_dispatched=self.n_dispatched,
+                n_finished=self.n_finished,
+                all_dispatched=self._all_dispatched, counts=dict(self.counts),
+                running=[[list(k), self.rep[k]] for k in running],
+            )
 
     def _dump(self):
         if self._worker or self._snapshot_file is None:
@@ -696,9 +725,8 @@ class RichOutput(TerminalOutput):
         self.n_finished = snapshot['n_finished']
         self._all_dispatched = snapshot['all_dispatched']
         self.counts = Counter(snapshot['counts'])
-        # Only the number of runs in flight is displayed: the ones running
-        # are known, as the run already probed the scheduler.
-        self.in_flight = [None] * snapshot['n_in_flight']
+        # The runs in flight are counted from the dispatched and finished
+        # ones: the ones running are known, as the run probed the scheduler.
         running = [tuple(k) for k, _ in snapshot['running']]
         self._running_keys = lambda: running
         self.rep = defaultdict(

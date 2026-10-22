@@ -25,7 +25,7 @@ STATE_STYLE = {
 def _load(path):
     "Snapshot stored in `path`, None if it is gone or unreadable."
     try:
-        return dict(json.loads(open(path).read()), path=str(path))
+        return dict(json.loads(Path(path).read_text()), path=str(path))
     except (OSError, ValueError):
         return None
 
@@ -215,7 +215,8 @@ def follow_run(run, console):
             update()
         return view._render()
 
-    if console.is_terminal and run_state(run) == 'running':
+    interactive = console.is_terminal and sys.stdin.isatty()
+    if interactive and run_state(run) == 'running':
         hint = keys
         try:
             with _read_key() as read, Live(
