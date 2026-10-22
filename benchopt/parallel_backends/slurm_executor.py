@@ -1,3 +1,4 @@
+import subprocess
 from contextlib import ExitStack
 
 try:
@@ -24,6 +25,22 @@ def get_slurm_executor(benchmark, config, timeout=100):
     executor = submitit.AutoExecutor(slurm_folder)
     executor.update_parameters(**config)
     return executor
+
+
+def cancel_jobs(jobs):
+    """Cancel the jobs, with one `scancel` call for all the job arrays.
+
+    The ids of jobs in an array are `<array_id>_<index>`: cancelling the
+    array cancels the jobs left in it, instead of one call per job.
+    """
+    arrays = set()
+    for job in jobs:
+        if getattr(job, "_cancel_command", None) == "scancel":
+            arrays.add(str(job.job_id).split("_")[0])
+        else:
+            job.cancel(check=False)
+    if arrays:
+        subprocess.call(["scancel", *sorted(arrays)])
 
 
 def harmonize_slurm_config(slurm_cfg):
@@ -138,6 +155,5 @@ def run_on_slurm(
     except BaseException:
         # A job failed, or the run was interrupted, e.g. with Ctrl-C or from
         # `benchopt monitor`: do not leave the remaining jobs running.
-        for tt in tasks:
-            tt.cancel(check=False)
+        cancel_jobs(tasks)
         raise
