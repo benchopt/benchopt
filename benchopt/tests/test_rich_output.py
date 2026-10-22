@@ -285,6 +285,7 @@ def test_rich_output_snapshot():
                                highlight=False)
     terminal._meta = dict(started=time(), log_file=None)
     terminal._make_progress()
+    terminal._results_file = io.StringIO()
     terminal.set_n_configs(3)
     other = dict(META, solver_name="other[lr=1]")
     for meta in [META, META, other]:
@@ -296,7 +297,9 @@ def test_rich_output_snapshot():
     # `benchopt monitor` displays the run as `benchopt run` does, from the
     # JSON snapshot of its state.
     snapshot = json.loads(json.dumps(terminal._snapshot()))
-    view = RichOutput.from_snapshot(snapshot, terminal.console)
+    results = list(map(json.loads,
+                       terminal._results_file.getvalue().splitlines()))
+    view = RichOutput.from_snapshot(snapshot, results, terminal.console)
 
     def lines(terminal):
         # The spinner of the progress bar moves with time.
@@ -336,6 +339,13 @@ def test_rich_output_writes_snapshots(tmp_path, monkeypatch):
     assert snapshot['outputs'] == {"results": "res.parquet"}
     # No log without the display: the output went to stdout.
     assert snapshot['log_file'] is None
+
+    # The results are appended to their own file, read incrementally.
+    from benchopt.utils.monitor import read_results
+    snapshot['path'] = str(next(tmp_path.glob("my_run-*.json")))
+    results, offset = read_results(snapshot)
+    assert results == [[2, *KEY, 'done', None, False]]
+    assert read_results(snapshot, offset) == ([], offset)
 
 
 def test_monitor_run_state():

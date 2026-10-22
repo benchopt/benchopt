@@ -299,18 +299,17 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     # <BENCHMARK>/outputs/. Only touch the benchmark outputs folder when it is
     # actually used, to keep the benchmark directory read-only for explicit
     # output paths.
-    output_dir = benchmark.get_output_folder()
     if output_file == "None":
         timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
         output_path = (
-            output_dir
+            benchmark.get_output_folder()
             / f'benchopt_run_{timestamp}.parquet'
         )
     elif os.sep in output_file or (os.altsep and os.altsep in output_file):
         output_path = Path(output_file)
         output_path.parent.mkdir(parents=True, exist_ok=True)
     else:
-        output_path = output_dir / output_file
+        output_path = benchmark.get_output_folder() / output_file
     from .utils.run_context import RunContext
     base_run_context = RunContext(
         pdb=pdb,
@@ -354,7 +353,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         config=parallel_config, collect=collect
     )
 
-    log_file = output_dir / f'{Path(output_file).stem}.log'
+    log_file = output_path.with_suffix('.log')
     try:
         # The generator drives the run enumeration, so the whole display is
         # held while the results are consumed.

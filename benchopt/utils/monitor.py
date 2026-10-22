@@ -2,6 +2,7 @@
 import sys
 import json
 from time import sleep, time
+from pathlib import Path
 from datetime import datetime
 
 from .rich_output import STALE_AFTER, RichOutput, get_runs_dir
@@ -23,6 +24,20 @@ def _load(path):
         return dict(json.loads(open(path).read()), path=str(path))
     except (OSError, ValueError):
         return None
+
+
+def read_results(run, offset=0):
+    """Results of `run` written past `offset`, and the offset to read from
+    next time, so that following a run only reads the new results."""
+    try:
+        with open(Path(run['path']).with_suffix(".jsonl"), "rb") as f:
+            f.seek(offset)
+            data = f.read()
+    except OSError:
+        return [], offset
+    # The last line can be partly written: leave it for the next read.
+    data = data[:data.rfind(b"\n") + 1]
+    return [json.loads(line) for line in data.splitlines()], offset + len(data)
 
 
 def load_runs():
@@ -58,7 +73,9 @@ def runs_table(runs, selected=None):
     table = Table(box=None, header_style="bold")
     for column in ["#", "Run", "Benchmark", "State", "Progress", "Duration",
                    "Started"]:
-        table.add_column(column)
+        # The end of the names, e.g. their timestamp, tells the runs apart:
+        # wrap them rather than crop them.
+        table.add_column(column, overflow="fold")
     now = time()
     for i, run in enumerate(runs):
         state = run_state(run, now)
@@ -95,13 +112,14 @@ def select_run(runs, console):
             i = (i + MOVES.get(key, 0)) % len(runs)
 
 
-def _view(run, console):
+def _view(run, results, console):
     "Display of `run`, as `benchopt run` shows it, with its state below."
     from rich.markup import escape
 
     state = run_state(run)
     view = RichOutput.from_snapshot(
-        run, console, stopped=None if state == 'running' else run['updated']
+        run, results, console,
+        stopped=None if state == 'running' else run['updated']
     )
     view._footer = (
         f"[bold]{escape(run['run_name'])}[/] · "
@@ -116,11 +134,18 @@ def follow_run(run, console):
     """Live display of `run` until it stops, then print its results."""
     from rich.live import Live
 
-    def render():
-        nonlocal run
+    results, offset = [], 0
+
+    def update():
+        nonlocal run, offset
         # The file can be gone, e.g. pruned by a new run: keep the last one.
         run = _load(run['path']) or run
-        return _view(run, console)._render()
+        new, offset = read_results(run, offset)
+        results.extend(new)
+        return _view(run, results, console)
+
+    def render():
+        return update()._render()
 
     if console.is_terminal and run_state(run) == 'running':
         try:
@@ -132,7 +157,7 @@ def follow_run(run, console):
             # Detach: the run itself goes on.
             pass
 
-    view = _view(run, console)
+    view = update()
     view._print_results()
     console.print(view._footer)
     view.show_outputs(**run.get('outputs', {}))

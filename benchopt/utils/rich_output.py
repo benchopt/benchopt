@@ -177,13 +177,17 @@ class RichOutput(TerminalOutput):
 
         self._meta = {}
         self._snapshot_file = None
+        # Finished results, appended as they come: they never change, so
+        # they are kept out of the snapshot that is rewritten every second.
+        self._results_file = None
         self._dump_time = 0
         self._dump_lock = threading.Lock()
 
     def __getstate__(self):
         state = self.__dict__.copy()
         for k in ['console', '_tty_fd', '_live', '_progress', '_task',
-                  '_probe', '_probe_lock', '_snapshot_file', '_dump_lock']:
+                  '_probe', '_probe_lock', '_snapshot_file', '_dump_lock',
+                  '_results_file']:
             state[k] = None
         state['_worker'] = True
         state['display'] = False
@@ -221,6 +225,9 @@ class RichOutput(TerminalOutput):
             stop.set()
             self._meta['finished'] = finished
             self._dump()
+            if self._results_file is not None:
+                self._results_file.close()
+                self._results_file = None
 
     def _make_progress(self, started=None, stopped=None):
         """Progress bar of the runs, timed from `started` if given."""
@@ -536,6 +543,20 @@ class RichOutput(TerminalOutput):
         if self._worker:
             return
 
+        level = 0 if dataset else 1 if objective else 2
+        result = [level, str(self.dataset), str(self.objective),
+                  str(self.solver), status, reason and str(reason), cached]
+        self._add_result(*result)
+        if self._results_file is not None:
+            try:
+                self._results_file.write(
+                    json.dumps(result, separators=(',', ':')) + "\n"
+                )
+            except Exception:
+                pass  # The display is never worth taking the run down for.
+
+    def _add_result(self, level, data, obj, solver, status, reason, cached):
+        """Add a result to the tree, at the `level` of the name it is for."""
         from rich.markup import escape
 
         if _is_cached(status, cached):
@@ -547,17 +568,15 @@ class RichOutput(TerminalOutput):
             if status in ['error', 'diverged']:
                 result += " [dim](traceback in the log)[/]"
 
-        level = 0 if dataset else 1 if objective else 2
-        name = str([self.dataset, self.objective, self.solver][level])
+        name = [data, obj, solver][level]
         lines = [
             f"{_guides(level)}[{style}]{glyph}[/] {escape(name)} {result}"
         ]
         if status == 'skip' and reason is not None:
             lines.append(
-                f"{GUIDE * level}[dim]Reason: {escape(str(reason))}[/]"
+                f"{GUIDE * level}[dim]Reason: {escape(reason)}[/]"
             )
 
-        data, obj = str(self.dataset), str(self.objective)
         objectives = self._tree.setdefault(data, {})
         if level == 0:
             self._labels[data, ] = lines
@@ -613,23 +632,30 @@ class RichOutput(TerminalOutput):
             old = sorted(runs_dir.glob("*.json"), key=os.path.getmtime)
             for f in old[:max(0, len(old) - MAX_SNAPSHOTS + 1)]:
                 f.unlink(missing_ok=True)
+                f.with_suffix(".jsonl").unlink(missing_ok=True)
             self._snapshot_file = runs_dir / f"{run_name}-{os.getpid()}.json"
+            # Line buffered, so that each result is readable once written.
+            self._results_file = open(
+                self._snapshot_file.with_suffix(".jsonl"), "w", buffering=1
+            )
         except OSError:
-            self._snapshot_file = None
+            self._snapshot_file = self._results_file = None
         self._dump()
 
     def _snapshot(self):
-        """State of the run needed by `_render`, as a JSON-able dict."""
+        """State of the run needed by `_render`, but the finished results.
+
+        Its size only depends on the number of runs in flight, so that it is
+        cheap to rewrite every second.
+        """
+        running = self._running_keys()
         return dict(
             self._meta, updated=time(), total=self._total(),
             n_repetitions=self.n_repetitions, n_jobs=self.n_jobs,
             n_configs=self.n_configs, n_dispatched=self.n_dispatched,
             n_finished=self.n_finished, all_dispatched=self._all_dispatched,
-            counts=self.counts, in_flight=list(self.in_flight),
-            running=self._running_keys(),
-            rep=[[list(map(str, k)), n] for k, n in self.rep.items()],
-            tree=self._tree,
-            labels=[[list(k), lines] for k, lines in self._labels.items()],
+            counts=self.counts, n_in_flight=len(self.in_flight),
+            running=[[list(k), self.rep[k]] for k in running],
         )
 
     def _dump(self):
@@ -639,7 +665,9 @@ class RichOutput(TerminalOutput):
             self._dump_time = time()
             tmp = self._snapshot_file.with_suffix(".tmp")
             try:
-                tmp.write_text(json.dumps(self._snapshot()))
+                tmp.write_text(
+                    json.dumps(self._snapshot(), separators=(',', ':'))
+                )
                 # Atomic, so that `benchopt monitor` never reads half a file.
                 os.replace(tmp, self._snapshot_file)
             except Exception:
@@ -648,10 +676,11 @@ class RichOutput(TerminalOutput):
                 pass
 
     @classmethod
-    def from_snapshot(cls, snapshot, console, stopped=None):
-        """Rebuild the display of a run from its snapshot.
+    def from_snapshot(cls, snapshot, results, console, stopped=None):
+        """Rebuild the display of a run from its snapshot and results.
 
-        `stopped` is the time the run stopped at, if it is over.
+        `results` are the lines of its results file, and `stopped` the time
+        the run stopped at, if it is over.
         """
         self = cls(snapshot['n_repetitions'], False,
                    n_jobs=snapshot['n_jobs'])
@@ -663,15 +692,16 @@ class RichOutput(TerminalOutput):
         self.n_finished = snapshot['n_finished']
         self._all_dispatched = snapshot['all_dispatched']
         self.counts = Counter(snapshot['counts'])
-        self.in_flight = deque(map(tuple, snapshot['in_flight']))
-        running = list(map(tuple, snapshot['running']))
-        # The run already probed the scheduler: use its answer as is.
+        # Only the number of runs in flight is displayed: the ones running
+        # are known, as the run already probed the scheduler.
+        self.in_flight = [None] * snapshot['n_in_flight']
+        running = [tuple(k) for k, _ in snapshot['running']]
         self._running_keys = lambda: running
         self.rep = defaultdict(
-            int, {tuple(k): n for k, n in snapshot['rep']}
+            int, {tuple(k): n for k, n in snapshot['running']}
         )
-        self._tree = snapshot['tree']
-        self._labels = {tuple(k): lines for k, lines in snapshot['labels']}
+        for result in results:
+            self._add_result(*result)
         self._make_progress(started=snapshot['started'], stopped=stopped)
         self._refresh()
         return self
