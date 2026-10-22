@@ -33,7 +33,7 @@ def test_monitor(tmp_path, monkeypatch):
             monitor([name], "benchopt", standalone_mode=False)
         out.check_output("Results")
         out.check_output("simulated")
-        out.check_output("monitored_run · done")
+        out.check_output("done · monitored_run")
 
     with pytest.raises(click.BadParameter, match="No run matching"):
         monitor(["unknown"], "benchopt", standalone_mode=False)
