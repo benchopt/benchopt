@@ -1,7 +1,12 @@
 import io
 import os
-import pickle
 import sys
+import json
+import time
+import pickle
+from pathlib import Path
+
+import pytest
 
 from rich.console import Console
 
@@ -277,7 +282,6 @@ def test_rich_output_running_probe():
 
 
 def test_rich_output_snapshot():
-    import json
     from time import sleep, time
 
     terminal = RichOutput(n_repetitions=2, show_progress=False, n_jobs=2)
@@ -324,7 +328,6 @@ def test_rich_output_snapshot():
 
 
 def test_rich_output_writes_snapshots(tmp_path, monkeypatch):
-    import json
     monkeypatch.setenv("BENCHOPT_RUNS_DIR", str(tmp_path))
     for i in range(25):
         (tmp_path / f"old{i}.json").write_text("{}")
@@ -379,43 +382,67 @@ def test_monitor_run_state():
     assert duration(dict(run, updated=65), now=4000) == "1m 05s"
 
 
-def test_monitor_select_run(monkeypatch):
-    import click
-    from benchopt.utils.monitor import select_run
+def test_monitor_select_run(tmp_path, monkeypatch):
+    from contextlib import contextmanager
+    from benchopt.utils import monitor
 
-    runs = [
-        dict(path=f"missing{i}.json", run_name=f"run{i}", benchmark="b",
-             started=0, updated=0, finished='done', n_finished=1, total=1)
-        for i in range(3)
-    ]
-    console = Console(file=io.StringIO(), width=120)
+    runs = []
+    for i in range(30):
+        run = dict(path=str(tmp_path / f"run{i}.json"), run_name=f"run{i}",
+                   benchmark="b", started=0, updated=0, finished='done',
+                   n_finished=1, total=1)
+        Path(run['path']).write_text(json.dumps(run))
+        runs.append(run)
+    console = Console(file=io.StringIO(), width=120, height=10,
+                      force_terminal=True)
 
-    keys = iter(["\x1b[B", "\x1b[B", "\x1b[A", "x", "\r"])
-    monkeypatch.setattr(click, "getchar", lambda: next(keys))
-    assert select_run(runs, console)['run_name'] == "run1"
+    def press(*keys):
+        @contextmanager
+        def read_key():
+            it = iter(keys)
+            yield lambda timeout: next(it)
+        monkeypatch.setattr(monitor, "_read_key", read_key)
 
-    # The selection wraps around.
-    keys = iter(["\x1b[A", "\r"])
-    assert select_run(runs, console)['run_name'] == "run2"
+    press("\x1b[B", "\x1b[B", "\x1b[A", None, "x", "\r")
+    assert monitor.select_run(runs, console)['run_name'] == "run1"
 
-    keys = iter(["q"])
-    assert select_run(runs, console) is None
+    # The selection wraps around, and the list scrolls to show it.
+    console.file = io.StringIO()
+    press("\x1b[A", "\r")
+    assert monitor.select_run(runs, console)['run_name'] == "run29"
+    assert "run29" in console.file.getvalue()
+
+    press("q")
+    assert monitor.select_run(runs, console) is None
+
+    # `d` deletes the files of a run, once confirmed.
+    press("d", "n", "d", "y", "\r")
+    assert monitor.select_run(runs, console)['run_name'] == "run1"
+    assert not (tmp_path / "run0.json").exists()
+    assert (tmp_path / "run1.json").exists()
+
+    # A running run must be killed first.
+    runs[0]['finished'], runs[0]['updated'] = None, time.time()
+    Path(runs[0]['path']).write_text(json.dumps(runs[0]))
+    press("d", "y", "\r")
+    assert monitor.select_run(runs, console)['run_name'] == "run0"
+    assert (tmp_path / "run0.json").exists()
 
 
-def test_monitor_kill_run():
-    import socket
-    import subprocess
+def test_monitor_kill_run(tmp_path, monkeypatch):
     from benchopt.utils.monitor import kill_run
 
-    proc = subprocess.Popen(
-        [sys.executable, "-c", "import time; time.sleep(30)"]
-    )
-    run = dict(pid=proc.pid, host="another-host")
-    # A pid only means something on the machine of the run.
-    assert "kill it from there" in kill_run(run)
-    assert proc.poll() is None
+    monkeypatch.setenv("BENCHOPT_RUNS_DIR", str(tmp_path))
+    terminal = make_terminal_output(1, False)
+    # The run polls for the kill request, from the monitor of any machine
+    # sharing the runs folder, and stops as on Ctrl-C.
+    with pytest.raises(KeyboardInterrupt):
+        with terminal.live(log_file=tmp_path / "run.log", benchmark="b"):
+            run = dict(path=str(next(tmp_path.glob("run-*.json"))))
+            assert "Interrupting" in kill_run(run)
+            for _ in range(100):
+                time.sleep(0.1)
+    assert terminal._meta['finished'] == 'interrupted'
+    assert not list(tmp_path.glob("*.kill"))
 
-    run['host'] = socket.gethostname()
-    assert "Interrupting" in kill_run(run)
-    assert proc.wait(timeout=10) != 0
-    assert "Could not kill" in kill_run(run)
+    assert "Could not kill" in kill_run(dict(path=str(tmp_path / "x/y")))

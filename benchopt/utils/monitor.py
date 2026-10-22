@@ -2,8 +2,6 @@
 import os
 import sys
 import json
-import signal
-import socket
 from time import sleep, time
 from pathlib import Path
 from datetime import datetime
@@ -70,7 +68,8 @@ def duration(run, now=None):
     return f"{minutes}m {seconds:02d}s" if minutes else f"{seconds}s"
 
 
-def runs_table(runs, selected=None):
+def runs_table(runs, selected=None, rows=None):
+    "Table of the `runs`, or of the ones whose index is in `rows`."
     from rich.markup import escape
     from rich.table import Table
 
@@ -81,7 +80,8 @@ def runs_table(runs, selected=None):
         # wrap them rather than crop them.
         table.add_column(column, overflow="fold")
     now = time()
-    for i, run in enumerate(runs):
+    for i in range(len(runs)) if rows is None else rows:
+        run = runs[i]
         state = run_state(run, now)
         table.add_row(
             str(i + 1), escape(run['run_name']), escape(str(run['benchmark'])),
@@ -94,26 +94,50 @@ def runs_table(runs, selected=None):
 
 
 def select_run(runs, console):
-    "Pick a run with the arrow keys. None if the user quits."
-    import click
+    """Pick a run with the arrow keys, or delete the old ones. None if the
+    user quits."""
     from rich.console import Group
     from rich.live import Live
+    from rich.markup import escape
 
-    i = 0
-    with Live(console=console, transient=True, auto_refresh=False) as live:
-        while True:
-            # Re-read on each key press, so that the states stay current.
+    keys = "[dim]↑/↓ select · enter monitor · d delete · q quit[/]"
+    i, top, hint = 0, 0, keys
+    with _read_key() as read, Live(
+            console=console, screen=True, auto_refresh=False) as live:
+        while runs:
+            # Re-read every second, so that the states stay current.
             runs = [_load(run['path']) or run for run in runs]
-            live.update(Group(
-                runs_table(runs, selected=i),
-                "[dim]↑/↓ select · enter monitor · q quit[/]",
-            ), refresh=True)
-            key = click.getchar()
-            if key in ('\r', '\n'):
+            # Scroll to keep the selected run on screen, below the header.
+            # ponytail: one line per run, a name folded on a narrow terminal
+            # can push the selection off screen.
+            n_rows = max(1, console.height - 2)
+            top = min(max(top, i - n_rows + 1), i)
+            rows = range(top, min(top + n_rows, len(runs)))
+            live.update(Group(runs_table(runs, i, rows), hint), refresh=True)
+            key = read(1)
+            if key is None:
+                continue
+            if hint.startswith("[red]Delete"):
+                if key == 'y':
+                    path = Path(runs.pop(i)['path'])
+                    for suffix in [".json", ".jsonl", ".kill"]:
+                        path.with_suffix(suffix).unlink(missing_ok=True)
+                    i = max(0, min(i, len(runs) - 1))
+                hint = keys
+            elif key in ('\r', '\n'):
                 return runs[i]
-            if key in ('q', '\x1b'):
+            elif key in ('q', '\x1b'):
                 return None
-            i = (i + MOVES.get(key, 0)) % len(runs)
+            elif key == 'd':
+                hint = (
+                    "[red]Kill the run before deleting it.[/]"
+                    if run_state(runs[i]) == 'running' else
+                    f"[red]Delete {escape(runs[i]['run_name'])}? "
+                    "y to confirm[/]"
+                )
+            else:
+                i = (i + MOVES.get(key, 0)) % len(runs)
+                hint = keys
 
 
 @contextmanager
@@ -130,7 +154,11 @@ def _read_key():
             end = time() + timeout
             while time() < end:
                 if msvcrt.kbhit():
-                    return msvcrt.getwch()
+                    key = msvcrt.getwch()
+                    # Arrows come as two characters, e.g. '\xe0H'.
+                    if key in ('\x00', '\xe0'):
+                        key += msvcrt.getwch()
+                    return key
                 sleep(0.05)
         yield read
         return
@@ -155,15 +183,12 @@ def _read_key():
 def kill_run(run):
     """Interrupt `run` as Ctrl-C would. Return a message telling the outcome.
 
-    The run saves its results and stops, cancelling its SLURM jobs if any.
+    The run polls for this request, so it works from any machine sharing the
+    runs folder, e.g. another node of a cluster. The run saves its results
+    and stops, cancelling its SLURM jobs if any.
     """
-    host = run.get('host')
-    if host != socket.gethostname():
-        return f"[red]The run is on {host}: kill it from there.[/]"
     try:
-        # ponytail: on Windows, os.kill terminates the process, without
-        # saving the results: the run shows as stale.
-        os.kill(run['pid'], signal.SIGINT)
+        Path(run['path']).with_suffix(".kill").touch()
     except OSError as e:
         return f"[red]Could not kill the run: {e}[/]"
     return "[yellow]Interrupting the run...[/]"
@@ -194,7 +219,7 @@ def follow_run(run, console):
     from rich.live import Live
 
     results, offset = [], 0
-    keys = "[dim]q quit · k kill[/]"
+    keys = "[dim]q quit · p print results · k kill[/]"
     hint = view = None
     updated = 0
 
@@ -226,6 +251,8 @@ def follow_run(run, console):
                     key = read(1)
                     if key == 'q':
                         # Detach: the run itself goes on.
+                        return
+                    if key == 'p':
                         break
                     if hint.startswith("[red]Kill"):
                         if key == 'y':

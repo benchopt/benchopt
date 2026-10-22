@@ -206,8 +206,11 @@ for a run launched in a SLURM job or without a terminal:
     benchopt monitor        # pick one of the last runs with the arrow keys
     benchopt monitor 1      # follow the most recent run
 
-While following a run, press ``q`` to detach, or ``k`` to interrupt it as
-Ctrl-C would: its results are saved and its SLURM jobs are cancelled. Without
+In the list of runs, press ``d`` to delete the snapshot of a finished run.
+While following a run, press ``q`` to quit, ``p`` to quit and print its
+results, or ``k`` to interrupt it as Ctrl-C would: its results are saved and
+its SLURM jobs are cancelled. This works from any machine sharing the
+``runs_dir`` folder, e.g. another login node of the cluster. Without
 a terminal, ``benchopt monitor`` only prints the list of runs, or the results
 of the selected one. Set the ``no_rich`` config option to fall back on the
 plain line by line output of ``benchopt run``.

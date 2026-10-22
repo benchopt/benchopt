@@ -2,7 +2,8 @@
 import os
 import sys
 import json
-import socket
+import signal
+import _thread
 import threading
 from time import time
 from pathlib import Path
@@ -208,12 +209,26 @@ class RichOutput(TerminalOutput):
         self._start_snapshot(log_file, benchmark)
 
         # Keep the snapshot fresh, and the scheduler probed, while no run
-        # finishes: `benchopt monitor` tells a long run from a dead one.
+        # finishes: `benchopt monitor` tells a long run from a dead one. It
+        # also asks to kill the run by creating a file next to the snapshot.
         stop = threading.Event()
 
         def heartbeat():
-            while not stop.wait(HEARTBEAT):
-                self._dump()
+            while not stop.wait(1):
+                kill = self._snapshot_file and (
+                    self._snapshot_file.with_suffix(".kill")
+                )
+                if kill and kill.exists():
+                    kill.unlink(missing_ok=True)
+                    if sys.platform == 'win32':
+                        # os.kill would terminate the process at once.
+                        _thread.interrupt_main()
+                    else:
+                        # Unlike `interrupt_main`, the signal stops the main
+                        # thread waiting in a system call.
+                        os.kill(os.getpid(), signal.SIGINT)
+                if time() - self._dump_time > HEARTBEAT:
+                    self._dump()
 
         threading.Thread(target=heartbeat, daemon=True).start()
         finished = 'interrupted'
@@ -639,8 +654,7 @@ class RichOutput(TerminalOutput):
             return
         run_name = Path(log_file).stem if log_file else "benchopt_run"
         self._meta = dict(
-            run_name=run_name, benchmark=benchmark, pid=os.getpid(),
-            host=socket.gethostname(),
+            run_name=run_name, benchmark=benchmark,
             log_file=str(log_file) if self.log_file else None,
             started=time(), finished=None,
         )
@@ -661,8 +675,8 @@ class RichOutput(TerminalOutput):
                 if now - mtime > STALE_AFTER
             )
             for _, f in old[:max(0, len(snapshots) - MAX_SNAPSHOTS + 1)]:
-                f.unlink(missing_ok=True)
-                f.with_suffix(".jsonl").unlink(missing_ok=True)
+                for suffix in [".json", ".jsonl", ".kill"]:
+                    f.with_suffix(suffix).unlink(missing_ok=True)
             self._snapshot_file = runs_dir / f"{run_name}-{os.getpid()}.json"
             # Line buffered, so that each result is readable once written.
             self._results_file = open(
