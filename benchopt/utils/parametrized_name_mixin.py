@@ -27,6 +27,12 @@ class ParametrizedNameMixin():
         for k, v in _parameters.items():
             if not hasattr(self, k):
                 setattr(self, k, v)
+            elif getattr(self, k) != v:
+                v_set = getattr(self, k)
+                raise ValueError(
+                    f"Parameter {k} set in {self} `__init__` to {v_set}, "
+                    f"while the parameter value is {v}."
+                )
 
     @classmethod
     def get_all_parameter_values(cls, name):
