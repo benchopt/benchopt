@@ -93,8 +93,11 @@ each dictionary represents a trace in the plot. Each dictionary must contain:
 
 - :code:`x`: A list of x values.
 - :code:`y`: A list of y values.
-- :code:`label`: The label of the trace. It can be a :code:`(label, tooltip)`
-  tuple to add a hover icon displaying the :code:`tooltip` HTML in the legend.
+- :code:`label`: The label of the trace.
+- :code:`description` (optional): HTML shown by a hover icon next to the
+  label in the legend. A trace labeled with a solver, dataset or objective
+  name shows its description by default. Set it to override this, or to
+  :code:`None` to hide the icon.
 - :code:`color` (optional): The color of the trace.
 - :code:`marker` (optional): The marker style of the trace.
 - :code:`y_low`, :code:`y_high` (optional): Lists of values to display uncertainty in the plot.
@@ -262,9 +265,8 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 
 String cells can carry simple formatting with :code:`**bold**`,
 :code:`*italic*` and :code:`__underlined__` markers. A literal marker is
-escaped with a backslash, as in :code:`r"a \* b"`. A cell given as a
-:code:`(label, tooltip)` tuple shows :code:`label` with a hover icon displaying
-the :code:`tooltip` HTML.
+escaped with a backslash, as in :code:`r"a \* b"`. A cell holding a solver,
+dataset or objective name gets a hover icon with its description.
 
 In the html report, each column header can be clicked to sort on that column,
 and the arrow next to it can be toggled to switch between increasing and
@@ -272,9 +274,7 @@ decreasing order. A search bar allows filtering the rows, and each column can
 be shown or hidden with the checkboxes below the table.
 
 Solver, dataset and objective names are already shortened (see
-:ref:`short_labels`), and their hover HTML (description and full parameters) is
-in the :code:`solver_tooltip`, :code:`dataset_tooltip` and
-:code:`objective_tooltip` columns, ready to build such a tuple:
+:ref:`short_labels`):
 
 .. code-block:: python
 
@@ -286,8 +286,7 @@ in the :code:`solver_tooltip`, :code:`dataset_tooltip` and
         for solver, df_solver in df.groupby('solver_name'):
             # Example: table with solver name and mean time
             # when using `sampling_strategy = 'run_once'`
-            tooltip = df_solver['solver_tooltip'].iloc[0]
-            rows.append([(f"**{solver}**", tooltip), df_solver['time'].mean()])
+            rows.append([solver, df_solver['time'].mean()])
         return rows
 
     def get_metadata(self, df, dataset, objective, **kwargs):
@@ -367,8 +366,11 @@ Shortened labels and hover descriptions
 Parametrized class names (e.g. ``Solver[alpha=0.1,n_iter=100]``) can be
 verbose. The HTML report automatically shortens them, keeping only the
 parameters that *vary* across the results, and a hover icon next to each entry
-reveals the full parameter list. This applies to solver, dataset, and objective
-names in traces, selectors, and table cells.
+reveals its description: the class docstring and the full parameter list.
+The legend, the table cells and the plot selectors show it for any value that
+is a solver, dataset or objective name, including the options of a custom
+plot. If names of different kinds share a short label, the solver's
+description is shown.
 
 This happens **before** :code:`plot` and :code:`get_metadata` are called: the
 ``solver_name``, ``dataset_name`` and ``objective_name`` columns of the ``df``
@@ -376,9 +378,10 @@ you receive already hold the short labels, so a custom plot that groups on
 those columns gets short labels for free — no extra call is needed. The
 original full name of each row is kept in a companion ``*_full_name`` column
 (``solver_full_name``, ``dataset_full_name``, ``objective_full_name``) if you
-need it, e.g. to set a different label. The hover HTML (description and full
-parameters) is in the ``*_tooltip`` columns: pass it with the label as a
-``(label, tooltip)`` tuple to get the hover icon in a legend or a table cell:
+need it, and the ``*_description`` columns (``solver_description``,
+``dataset_description``, ``obj_description``) hold the hover HTML. A trace
+labeled with a short solver, dataset or objective name gets its hover icon
+automatically:
 
 .. code-block:: python
 
@@ -386,12 +389,19 @@ parameters) is in the ``*_tooltip`` columns: pass it with the label as a
         traces = []
         for solver, df_solver in df.groupby('solver_name'):
             # `solver` is already the short label here.
-            tooltip = df_solver['solver_tooltip'].iloc[0]
             traces.append({
-                "x": ..., "y": ..., "label": (solver, tooltip),
+                "x": ..., "y": ..., "label": solver,
                 **self.get_style(solver),
             })
         return traces
+
+With another label, pass the matching ``*_description`` as the trace's
+``description``:
+
+.. code-block:: python
+
+    "label": f"{solver} ({dataset})",
+    "description": df_solver["solver_description"].iloc[0],
 
 The short labels are **display-only** and computed relative to the current
 results: never write them back into persisted results — keep the full name

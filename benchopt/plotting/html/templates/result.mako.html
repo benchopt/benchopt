@@ -90,9 +90,9 @@
                                 <div id="${kind}_${param}_form_group" class="mt-8 px-8">
                                     <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">
                                         ${param}
-                                        % if param in ('solver', 'dataset', 'objective'):
+                                        % if any(result['descriptions'].get(str(o)) for o in options):
                                         <span class="params-info-icon ml-1 text-gray-400 cursor-help text-xs align-middle"
-                                              data-desc-state="${kind}_${param}" data-desc-type="${param}">(?)</span>
+                                              data-desc-state="${kind}_${param}">(?)</span>
                                         % endif
                                     </label>
                                     <div class="mt-1 rounded-md shadow-sm">
@@ -243,9 +243,9 @@
                                     <div id="${kind}_${param}_form_group" class="mt-8 px-8">
                                         <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">
                                             ${param}
-                                            % if param in ('solver', 'dataset', 'objective'):
+                                            % if any(result['descriptions'].get(str(o)) for o in options):
                                             <span class="params-info-icon ml-1 text-gray-400 cursor-help text-xs align-middle"
-                                                  data-desc-state="${kind}_${param}" data-desc-type="${param}">(?)</span>
+                                                  data-desc-state="${kind}_${param}">(?)</span>
                                             % endif
                                         </label>
                                         <div class="mt-1 rounded-md shadow-sm">

@@ -47,7 +47,7 @@ class ObjectiveCurvePlot(BasePlot):
             curve_data = {
                 "x": x.tolist(),
                 "y": y.tolist(),
-                "label": (solver, df_filtered['solver_tooltip'].iloc[0]),
+                "label": solver,
                 **self.get_style(solver)
             }
 
@@ -222,7 +222,7 @@ class TablePlot(BasePlot):
         ]
 
         for solver, solver_df in df.groupby('solver_name'):
-            solver_res = [(solver, solver_df['solver_tooltip'].iloc[0])]
+            solver_res = [solver]
             median_vals = (
                solver_df.groupby('stop_val')
                .median(numeric_only=True).iloc[-1]

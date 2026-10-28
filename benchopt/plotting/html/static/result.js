@@ -688,15 +688,12 @@ const descIconHTML = (text) =>
  * Resolve the tooltip HTML for a hover icon. Two sources, one path:
  *   - `data-desc`: HTML baked at render time (legend + table cell icons);
  *   - `data-desc-state`: a state key, resolved live against the current
- *     selection (selector icons, whose value changes with the dropdown),
- *     looked up in the global `descriptions` map ({type: {short: HTML}})
- *     with `data-desc-type` the entity type of that selector.
+ *     selection (selector icons, whose value changes with the dropdown).
  */
 const descForIcon = (icon) => {
   if (icon.dataset.desc != null) return icon.dataset.desc;
   const key = icon.dataset.descState;
-  const descriptions = (window.descriptions || {})[icon.dataset.descType];
-  return key ? ((descriptions || {})[state()[key]] || '') : '';
+  return key ? ((window.descriptions || {})[state()[key]] || '') : '';
 };
 
 /** Show the shared params tooltip. The description is already HTML. */
@@ -1321,9 +1318,6 @@ const stripMarkup = (value) => CELL_MARKUP.reduce(
   String(value).replace(/\\([*_])/g, (match, c) => PLACEHOLDERS[c])
 ).replace(/[\u0000\u0001]/g, c => LITERALS[c]);
 
-// Label of a cell, unwrapping `[label, tooltip]` cells.
-const cellLabel = (value) => Array.isArray(value) ? value[0] : value;
-
 // Numeric value of a cell, or null if its text is not a single number.
 const cellNumber = (value) => {
   if (typeof value === 'number') return value;
@@ -1366,7 +1360,6 @@ const elementToLatex = (element) => nodeToLatex(element).trim();
  * would make all close numbers compare as equal.
  */
 const compareCells = (a, b) => {
-  [a, b] = [cellLabel(a), cellLabel(b)];
   const [numA, numB] = [cellNumber(a), cellNumber(b)];
   if (numA !== null && numB !== null) {
     return numA > numB ? 1 : numA < numB ? -1 : 0;
@@ -1489,14 +1482,15 @@ function renderTable() {
   const card = document.createElement("div");
   card.className = "w-full bg-white overflow-hidden mx-auto";
 
-  // A `[label, tooltip]` cell shows its label with a hover icon carrying the
-  // tooltip HTML. The SVG icon stays out of `innerText`, so exports are
-  // unaffected.
+  // Solver/dataset/objective names are already short labels, in any column.
+  // Cells matching one get a hover icon carrying the full parameter list, from
+  // the global `descriptions` map (short -> HTML). The SVG icon stays out of
+  // `innerText`, so exports are unaffected.
   const tableCell = (value) => {
-    if (!Array.isArray(value)) return formatCell(value);
-    const [label, tooltip] = value;
-    if (!tooltip) return formatCell(label);
-    return gridjs.html(markupToHtml(String(label)) + descIconHTML(tooltip));
+    const desc = typeof value === 'string' && (window.descriptions || {})[value];
+    return desc
+      ? gridjs.html(markupToHtml(value) + descIconHTML(desc))
+      : formatCell(value);
   };
 
   const buildColumns = () => plotData.columns.map(name => ({
@@ -1510,8 +1504,7 @@ function renderTable() {
     columns: buildColumns(),
     data: orderedData,
     sort: true,
-    // Search the label only, not the tooltip HTML.
-    search: { selector: (cell) => String(cellLabel(cell)) },
+    search: true,
   });
   if (prevGridHeight) {
     card.style.minHeight = `${prevGridHeight}px`;
@@ -1717,8 +1710,8 @@ const renderLegend = () => {
 
   getCurves().forEach(curve => {
     const curve_data = data(curve);
-    // The curve's tooltip hover lives on the legend item's icon (see
-    // createLegendItem).
+    // The curve's params + docstring hover lives on the legend item's icon,
+    // fed by the global `descriptions` map (see createLegendItem).
     legend.appendChild(
       createLegendItem(curve, curve_data.color, curve_data.marker)
     );
@@ -1788,9 +1781,12 @@ const createLegendItem = (curve, color, symbolNumber) => {
   textContainer.setAttribute('data-curve', curve);
   textContainer.appendChild(document.createTextNode(curve));
 
-  // Append a hover icon carrying the curve's tooltip, given by the plot as a
-  // `(label, tooltip)` label (e.g. docstring + full parameter list).
-  const desc = data(curve).tooltip;
+  // Append a hover icon carrying the curve's description (docstring + full
+  // parameter list), looked up from the global `descriptions` map (keyed by
+  // the short label), unless the plot sets the curve's `description`.
+  const curveData = data(curve);
+  const desc = 'description' in curveData
+    ? curveData.description : (window.descriptions || {})[curve];
   if (desc) {
     textContainer.insertAdjacentHTML('beforeend', descIconHTML(desc));
   }

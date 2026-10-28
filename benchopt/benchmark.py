@@ -396,8 +396,7 @@ class Benchmark:
         # Shorten entity names once for the whole report: solver/dataset/
         # objective names become their short labels everywhere downstream
         # (selectors, plot keys, trace labels), while the full names are kept
-        # in `*_full_name` columns. `descriptions` maps type -> short label
-        # -> tooltip.
+        # in `*_full_name` columns. `descriptions` maps short label -> tooltip.
         df, descriptions = shorten_names(df)
 
         all_data = {}

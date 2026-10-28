@@ -185,14 +185,11 @@ def shorten_names(
 
     For each column in *columns* present in *df*, the original full names are
     preserved in a companion ``*_full_name`` column (opt-in for custom plots
-    that need the full parametrized name), the hover HTML is stored in a
-    ``*_tooltip`` column (for plot labels and table cells given as
-    ``(label, tooltip)``), and the column itself is replaced by its short
-    label. The ``{type: {short_label: description_html}}`` map for the
-    selector hover tooltips is returned alongside, combining any free-text
-    description column (e.g. ``solver_description``) with the object's
-    parameters table. It is keyed by entity type (``solver``, ``dataset``,
-    ``objective``) so that equal labels of different types don't clash.
+    that need the full parametrized name), and the column itself is replaced by
+    its short label. The description columns (``solver_description``,
+    ``dataset_description``, ``obj_description``) are replaced by the hover
+    HTML, combining the free-text description with the object's parameters
+    table. The ``{short_label: description_html}`` map is returned alongside.
 
     Parameters
     ----------
@@ -204,11 +201,12 @@ def shorten_names(
     Returns
     -------
     df : pandas.DataFrame
-        Copy of *df* with shortened ``*_name`` columns and added
-        ``*_full_name`` and ``*_tooltip`` columns.
-    descriptions : dict[str, dict[str, str]]
-        Mapping ``{type: {short_label: description_html}}`` for every shortened
-        name, with ``type`` the column name without its ``_name`` suffix.
+        Copy of *df* with shortened ``*_name`` columns, added ``*_full_name``
+        columns and HTML ``*_description`` columns.
+    descriptions : dict[str, str]
+        Mapping ``{short_label: description_html}`` for every shortened name.
+        When names of several columns share a short label, the first column
+        in *columns* gives its description.
     """
     df = df.copy()
     descriptions = {}
@@ -230,11 +228,12 @@ def shorten_names(
             }
         desc = compute_descriptions(unique, prose)
 
-        kind = col.removesuffix("_name")
-        df[f"{kind}_full_name"] = names
-        df[f"{kind}_tooltip"] = names.map(desc)
+        full_col = col.replace("_name", "_full_name")
+        df[full_col] = names
         df[col] = names.map(short_map)
-        descriptions[kind] = {
-            short_map[name]: desc[name] for name in unique
-        }
+        if desc_col:
+            df[desc_col] = names.map(desc)
+        # Earlier columns win on a shared short label (solver first).
+        for name in unique:
+            descriptions.setdefault(short_map[name], desc[name])
     return df, descriptions
