@@ -189,7 +189,7 @@ def shorten_names(
     its short label. The description columns (``solver_description``,
     ``dataset_description``, ``obj_description``) are replaced by the hover
     HTML, combining the free-text description with the object's parameters
-    table. The ``{short_label: description_html}`` map is returned alongside.
+    table.
 
     Parameters
     ----------
@@ -203,13 +203,8 @@ def shorten_names(
     df : pandas.DataFrame
         Copy of *df* with shortened ``*_name`` columns, added ``*_full_name``
         columns and HTML ``*_description`` columns.
-    descriptions : dict[str, str]
-        Mapping ``{short_label: description_html}`` for every shortened name.
-        When names of several columns share a short label, the first column
-        in *columns* gives its description.
     """
     df = df.copy()
-    descriptions = {}
     for col in columns:
         if col not in df.columns:
             continue
@@ -233,7 +228,4 @@ def shorten_names(
         df[col] = names.map(short_map)
         if desc_col:
             df[desc_col] = names.map(desc)
-        # Earlier columns win on a shared short label (solver first).
-        for name in unique:
-            descriptions.setdefault(short_map[name], desc[name])
-    return df, descriptions
+    return df

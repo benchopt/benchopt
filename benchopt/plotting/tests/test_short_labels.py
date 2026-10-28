@@ -132,7 +132,7 @@ def test_shorten_names_replaces_and_keeps_full():
         "dataset_name": ["d1", "d1"],
         "objective_name": ["obj1", "obj1"],
     })
-    short_df, descriptions = shorten_names(df)
+    short_df = shorten_names(df)
 
     # b=2 is constant → dropped; the full name moves to `*_full_name`.
     assert set(short_df["solver_name"]) == {"S[a=1]", "S[a=3]"}
@@ -140,10 +140,11 @@ def test_shorten_names_replaces_and_keeps_full():
     # Single dataset/objective → shortened to the bare base name.
     assert set(short_df["dataset_name"]) == {"d1"}
 
-    # descriptions keyed by the short label, with the full param table.
-    assert "<table>" in descriptions["S[a=1]"]
+    # The description column holds the full param table, per row.
+    desc = short_df["solver_description"].iloc[0]
+    assert "<table>" in desc
     # full params (including constant b), not only the varying ones
-    assert ">b<" in descriptions["S[a=1]"]
+    assert ">b<" in desc
 
 
 def test_shorten_names_merges_solver_description():
@@ -151,12 +152,10 @@ def test_shorten_names_merges_solver_description():
         "solver_name": ["S[a=1]", "S[a=2]"],
         "solver_description": ["docstring one", "docstring two"],
     })
-    short_df, descriptions = shorten_names(df)
+    desc = shorten_names(df)["solver_description"].iloc[0]
     # The docstring is folded into the same hover as the params table.
-    assert "docstring one" in descriptions["S[a=1]"]
-    assert "<table>" in descriptions["S[a=1]"]
-    # The description column holds the same hover HTML, per row.
-    assert short_df["solver_description"].iloc[0] == descriptions["S[a=1]"]
+    assert "docstring one" in desc
+    assert "<table>" in desc
 
 
 def test_shorten_names_merges_dataset_description():
@@ -164,26 +163,14 @@ def test_shorten_names_merges_dataset_description():
         "dataset_name": ["D[n=1]", "D[n=2]"],
         "dataset_description": ["first dataset", "second dataset"],
     })
-    _, descriptions = shorten_names(df)
-    assert "first dataset" in descriptions["D[n=1]"]
-    assert "second dataset" in descriptions["D[n=2]"]
-
-
-def test_shorten_names_same_label_different_types():
-    df = pd.DataFrame({
-        "solver_name": ["Lasso[a=1]", "S[a=1]"],
-        "dataset_name": ["Lasso[b=2]", "Ridge[b=2]"],
-        "objective_name": ["Lasso[c=3]", "Ridge[c=3]"],
-    })
-    _, descriptions = shorten_names(df)
-    # Shared short labels keep solver > dataset > objective descriptions.
-    assert ">a<" in descriptions["Lasso"]
-    assert ">b<" in descriptions["Ridge"]
+    desc = shorten_names(df)["dataset_description"]
+    assert "first dataset" in desc.iloc[0]
+    assert "second dataset" in desc.iloc[1]
 
 
 def test_shorten_names_is_a_copy():
     df = pd.DataFrame({"solver_name": ["S[a=1]", "S[a=2]"]})
-    short_df, _ = shorten_names(df)
+    short_df = shorten_names(df)
     # Original df is untouched (short labels must never mutate the results).
     assert list(df["solver_name"]) == ["S[a=1]", "S[a=2]"]
     assert "solver_full_name" not in df.columns

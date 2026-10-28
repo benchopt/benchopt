@@ -90,15 +90,14 @@
                                 <div id="${kind}_${param}_form_group" class="mt-8 px-8">
                                     <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">
                                         ${param}
-                                        % if any(result['descriptions'].get(str(o)) for o in options):
-                                        <span class="params-info-icon ml-1 text-gray-400 cursor-help text-xs align-middle"
-                                              data-desc-state="${kind}_${param}">(?)</span>
+                                        % if any(o['description'] for o in options):
+                                        <span class="cursor-help" data-desc-state="${kind}_${param}"></span>
                                         % endif
                                     </label>
                                     <div class="mt-1 rounded-md shadow-sm">
                                         <select id="change_${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
                                             % for option in options:
-                                                <option value="${option}" title="${option}">${option}</option>
+                                                <option value="${option['value']}" title="${option['value']}" data-desc="${option['description'] or '' | h}">${option['value']}</option>
                                             % endfor
                                         </select>
                                     </div>
@@ -243,15 +242,14 @@
                                     <div id="${kind}_${param}_form_group" class="mt-8 px-8">
                                         <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">
                                             ${param}
-                                            % if any(result['descriptions'].get(str(o)) for o in options):
-                                            <span class="params-info-icon ml-1 text-gray-400 cursor-help text-xs align-middle"
-                                                  data-desc-state="${kind}_${param}">(?)</span>
+                                            % if any(o['description'] for o in options):
+                                            <span class="cursor-help" data-desc-state="${kind}_${param}"></span>
                                             % endif
                                         </label>
                                         <div class="mt-1 rounded-md shadow-sm">
                                             <select id="change_${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
                                                 % for option in options:
-                                                    <option value="${option}" title="${option}">${option}</option>
+                                                    <option value="${option['value']}" title="${option['value']}" data-desc="${option['description'] or '' | h}">${option['value']}</option>
                                                 % endfor
                                             </select>
                                         </div>
@@ -492,7 +490,6 @@
         <script>
             window._plots = ${result['json_plots']};
             window.metadata = ${json.dumps(result['metadata'])};
-            window.descriptions = ${json.dumps(result['descriptions'])};
 
             window.addEventListener("load", () => {
                 // Initialize plot state

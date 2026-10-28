@@ -396,8 +396,8 @@ class Benchmark:
         # Shorten entity names once for the whole report: solver/dataset/
         # objective names become their short labels everywhere downstream
         # (selectors, plot keys, trace labels), while the full names are kept
-        # in `*_full_name` columns. `descriptions` maps short label -> tooltip.
-        df, descriptions = shorten_names(df)
+        # in `*_full_name` columns and their hover HTML in `*_description`.
+        df = shorten_names(df)
 
         all_data = {}
         all_options = {}
@@ -409,7 +409,7 @@ class Benchmark:
             all_data[plot_name] = data
             all_options[plot_name] = options
 
-        return all_data, all_options, descriptions
+        return all_data, all_options
 
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.

@@ -676,24 +676,34 @@ const escapeHTML = (s) => String(s)
  * cells on every sort/search. Returning an SVG (not a text glyph) keeps the
  * icon out of `innerText`, so the LaTeX table export is unaffected.
  */
-const descIconHTML = (text) =>
+const infoIconHTML = (attrs = '') =>
   `<svg class="param-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"` +
-  ` stroke-width="2" stroke-linecap="round" stroke-linejoin="round"` +
-  ` data-desc="${escapeHTML(text)}">` +
+  ` stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${attrs}>` +
   `<circle cx="12" cy="12" r="10"></circle>` +
   `<line x1="12" y1="16" x2="12" y2="12"></line>` +
   `<line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+const descIconHTML = (text) => infoIconHTML(` data-desc="${escapeHTML(text)}"`);
+
+// Selector icons (`data-desc-state` spans) show the same icon as the legend.
+document.querySelectorAll('span[data-desc-state]').forEach(span => {
+  span.innerHTML = infoIconHTML();
+});
 
 /**
  * Resolve the tooltip HTML for a hover icon. Two sources, one path:
  *   - `data-desc`: HTML baked at render time (legend + table cell icons);
  *   - `data-desc-state`: a state key, resolved live against the current
- *     selection (selector icons, whose value changes with the dropdown).
+ *     selection (selector icons), reading the `data-desc` of the selected
+ *     `<option>`.
  */
 const descForIcon = (icon) => {
   if (icon.dataset.desc != null) return icon.dataset.desc;
   const key = icon.dataset.descState;
-  return key ? ((window.descriptions || {})[state()[key]] || '') : '';
+  if (!key) return '';
+  const option = document.querySelector(
+    `#change_${key} option[value="${CSS.escape(String(state()[key]))}"]`
+  );
+  return (option && option.dataset.desc) || '';
 };
 
 /** Show the shared params tooltip. The description is already HTML. */
@@ -1121,18 +1131,8 @@ const show = (HTMLElements, style = '') => {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 const getCurveFromEvent = event => {
-  const target = event.currentTarget;
-
-  for (let i = 0; i < target.children.length; i++) {
-    if (target.children[i].className.includes('curve')) {
-      // Prefer the data-curve attribute (curve identifier) when available.
-      const attr = target.children[i].getAttribute('data-curve');
-      if (attr) return attr;
-      return target.children[i].firstChild.nodeValue;
-    }
-  }
-
-  return null;
+  const text = event.currentTarget.querySelector(':scope > .curve');
+  return text ? text.dataset.curve : null;
 };
 
 const purgeHiddenCurves = () => setState({hidden_curves: []});
@@ -1318,6 +1318,10 @@ const stripMarkup = (value) => CELL_MARKUP.reduce(
   String(value).replace(/\\([*_])/g, (match, c) => PLACEHOLDERS[c])
 ).replace(/[\u0000\u0001]/g, c => LITERALS[c]);
 
+// Value of a cell, unwrapping `{value, description}` cells.
+const cellValue = (cell) =>
+  cell !== null && typeof cell === 'object' ? cell.value : cell;
+
 // Numeric value of a cell, or null if its text is not a single number.
 const cellNumber = (value) => {
   if (typeof value === 'number') return value;
@@ -1360,6 +1364,7 @@ const elementToLatex = (element) => nodeToLatex(element).trim();
  * would make all close numbers compare as equal.
  */
 const compareCells = (a, b) => {
+  [a, b] = [cellValue(a), cellValue(b)];
   const [numA, numB] = [cellNumber(a), cellNumber(b)];
   if (numA !== null && numB !== null) {
     return numA > numB ? 1 : numA < numB ? -1 : 0;
@@ -1482,14 +1487,14 @@ function renderTable() {
   const card = document.createElement("div");
   card.className = "w-full bg-white overflow-hidden mx-auto";
 
-  // Solver/dataset/objective names are already short labels, in any column.
-  // Cells matching one get a hover icon carrying the full parameter list, from
-  // the global `descriptions` map (short -> HTML). The SVG icon stays out of
-  // `innerText`, so exports are unaffected.
-  const tableCell = (value) => {
-    const desc = typeof value === 'string' && (window.descriptions || {})[value];
+  // A `{value, description}` cell shows its value with a hover icon carrying
+  // the description HTML. The SVG icon stays out of `innerText`, so exports
+  // are unaffected.
+  const tableCell = (cell) => {
+    const value = cellValue(cell);
+    const desc = cell !== null && typeof cell === 'object' && cell.description;
     return desc
-      ? gridjs.html(markupToHtml(value) + descIconHTML(desc))
+      ? gridjs.html(markupToHtml(String(value)) + descIconHTML(desc))
       : formatCell(value);
   };
 
@@ -1504,7 +1509,8 @@ function renderTable() {
     columns: buildColumns(),
     data: orderedData,
     sort: true,
-    search: true,
+    // Search the value only, not the description HTML.
+    search: { selector: (cell) => String(cellValue(cell)) },
   });
   if (prevGridHeight) {
     card.style.minHeight = `${prevGridHeight}px`;
@@ -1710,8 +1716,8 @@ const renderLegend = () => {
 
   getCurves().forEach(curve => {
     const curve_data = data(curve);
-    // The curve's params + docstring hover lives on the legend item's icon,
-    // fed by the global `descriptions` map (see createLegendItem).
+    // The curve's description hover lives on the legend item's icon (see
+    // createLegendItem).
     legend.appendChild(
       createLegendItem(curve, curve_data.color, curve_data.marker)
     );
@@ -1781,12 +1787,8 @@ const createLegendItem = (curve, color, symbolNumber) => {
   textContainer.setAttribute('data-curve', curve);
   textContainer.appendChild(document.createTextNode(curve));
 
-  // Append a hover icon carrying the curve's description (docstring + full
-  // parameter list), looked up from the global `descriptions` map (keyed by
-  // the short label), unless the plot sets the curve's `description`.
-  const curveData = data(curve);
-  const desc = 'description' in curveData
-    ? curveData.description : (window.descriptions || {})[curve];
+  // Append a hover icon carrying the curve's description HTML, if any.
+  const desc = data(curve).description;
   if (desc) {
     textContainer.insertAdjacentHTML('beforeend', descIconHTML(desc));
   }

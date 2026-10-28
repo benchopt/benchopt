@@ -6,6 +6,7 @@ from ..utils.dependencies_mixin import DependenciesMixin
 from ..utils.parametrized_name_mixin import ParametrizedNameMixin
 from ..utils.parametrized_name_mixin import product_param
 from ..utils.parametrized_name_mixin import sanitize
+from .short_labels import _DESCRIPTION_COLUMNS
 
 CMAP = plt.get_cmap('tab20')
 COLORS = [CMAP(i) for i in range(CMAP.N)]
@@ -39,17 +40,18 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                 'label', optional: 'color', 'text'.
         - boxplot: list of dict for each box, requires: 'x', 'y',
                 'label', optional: 'color'.
-        - table: list of list, each inner list is a row of the table.
+        - table: list of list, each inner list is a row of the table. A cell
+                can be a ``{'value', 'description'}`` dict.
         - image: list of dict for each image, requires: 'image',
                 optional: 'label'.
 
         Solver/dataset/objective names are shortened for display upstream, so
         ``label`` (and boxplot ``x``) only carry varying params; the full name
-        stays available in the ``*_full_name`` columns of ``df``. Legend
-        entries, table cells and selector values holding a solver, dataset or
-        objective name get a hover icon with its description, also available
-        as HTML in the ``*_description`` columns. Set a trace's
-        ``description`` to override it, or to ``None`` to hide it.
+        stays available in the ``*_full_name`` columns of ``df``. Traces,
+        table cells and option values holding a solver, dataset or objective
+        name get a hover icon with its description, the HTML of the
+        ``*_description`` columns. Give an explicit ``description`` to
+        override it, or ``None`` to hide it.
 
         Please refer to :ref:`add_custom_plot` for a complete description
         of the plot data.
@@ -169,13 +171,40 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                 else:
                     options[k] = df[k].unique().tolist()
 
-        combinations = product_param(options)
+        # Hover HTML of each solver/dataset/objective name, solver first on a
+        # shared short label. An empty description shows no icon.
+        descriptions = {}
+        for col, desc_col in _DESCRIPTION_COLUMNS.items():
+            if desc_col in df:
+                names = df.drop_duplicates(col)[[col, desc_col]].values
+                for name, desc in names:
+                    descriptions.setdefault(name, desc or None)
+
+        options = {
+            k: [_with_description(v, descriptions) for v in values]
+            for k, values in options.items()
+        }
+        combinations = product_param({
+            k: [v['value'] for v in values] for k, values in options.items()
+        })
 
         plots = {}
         for kwargs in combinations:
             data = self.get_metadata(df, **kwargs)
             data["type"] = self.type
             data["data"] = self.plot(df, **kwargs)
+            if self.type == "scatter":
+                for trace in data["data"]:
+                    trace.setdefault(
+                        "description", descriptions.get(trace["label"])
+                    )
+            elif self.type == "table":
+                data["data"] = [
+                    [_with_description(c, descriptions)
+                     if isinstance(c, dict) or c in descriptions else c
+                     for c in row]
+                    for row in data["data"]
+                ]
             key_list = (
                 [self._get_name()] + list(kwargs.values())
             )
@@ -183,3 +212,14 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             plots[key] = data
 
         return plots, options
+
+
+def _with_description(value, descriptions):
+    """Return ``value`` as a ``{'value', 'description'}`` dict.
+
+    An explicit dict is kept as is; a plain value gets its description from
+    ``descriptions`` (``None`` if it is not a solver/dataset/objective name).
+    """
+    if isinstance(value, dict):
+        return value
+    return {"value": value, "description": descriptions.get(value)}

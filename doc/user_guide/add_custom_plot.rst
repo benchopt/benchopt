@@ -82,7 +82,10 @@ The :code:`options` dictionary keys define the arguments passed to
 :code:`dataset`, :code:`objective`, :code:`solver` will automatically
 try to match columns in the dataframe. Using :code:`...` as a value
 will populate the options with all unique values from the dataframe
-column :code:`{key}_name` (e.g. :code:`dataset_name`).
+column :code:`{key}_name` (e.g. :code:`dataset_name`). An option value can
+also be a :code:`{"value": ..., "description": ...}` dict, to show a hover
+icon with the :code:`description` HTML next to the selector. :code:`plot`
+and :code:`get_metadata` receive the plain value.
 
 
 Scatter Plot
@@ -266,7 +269,9 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 String cells can carry simple formatting with :code:`**bold**`,
 :code:`*italic*` and :code:`__underlined__` markers. A literal marker is
 escaped with a backslash, as in :code:`r"a \* b"`. A cell holding a solver,
-dataset or objective name gets a hover icon with its description.
+dataset or objective name gets a hover icon with its description. A cell can
+also be a :code:`{"value": ..., "description": ...}` dict, to set its hover
+HTML explicitly, or hide it with :code:`None`.
 
 In the html report, each column header can be clicked to sort on that column,
 and the arrow next to it can be toggled to switch between increasing and
@@ -367,10 +372,10 @@ Parametrized class names (e.g. ``Solver[alpha=0.1,n_iter=100]``) can be
 verbose. The HTML report automatically shortens them, keeping only the
 parameters that *vary* across the results, and a hover icon next to each entry
 reveals its description: the class docstring and the full parameter list.
-The legend, the table cells and the plot selectors show it for any value that
-is a solver, dataset or objective name, including the options of a custom
-plot. If names of different kinds share a short label, the solver's
-description is shown.
+Traces, table cells and option values that are a solver, dataset or objective
+name get it implicitly, unless they set an explicit :code:`description`. If
+names of different kinds share a short label, the description is taken from
+the solver, then the dataset, then the objective.
 
 This happens **before** :code:`plot` and :code:`get_metadata` are called: the
 ``solver_name``, ``dataset_name`` and ``objective_name`` columns of the ``df``
