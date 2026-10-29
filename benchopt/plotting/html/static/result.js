@@ -1574,7 +1574,7 @@ async function exportTable() {
     value += "}\n";
   }
   value += "\\begin{tabular}{l";
-  value += "c".repeat(displayedColumns.length);
+  value += "c".repeat(displayedColumns.length - 1);
   value += "}\n";
   value += "\\hline\n";
 
@@ -1601,7 +1601,20 @@ async function exportTable() {
     button.innerHTML = "Copied in clipboard!";
     setTimeout(() => button.innerHTML = defaultText, 2500);
   } catch (err) {
-    button.innerHTML = "Error!";
+    // No clipboard access (e.g. file opened on a phone): show the LaTeX in a
+    // text box so it can be copied by hand.
+    let area = document.getElementById("table-export-text");
+    if (!area) {
+      area = document.createElement("textarea");
+      area.id = "table-export-text";
+      area.readOnly = true;
+      area.rows = 10;
+      area.className = "w-full mt-2 p-2 font-mono text-xs border border-gray-300 rounded-md";
+      button.parentElement.after(area);
+    }
+    area.value = value;
+    area.select();
+    button.innerHTML = "Copy the LaTeX below";
     setTimeout(() => button.innerHTML = defaultText, 2500);
   }
 }
