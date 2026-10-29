@@ -1610,9 +1610,11 @@ async function exportTable() {
       area.readOnly = true;
       area.rows = 10;
       area.className = "w-full mt-2 p-2 font-mono text-xs border border-gray-300 rounded-md";
+      area.addEventListener('blur', () => area.remove());
       button.parentElement.after(area);
     }
     area.value = value;
+    area.focus();
     area.select();
     button.innerHTML = "Copy the LaTeX below";
     setTimeout(() => button.innerHTML = defaultText, 2500);
