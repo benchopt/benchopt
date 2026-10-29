@@ -99,8 +99,8 @@ each dictionary represents a trace in the plot. Each dictionary must contain:
 - :code:`label`: The label of the trace.
 - :code:`description` (optional): HTML shown by a hover icon next to the
   label in the legend. A trace labeled with a solver, dataset or objective
-  name shows its description by default. Set it to override this, or to
-  :code:`None` to hide the icon.
+  name shows its description and fixed parameters by default. Set it to
+  override this, or to :code:`None` to hide the icon.
 - :code:`color` (optional): The color of the trace.
 - :code:`marker` (optional): The marker style of the trace.
 - :code:`y_low`, :code:`y_high` (optional): Lists of values to display uncertainty in the plot.
@@ -269,7 +269,8 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 String cells can carry simple formatting with :code:`**bold**`,
 :code:`*italic*` and :code:`__underlined__` markers. A literal marker is
 escaped with a backslash, as in :code:`r"a \* b"`. A cell holding a solver,
-dataset or objective name gets a hover icon with its description. A cell can
+dataset or objective name, with or without markers, gets a hover icon with
+its description. A cell can
 also be a :code:`{"value": ..., "description": ...}` dict, to set its hover
 HTML explicitly, or hide it with :code:`None`.
 
@@ -291,7 +292,7 @@ Solver, dataset and objective names are already shortened (see
         for solver, df_solver in df.groupby('solver_name'):
             # Example: table with solver name and mean time
             # when using `sampling_strategy = 'run_once'`
-            rows.append([solver, df_solver['time'].mean()])
+            rows.append([f"**{solver}**", df_solver['time'].mean()])
         return rows
 
     def get_metadata(self, df, dataset, objective, **kwargs):
@@ -380,7 +381,7 @@ the solver, then the dataset, then the objective.
 This happens **before** :code:`plot` and :code:`get_metadata` are called: the
 ``solver_name``, ``dataset_name`` and ``objective_name`` columns of the ``df``
 you receive already hold the short labels, so a custom plot that groups on
-those columns gets short labels for free — no extra call is needed. The
+those columns gets short labels for free. The
 original full name of each row is kept in a companion ``*_full_name`` column
 (``solver_full_name``, ``dataset_full_name``, ``objective_full_name``) if you
 need it, and the ``*_description`` columns (``solver_description``,

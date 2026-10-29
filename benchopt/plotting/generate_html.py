@@ -108,12 +108,10 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
                 if k.startswith('objective_') and k != 'objective_name'
             ],
             kinds=kinds,
-            metadata=get_metadata(df, config_.get('plot_configs', {})),
+            metadata={'plot_configs': config_.get('plot_configs', {})},
         )
 
-        data, options = benchmark.get_plot_data(
-            df, result['kinds']
-        )
+        data, options = benchmark.get_plot_data(df, result['kinds'])
         data = update_plot_data_style(data, plotly=True)
         result['json_plots'] = json.dumps(data)
         result['plot_options'] = options
@@ -126,21 +124,6 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
         result['page'] = quote(f"{benchmark.name}_{html_file_name}")
 
     return results
-
-
-def get_metadata(df, plot_configs):
-    """Get the benchmark metadata.
-
-    Solver/objective descriptions are folded into the per-object hover
-    tooltips by :func:`~benchopt.plotting.short_labels.shorten_names`, so the
-    metadata only carries the plot view configurations here.
-
-    Returns
-    -------
-    metadata: dict
-        Dictionary containing the benchmark metadata.
-    """
-    return {'plot_configs': plot_configs}
 
 
 def get_sysinfo(df):

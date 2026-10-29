@@ -421,6 +421,19 @@ input:checked+.slider:before {
 .param-icon:hover { color: #1d4ed8; transform: scale(1.2); }
 .param-icon * { pointer-events: none; }
 
+#params-tooltip {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  background: #1f2937;
+  color: #f9fafb;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  max-width: 20rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, .4);
+}
 #params-tooltip .param-title {
   font-weight: 700;
   margin-bottom: 4px;

@@ -205,7 +205,8 @@ def test_scatter_and_options_descriptions():
 
 
 def test_table_cells_descriptions():
-    # String cells naming an object get its description, in any column;
+    # String cells naming an object get its description, in any column and
+    # through markup;
     # explicit `{value, description}` cells are kept.
     custom = {'value': 'x', 'description': 'custom'}
 
@@ -215,7 +216,7 @@ def test_table_cells_descriptions():
         options = {}
 
         def plot(self, df):
-            return [['Lasso', 1.0], [custom, 'O'], [3, 'other']]
+            return [['Lasso', 1.0], [custom, '**O**'], [3, 'other']]
 
         def get_metadata(self, df):
             return {'title': 'table', 'columns': ['a', 'b']}
@@ -223,6 +224,6 @@ def test_table_cells_descriptions():
     plots, _ = Plot()._get_all_plots(DESC_DF)
     assert next(iter(plots.values()))['data'] == [
         [{'value': 'Lasso', 'description': 'solver Lasso'}, 1.0],
-        [custom, {'value': 'O', 'description': 'objective O'}],
+        [custom, {'value': '**O**', 'description': 'objective O'}],
         [3, 'other'],
     ]

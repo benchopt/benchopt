@@ -137,7 +137,7 @@ def get_plot_barchart(plot_data):
 
     ax.set_xticks([(i+1.5)*width for i in range(n_bars)])
     ax.set_xticklabels(
-        [d["label"] for d in plot_data["data"]],
+        [data["label"] for data in plot_data["data"]],
         rotation=60
     )
     ax.set_yscale('log')

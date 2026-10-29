@@ -737,7 +737,7 @@ document.addEventListener('mouseout', (e) => {
 
 const _moveParamsTooltip = (event) => {
   const tip = document.getElementById('params-tooltip');
-  if (!tip || tip.style.display === 'none') return;
+  if (!tip || tip.style.display !== 'block') return;
   tip.style.left = (event.clientX + 14) + 'px';
   tip.style.top  = (event.clientY - tip.offsetHeight - 8) + 'px';
 };

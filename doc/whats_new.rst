@@ -39,8 +39,8 @@ PLOT
   parameters that vary, with a hover icon showing the docstring and full
   parameters. Custom plots receive the short names, with ``*_full_name`` and
   ``*_description`` columns, and can set a ``description`` on traces, table
-  cells and option values. By `Hippolyte Verninas`_ and `Thomas Moreau`_
-  (:gh:`935`)
+  cells and option values.
+  By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`935`)
 
 
 .. _changes_1_10:

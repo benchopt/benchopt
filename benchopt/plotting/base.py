@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import inspect
+import re
 import matplotlib.pyplot as plt
 
 from ..utils.dependencies_mixin import DependenciesMixin
@@ -45,13 +46,8 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         - image: list of dict for each image, requires: 'image',
                 optional: 'label'.
 
-        Solver/dataset/objective names are shortened for display upstream, so
-        ``label`` (and boxplot ``x``) only carry varying params; the full name
-        stays available in the ``*_full_name`` columns of ``df``. Traces,
-        table cells and option values holding a solver, dataset or objective
-        name get a hover icon with its description, the HTML of the
-        ``*_description`` columns. Give an explicit ``description`` to
-        override it, or ``None`` to hide it.
+        Names in ``df`` are short labels. A trace or cell holding a solver,
+        dataset or objective name gets its description by default.
 
         Please refer to :ref:`add_custom_plot` for a complete description
         of the plot data.
@@ -200,9 +196,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                     )
             elif self.type == "table":
                 data["data"] = [
-                    [_with_description(c, descriptions)
-                     if isinstance(c, dict) or c in descriptions else c
-                     for c in row]
+                    [_describe_cell(c, descriptions) for c in row]
                     for row in data["data"]
                 ]
             key_list = (
@@ -223,3 +217,19 @@ def _with_description(value, descriptions):
     if isinstance(value, dict):
         return value
     return {"value": value, "description": descriptions.get(value)}
+
+
+# Cell markup, as rendered by the HTML report (see `CELL_MARKUP` in result.js).
+_CELL_MARKUP = [r"\*\*([^*]+)\*\*", r"__([^_]+)__", r"\*([^*]+)\*"]
+
+
+def _describe_cell(cell, descriptions):
+    """Wrap a string cell naming an object, ignoring its markup."""
+    if not isinstance(cell, str):
+        return cell
+    name = cell
+    for pattern in _CELL_MARKUP:
+        name = re.sub(pattern, r"\1", name)
+    if name not in descriptions:
+        return cell
+    return {"value": cell, "description": descriptions[name]}
