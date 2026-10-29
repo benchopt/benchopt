@@ -374,7 +374,7 @@ const getScatterData = () => {
         color: curveData.color,
       },
       marker: {
-        symbol: curveData.marker,
+        symbol: curveData.marker % N_SYMBOLS,
         size: 10,
         color: curveData.color,
       },
@@ -1713,7 +1713,7 @@ const renderLegend = () => {
   getCurves().forEach(curve => {
     const curve_data = data(curve);
     legend.appendChild(
-      createLegendItem(curve, curve_data.color, curve_data.marker)
+      createLegendItem(curve, curve_data.color, curve_data.marker % N_SYMBOLS)
     );
   });
 }

@@ -568,6 +568,7 @@ Object.keys(SYMBOLDEFS).forEach(function(k) {
     drawing.symbolFuncs[n] = symDef.f;
 });
 
+// Number of base plotly symbols. Markers cycle over them, filled only.
 const N_SYMBOLS = Object.keys(SYMBOLDEFS).length;
 
 /**
@@ -585,7 +586,7 @@ const createPathElement = (symbolNumber, color) => {
     path.setAttribute('transform', 'translate(15, 15)');
 
     // If svg is type "open" or "open-dot" : https://plotly.com/javascript/reference/scatter/#scatter-marker-symbol
-    if ((N_SYMBOLS <= symbolNumber && symbolNumber < 2*N_SYMBOLS) || 3 * N_SYMBOLS <= symbolNumber) {
+    if ((100 <= symbolNumber && symbolNumber < 200) || 300 <= symbolNumber) {
         path.setAttribute('stroke', color);
         path.setAttribute('stroke-width', 0.5);
         path.setAttribute('stroke-opacity', 1);
@@ -593,13 +594,13 @@ const createPathElement = (symbolNumber, color) => {
     }
 
     // If svg is type "normal" or "dot" : https://plotly.com/javascript/reference/scatter/#scatter-marker-symbol
-    if (symbolNumber < N_SYMBOLS || (2*N_SYMBOLS <= symbolNumber && symbolNumber < 3*N_SYMBOLS)) {
+    if (symbolNumber < 100 || (200 <= symbolNumber && symbolNumber < 300)) {
         path.setAttribute('fill-opacity', 1);
         path.setAttribute('fill', color);
     }
 
     // If svg is type "dot" : https://plotly.com/javascript/reference/scatter/#scatter-marker-symbol
-    if (2*N_SYMBOLS <= symbolNumber && symbolNumber < 3*N_SYMBOLS) {
+    if (200 <= symbolNumber && symbolNumber < 300) {
         path.setAttribute('stroke', 'black');
         path.setAttribute('stroke-width', 0.5);
         path.setAttribute('stroke-opacity', 1);
@@ -616,6 +617,6 @@ const createPathElement = (symbolNumber, color) => {
  * @returns {String} this string must be placed in the "d" attribute of <path></path> SVG element.
  */
 function createPathString(symbolNumber, r) {
-    var base = symbolNumber % N_SYMBOLS;
-    return drawing.symbolFuncs[base](r) + (symbolNumber >= 2*N_SYMBOLS ? DOTPATH : '');
+    var base = symbolNumber % 100;
+    return drawing.symbolFuncs[base](r) + (symbolNumber >= 200 ? DOTPATH : '');
 }
