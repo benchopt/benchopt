@@ -18,6 +18,10 @@ FIX
   dataset in memory while submitting jobs. By `Hippolyte Verninas`_
   (:gh:`1020`)
 
+- The "Export LaTeX" button of the HTML report shows the table in a text box
+  when the clipboard is unavailable, and no longer adds an extra column. By
+  `Thomas Moreau`_ (:gh:`1023`)
+
 API
 ~~~
 
