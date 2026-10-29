@@ -59,16 +59,6 @@ def compute_short_labels(names):
     return short_map
 
 
-def _compute_params_info(names):
-    """Return ``{full_name: {param: str_value}}`` parsed from *names*."""
-    result = {}
-    for name in names:
-        name_str = str(name)
-        base, _args, kwargs = _extract_options(name_str)
-        result[name_str] = {k: str(v) for k, v in kwargs.items()}
-    return result
-
-
 def _format_description(params, description=""):
     """Render the hover HTML: free-text description and parameters table."""
     parts = []
@@ -103,10 +93,12 @@ def compute_descriptions(names, prose=None):
         Mapping ``{name: html}``, empty when there is nothing to show.
     """
     prose = prose or {}
-    return {
-        name: _format_description(params, prose.get(name, ""))
-        for name, params in _compute_params_info(names).items()
-    }
+    descriptions = {}
+    for name in map(str, names):
+        _, _, params = _extract_options(name)
+        params = {k: str(v) for k, v in params.items()}
+        descriptions[name] = _format_description(params, prose.get(name, ""))
+    return descriptions
 
 
 # Description column of each name column, in hover priority order.

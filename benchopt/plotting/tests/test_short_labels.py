@@ -6,7 +6,6 @@ from benchopt.plotting.short_labels import (
     compute_short_labels,
     compute_descriptions,
     shorten_names,
-    _compute_params_info,
 )
 
 
@@ -65,30 +64,6 @@ def test_mixed_solver_types():
     assert short["SolverA[alpha=0.5,n_iter=100]"] == "SolverA[alpha=0.5]"
     # SolverB has only one instance – show base name only
     assert short["SolverB[alpha=0.1]"] == "SolverB"
-
-
-# ---------------------------------------------------------------------------
-# _compute_params_info
-# ---------------------------------------------------------------------------
-
-
-def test_compute_params_info_basic():
-    names = ["Solver[alpha=0.1,n_iter=100]", "Solver[alpha=0.5,n_iter=100]"]
-    info = _compute_params_info(names)
-    assert info["Solver[alpha=0.1,n_iter=100]"] == {
-        "alpha": "0.1",
-        "n_iter": "100",
-    }
-    assert info["Solver[alpha=0.5,n_iter=100]"] == {
-        "alpha": "0.5",
-        "n_iter": "100",
-    }
-
-
-def test_compute_params_info_no_params():
-    info = _compute_params_info(["SolverA", "SolverB"])
-    assert info["SolverA"] == {}
-    assert info["SolverB"] == {}
 
 
 # ---------------------------------------------------------------------------

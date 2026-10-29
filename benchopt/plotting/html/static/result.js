@@ -266,7 +266,7 @@ const getLayout = () => {
 const getBarData = () => {
   if (!isAvailable()) return [{type:'bar'}];
 
-  const {x, y, color, texts} = barDataToArrays();
+  const {x, y, colors, texts} = barDataToArrays();
 
   // Add bars
   const barData = [{
@@ -274,7 +274,7 @@ const getBarData = () => {
     x: x,
     y: y,
     marker: {
-      color: color,
+      color: colors,
     },
     text: texts,
     textposition: 'inside',
@@ -283,7 +283,7 @@ const getBarData = () => {
   }];
 
   getPlotData().data.forEach(curveData => {
-    // Add times for each convergent bar if multiple values
+    // Add the individual times of bars with several values
     let nbTimes = curveData.y.length;
     if (nbTimes > 1) {
       barData.push({
@@ -883,7 +883,7 @@ const barDataToArrays = () => {
     texts.push(plotText);
   });
 
-  return {x, y, color: colors, texts}
+  return {x, y, colors, texts}
 }
 
 const getScale = () => {
