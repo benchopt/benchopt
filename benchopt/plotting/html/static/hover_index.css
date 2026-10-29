@@ -406,7 +406,6 @@ input:checked+.slider:before {
 /***** Param hover icon *****/
 /*----------------------------------------*/
 
-/* Info icon revealing a solver's full parameters on hover. */
 .param-icon {
   display: inline-block;
   width: 15px;

@@ -393,10 +393,7 @@ class Benchmark:
         all_plots = self.get_plots()
         self.check_plots()
 
-        # Shorten entity names once for the whole report: solver/dataset/
-        # objective names become their short labels everywhere downstream
-        # (selectors, plot keys, trace labels), while the full names are kept
-        # in `*_full_name` columns and their hover HTML in `*_description`.
+        # Short names for the whole report, full ones in `*_full_name`.
         df = shorten_names(df)
 
         all_data = {}
@@ -408,7 +405,6 @@ class Benchmark:
             data, options = plot._get_all_plots(df)
             all_data[plot_name] = data
             all_options[plot_name] = options
-
         return all_data, all_options
 
     def _list_benchmark_classes(self, base_class):

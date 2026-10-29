@@ -1,6 +1,5 @@
 const UNDEFINED_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
 
-
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * STATE MANAGEMENT
@@ -284,7 +283,7 @@ const getBarData = () => {
   }];
 
   getPlotData().data.forEach(curveData => {
-    // Add times for each convergent bar if mulitple values
+    // Add times for each convergent bar if multiple values
     let nbTimes = curveData.y.length;
     if (nbTimes > 1) {
       barData.push({
@@ -669,13 +668,7 @@ const escapeHTML = (s) => String(s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;')
   .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-/**
- * Inline SVG "info" icon (class `param-icon`) carrying a trace `description`
- * in `data-desc`. Hover is wired through event delegation (see below) so the
- * icon works both in the legend and in Grid.js tables, which re-render their
- * cells on every sort/search. Returning an SVG (not a text glyph) keeps the
- * icon out of `innerText`, so the LaTeX table export is unaffected.
- */
+// SVG "info" icon: unlike a text glyph, it stays out of the LaTeX export.
 const infoIconHTML = (attrs = '') =>
   `<svg class="param-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"` +
   ` stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${attrs}>` +
@@ -689,13 +682,8 @@ document.querySelectorAll('span[data-desc-state]').forEach(span => {
   span.innerHTML = infoIconHTML();
 });
 
-/**
- * Resolve the tooltip HTML for a hover icon. Two sources, one path:
- *   - `data-desc`: HTML baked at render time (legend + table cell icons);
- *   - `data-desc-state`: a state key, resolved live against the current
- *     selection (selector icons), reading the `data-desc` of the selected
- *     `<option>`.
- */
+// Tooltip HTML of an icon: its own `data-desc`, or for a selector icon
+// (`data-desc-state`) the `data-desc` of the selected option.
 const descForIcon = (icon) => {
   if (icon.dataset.desc != null) return icon.dataset.desc;
   const key = icon.dataset.descState;
@@ -706,7 +694,7 @@ const descForIcon = (icon) => {
   return (option && option.dataset.desc) || '';
 };
 
-/** Show the shared params tooltip. The description is already HTML. */
+/** Show the shared params tooltip. */
 const showDescTooltip = (event, html) => {
   if (!html) return;
   const tip = document.getElementById('params-tooltip');
@@ -720,12 +708,7 @@ const hideParamsTooltip = () => {
   document.getElementById('params-tooltip').style.display = 'none';
 };
 
-// Single delegated hover path for every params icon: legend, table cells and
-// selectors. Delegation is required because Grid.js re-renders table cells on
-// sort/search (dropping per-node listeners), and it lets the static selector
-// markup reuse the same handler. Matching on the data attributes (not a class)
-// keeps the SVG icon and the plain selector span on one path;
-// `.param-icon * { pointer-events: none }` keeps the SVG from flickering.
+// Delegated hover for all icons, as Grid.js re-renders cells on sort/search.
 const PARAMS_ICON_SEL = '[data-desc], [data-desc-state]';
 document.addEventListener('mouseover', (e) => {
   const icon = e.target.closest?.(PARAMS_ICON_SEL);
@@ -1487,9 +1470,7 @@ function renderTable() {
   const card = document.createElement("div");
   card.className = "w-full bg-white overflow-hidden mx-auto";
 
-  // A `{value, description}` cell shows its value with a hover icon carrying
-  // the description HTML. The SVG icon stays out of `innerText`, so exports
-  // are unaffected.
+  // A `{value, description}` cell shows its value with a hover icon.
   const tableCell = (cell) => {
     const value = cellValue(cell);
     const desc = cell !== null && typeof cell === 'object' && cell.description;
@@ -1731,8 +1712,6 @@ const renderLegend = () => {
 
   getCurves().forEach(curve => {
     const curve_data = data(curve);
-    // The curve's description hover lives on the legend item's icon (see
-    // createLegendItem).
     legend.appendChild(
       createLegendItem(curve, curve_data.color, curve_data.marker)
     );
@@ -1794,7 +1773,7 @@ const createLegendItem = (curve, color, symbolNumber) => {
     }
   });
 
-  // Create the text node for the curve name in the legend.
+  // Create the HTML text node for the curve name in the legend
   const textContainer = document.createElement('div');
   textContainer.style.marginLeft = '0.5rem';
   textContainer.style.flex = '1';
@@ -1802,7 +1781,6 @@ const createLegendItem = (curve, color, symbolNumber) => {
   textContainer.setAttribute('data-curve', curve);
   textContainer.appendChild(document.createTextNode(curve));
 
-  // Append a hover icon carrying the curve's description HTML, if any.
   const desc = data(curve).description;
   if (desc) {
     textContainer.insertAdjacentHTML('beforeend', descIconHTML(desc));

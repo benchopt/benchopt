@@ -206,8 +206,7 @@ def test_scatter_and_options_descriptions():
 
 def test_table_cells_descriptions():
     # String cells naming an object get its description, in any column and
-    # through markup;
-    # explicit `{value, description}` cells are kept.
+    # through markup; explicit `{value, description}` cells are kept.
     custom = {'value': 'x', 'description': 'custom'}
 
     class Plot(BasePlot):

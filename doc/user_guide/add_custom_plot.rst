@@ -270,9 +270,9 @@ String cells can carry simple formatting with :code:`**bold**`,
 :code:`*italic*` and :code:`__underlined__` markers. A literal marker is
 escaped with a backslash, as in :code:`r"a \* b"`. A cell holding a solver,
 dataset or objective name, with or without markers, gets a hover icon with
-its description. A cell can
-also be a :code:`{"value": ..., "description": ...}` dict, to set its hover
-HTML explicitly, or hide it with :code:`None`.
+its description. A cell can also be a
+:code:`{"value": ..., "description": ...}` dict, to set its hover HTML
+explicitly, or hide it with :code:`None`.
 
 In the html report, each column header can be clicked to sort on that column,
 and the arrow next to it can be toggled to switch between increasing and
@@ -381,12 +381,11 @@ the solver, then the dataset, then the objective.
 This happens **before** :code:`plot` and :code:`get_metadata` are called: the
 ``solver_name``, ``dataset_name`` and ``objective_name`` columns of the ``df``
 you receive already hold the short labels, so a custom plot that groups on
-those columns gets short labels for free. The
-original full name of each row is kept in a companion ``*_full_name`` column
-(``solver_full_name``, ``dataset_full_name``, ``objective_full_name``) if you
-need it, and the ``*_description`` columns (``solver_description``,
-``dataset_description``, ``obj_description``) hold the hover HTML. A trace
-labeled with a short solver, dataset or objective name gets its hover icon
+those columns gets short labels for free. The full name of each row is kept in
+the ``*_full_name`` columns (``solver_full_name``, ``dataset_full_name``,
+``objective_full_name``), and the ``*_description`` columns
+(``solver_description``, ``dataset_description``, ``obj_description``) hold
+the hover HTML. A trace labeled with a short name gets its hover icon
 automatically:
 
 .. code-block:: python
@@ -410,28 +409,5 @@ With another label, pass the matching ``*_description`` as the trace's
     "description": df_solver["solver_description"].iloc[0],
 
 The short labels are **display-only** and computed relative to the current
-results: never write them back into persisted results — keep the full name
-(from the ``*_full_name`` columns) as the canonical identity.
-
-If you need to compute short labels or their hover descriptions yourself — for
-instance in a ``type="image"`` plot, which has no ``df``-derived labels — the
-helpers live in :mod:`benchopt.plotting.short_labels`:
-
-- :func:`~benchopt.plotting.short_labels.compute_short_labels` returns the
-  ``{full_name: short_label}`` mapping;
-- :func:`~benchopt.plotting.short_labels.compute_descriptions` returns the
-  ``{name: hover_html}`` mapping.
-
-.. code-block:: python
-
-    from benchopt.plotting.short_labels import compute_short_labels
-
-    def plot(self, df, dataset, objective, **kwargs):
-        solver_names = sorted(df["solver_full_name"].unique())
-        label_map = compute_short_labels(solver_names)
-        images = []
-        for solver in solver_names:
-            fig = render_figure(df, solver)
-            images.append({"image": fig, "label": label_map[solver]})
-        return images
-
+results. Never write them back into persisted results, and use the
+``*_full_name`` columns as the canonical identity.

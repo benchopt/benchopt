@@ -1,30 +1,13 @@
-"""Utilities for computing short labels from parametrized class names.
+"""Short display labels and hover descriptions for parametrized names.
 
-Benchopt class names follow the format::
-
-    ClassName[param1=val1,param2=val2,...]
-
-When many configurations exist but only a few parameters vary across runs,
-the full names can be very verbose.  This module provides helpers to produce
-*short labels* that only include the parameters that actually differ across
-the set of names being compared, together with a tooltip-friendly full label.
-
-Short labels are **display-only**: they are computed relative to the current
-set of names being compared, so they are not stable identifiers and must never
-be written back into the results (parquet, published reports, ``*_name``
-columns). Use them for plot labels, selectors and tooltips only; keep the full
-parametrized name as the canonical identity everywhere data is persisted.
+Short labels only keep the parameters that vary across the compared names.
+They are display-only and must never be written back into the results.
 """
 
 from html import escape
 from collections import defaultdict
 
 from ..utils.parametrized_name_mixin import _extract_options
-
-
-# ---------------------------------------------------------------------------
-# Name parsing
-# ---------------------------------------------------------------------------
 
 
 def _format_name(base, params):
@@ -35,16 +18,12 @@ def _format_name(base, params):
     return f"{base}[{param_str}]"
 
 
-# ---------------------------------------------------------------------------
-# Short label computation
-# ---------------------------------------------------------------------------
-
-
 def compute_short_labels(names):
     """Compute short display labels from a list of parametrized names.
 
     Short labels include only the parameters that *vary* within a group of
     names sharing the same base class name.
+
     Parameters
     ----------
     names : sequence of str
@@ -53,27 +32,8 @@ def compute_short_labels(names):
     Returns
     -------
     short_map : dict[str, str]
-        Mapping ``{full_name: short_label}``.  Every element of *names* is
-        guaranteed to have an entry (identical to the full name when no
-        reduction is possible).
-
-    Examples
-    --------
-    >>> names = [
-    ...     "Solver[alpha=0.1,n_iter=100]",
-    ...     "Solver[alpha=0.5,n_iter=100]",
-    ...     "OtherSolver[alpha=0.1]",
-    ... ]
-    >>> compute_short_labels(names)
-    {
-        'Solver[alpha=0.1,n_iter=100]': 'Solver[alpha=0.1]',
-        'Solver[alpha=0.5,n_iter=100]': 'Solver[alpha=0.5]',
-        'OtherSolver[alpha=0.1]':       'OtherSolver',
-    }
+        Mapping ``{full_name: short_label}`` for every name.
     """
-    # Parse each name into (base, params); `_extract_options` is AST-aware so
-    # complex values (lists, dicts, tuples) are handled. Names come from a
-    # parameters dict, so they carry only keyword params (no positional args).
     by_base = defaultdict(list)
     for name in map(str, names):
         base, _args, params = _extract_options(name)
@@ -82,12 +42,10 @@ def compute_short_labels(names):
     short_map = {}
     for base, group in by_base.items():
         if len(group) == 1:
-            # Single instance: the base name alone identifies it.
             short_map[group[0][0]] = base
             continue
 
-        # All names of a class share the same parameters, so keep exactly the
-        # ones that take more than one distinct value across the group.
+        # Keep the parameters taking several values across the group.
         values = defaultdict(set)
         for _, params in group:
             for k, v in params.items():
@@ -102,19 +60,7 @@ def compute_short_labels(names):
 
 
 def _compute_params_info(names):
-    """Return ``{full_name: {param: str_value}}`` parsed from *names*.
-
-    Uses :func:`_extract_options` for robust AST-aware parsing so that
-    complex values (lists, dicts, tuples) are handled correctly.
-
-    Parameters
-    ----------
-    names : sequence of str
-
-    Returns
-    -------
-    params_info : dict[str, dict[str, str]]
-    """
+    """Return ``{full_name: {param: str_value}}`` parsed from *names*."""
     result = {}
     for name in names:
         name_str = str(name)
@@ -124,11 +70,7 @@ def _compute_params_info(names):
 
 
 def _format_description(params, description=""):
-    """Render an object's hover-icon HTML (empty when nothing to show).
-
-    Combines an optional free-text ``description`` (e.g. a solver docstring)
-    with a table of the object's ``{param: value}`` parameters.
-    """
+    """Render the hover HTML: free-text description and parameters table."""
     parts = []
     if description:
         parts.append(f'<div class="param-desc">{escape(description)}</div>')
@@ -158,10 +100,7 @@ def compute_descriptions(names, prose=None):
     Returns
     -------
     descriptions : dict[str, str]
-        Mapping ``{name: html}``; the HTML combines the free-text description
-        and a small parameters table (empty string when there is neither).
-        Useful for a custom plot that needs the same hover tooltip as the
-        default plots.
+        Mapping ``{name: html}``, empty when there is nothing to show.
     """
     prose = prose or {}
     return {
@@ -170,7 +109,7 @@ def compute_descriptions(names, prose=None):
     }
 
 
-# Free-text description columns associated with each name column, when present.
+# Description column of each name column, in hover priority order.
 _DESCRIPTION_COLUMNS = {
     "solver_name": "solver_description",
     "dataset_name": "dataset_description",
@@ -178,25 +117,16 @@ _DESCRIPTION_COLUMNS = {
 }
 
 
-def shorten_names(
-    df, columns=("solver_name", "dataset_name", "objective_name")
-):
-    """Return a copy of *df* with entity name columns shortened for display.
+def shorten_names(df):
+    """Return a copy of *df* with solver/dataset/objective names shortened.
 
-    For each column in *columns* present in *df*, the original full names are
-    preserved in a companion ``*_full_name`` column (opt-in for custom plots
-    that need the full parametrized name), and the column itself is replaced by
-    its short label. The description columns (``solver_description``,
-    ``dataset_description``, ``obj_description``) are replaced by the hover
-    HTML, combining the free-text description with the object's parameters
-    table.
+    The full names move to ``*_full_name`` columns, and the description
+    columns are replaced by the hover HTML.
 
     Parameters
     ----------
     df : pandas.DataFrame
         Results dataframe, with ``*_name`` columns holding full names.
-    columns : sequence of str
-        Name columns to shorten when present.
 
     Returns
     -------
@@ -205,18 +135,16 @@ def shorten_names(
         columns and HTML ``*_description`` columns.
     """
     df = df.copy()
-    for col in columns:
+    for col, desc_col in _DESCRIPTION_COLUMNS.items():
         if col not in df.columns:
             continue
         names = df[col].astype(str)
         unique = names.unique().tolist()
         short_map = compute_short_labels(unique)
 
-        # Pull the free-text description (docstring) per name, if the benchmark
-        # recorded one, before the name column is overwritten.
-        desc_col = _DESCRIPTION_COLUMNS.get(col)
+        # Docstring per name, read before the name column is overwritten.
         prose = {}
-        if desc_col and desc_col in df.columns:
+        if desc_col in df.columns:
             prose = {
                 str(k): (v or "")
                 for k, v in df.groupby(col)[desc_col].first().items()
@@ -226,6 +154,5 @@ def shorten_names(
         full_col = col.replace("_name", "_full_name")
         df[full_col] = names
         df[col] = names.map(short_map)
-        if desc_col:
-            df[desc_col] = names.map(desc)
+        df[desc_col] = names.map(desc)
     return df
