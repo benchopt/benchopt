@@ -38,6 +38,7 @@ dependencies = [
   "pyyaml",
   "click>=8.0",
   "pygithub",
+  "rich",
   # Runner deps
   "psutil",
   "line-profiler",
