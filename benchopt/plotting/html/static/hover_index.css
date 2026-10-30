@@ -712,7 +712,7 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
   border-left-color: rgba(255, 255, 255, 0.4);
 }
 
-#pdf-menu {
+.pdf-menu {
   top: 100%;
   /* Right-aligned: the button sits at the right edge of the toolbar, a
      left-aligned menu runs off the page. */
@@ -724,7 +724,7 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-#pdf-menu a:hover {
+.pdf-menu a:hover {
   background-color: #f3f4f6;
 }
 

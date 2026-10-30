@@ -942,14 +942,15 @@ const bestLegendCorner = (data, layout) => {
 // Dropdown next to the PDF button, listing what the export can contain. The
 // arrow sits inside the button, so its click must not trigger the export.
 const togglePDFMenu = (event) => {
-  if (event) event.stopPropagation();
-  const menu = document.getElementById('pdf-menu');
+  event.stopPropagation();
+  const menu = event.currentTarget.closest('.pdf-export-btn')
+    .querySelector('.pdf-menu');
   menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
   return false;
 };
 
 const closePDFMenu = () => {
-  document.getElementById('pdf-menu').style.display = 'none';
+  hide(document.querySelectorAll('.pdf-menu'));
   return false;
 };
 
@@ -972,8 +973,10 @@ const exportPDF = (kind) => {
   }
 
   const plot = getPlotDiv();
-  const width = plot.layout.width || plot.clientWidth;
-  const height = plot.layout.height || plot.clientHeight;
+  // Scale small plots (e.g. on a phone) up to matplotlib's default width.
+  const scale = Math.max(1, 460 / (plot.layout.width || plot.clientWidth));
+  const width = scale * (plot.layout.width || plot.clientWidth);
+  const height = scale * (plot.layout.height || plot.clientHeight);
 
   // Render from a figure object, not the div, so the export changes do not
   // affect what's on screen. plot.layout, not getLayout(): it carries what is
@@ -1039,8 +1042,9 @@ const renderExportButtons = () => {
 
   // Only scatter has a legend outside the figure, so it is the only chart with
   // something to choose from.
+  (isChart('scatter') ? show : hide)(
+    document.querySelectorAll('.pdf-legend-choice'));
   const toggle = document.getElementById('pdf-menu-toggle');
-  (isChart('scatter') ? show : hide)(toggle);
   // Alone, the PDF button rounds on both sides again.
   toggle.parentElement.classList.toggle('no-menu', !isChart('scatter'));
   closePDFMenu();
