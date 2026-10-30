@@ -388,8 +388,14 @@ class Benchmark:
 
     def get_plot_data(self, df, kinds):
         "Get the data to plot for the benchmark."
+        from .plotting.short_labels import shorten_names
+
         all_plots = self.get_plots()
         self.check_plots()
+
+        # Short names for the whole report, full ones in `*_full_name`.
+        df = shorten_names(df)
+
         all_data = {}
         all_options = {}
         for plot in all_plots:

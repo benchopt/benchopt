@@ -1,4 +1,4 @@
-const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
+const UNDEFINED_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -266,7 +266,7 @@ const getLayout = () => {
 const getBarData = () => {
   if (!isAvailable()) return [{type:'bar'}];
 
-  const {x, y, colors, texts} = barDataToArrays()
+  const {x, y, colors, texts} = barDataToArrays();
 
   // Add bars
   const barData = [{
@@ -283,12 +283,9 @@ const getBarData = () => {
   }];
 
   getPlotData().data.forEach(curveData => {
-    // Add times for each convergent bar
-    // Check if text is not 'Did not converge'
-    curveText = curveData.text || ''
-    if (curveText === '') {
-      let nbTimes = curveData.y.length
-
+    // Add the individual times of bars with several values
+    let nbTimes = curveData.y.length;
+    if (nbTimes > 1) {
       barData.push({
         type: 'scatter',
         x: new Array(nbTimes).fill(curveData.label),
@@ -377,7 +374,7 @@ const getScatterData = () => {
         color: curveData.color,
       },
       marker: {
-        symbol: curveData.marker,
+        symbol: curveData.marker % N_SYMBOLS,
         size: 10,
         color: curveData.color,
       },
@@ -667,6 +664,69 @@ const renderSidebar = () => {
   renderPlotDropdowns();
 }
 
+const escapeHTML = (s) => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// SVG "info" icon: unlike a text glyph, it stays out of the LaTeX export.
+const infoIconHTML = (attrs = '') =>
+  `<svg class="param-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"` +
+  ` stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${attrs}>` +
+  `<circle cx="12" cy="12" r="10"></circle>` +
+  `<line x1="12" y1="16" x2="12" y2="12"></line>` +
+  `<line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+const descIconHTML = (text) => infoIconHTML(` data-desc="${escapeHTML(text)}"`);
+
+// Selector icons (`data-desc-state` spans) show the same icon as the legend.
+document.querySelectorAll('span[data-desc-state]').forEach(span => {
+  span.innerHTML = infoIconHTML();
+});
+
+// Tooltip HTML of an icon: its own `data-desc`, or for a selector icon
+// (`data-desc-state`) the `data-desc` of the selected option.
+const descForIcon = (icon) => {
+  if (icon.dataset.desc != null) return icon.dataset.desc;
+  const key = icon.dataset.descState;
+  if (!key) return '';
+  const option = document.querySelector(
+    `#change_${key} option[value="${CSS.escape(String(state()[key]))}"]`
+  );
+  return (option && option.dataset.desc) || '';
+};
+
+/** Show the shared params tooltip. */
+const showDescTooltip = (event, html) => {
+  if (!html) return;
+  const tip = document.getElementById('params-tooltip');
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  _moveParamsTooltip(event);
+};
+
+/** Hide the shared params tooltip. */
+const hideParamsTooltip = () => {
+  document.getElementById('params-tooltip').style.display = 'none';
+};
+
+// Delegated hover for all icons, as Grid.js re-renders cells on sort/search.
+const PARAMS_ICON_SEL = '[data-desc], [data-desc-state]';
+document.addEventListener('mouseover', (e) => {
+  const icon = e.target.closest?.(PARAMS_ICON_SEL);
+  if (icon) showDescTooltip(e, descForIcon(icon));
+});
+document.addEventListener('mouseout', (e) => {
+  if (e.target.closest?.(PARAMS_ICON_SEL)) hideParamsTooltip();
+});
+
+const _moveParamsTooltip = (event) => {
+  const tip = document.getElementById('params-tooltip');
+  if (!tip || tip.style.display !== 'block') return;
+  tip.style.left = (event.clientX + 14) + 'px';
+  tip.style.top  = (event.clientY - tip.offsetHeight - 8) + 'px';
+};
+
+document.addEventListener('mousemove', _moveParamsTooltip);
+
 /**
  * Render Scale selector
  */
@@ -819,7 +879,7 @@ const barDataToArrays = () => {
     x.push(plotData.label);
     y.push(getMedian(plotData.y));
     const plotText = plotData.text || '';
-    colors.push(plotText === '' ? plotData.color : NON_CONVERGENT_COLOR);
+    colors.push(plotData.color || UNDEFINED_COLOR);
     texts.push(plotText);
   });
 
@@ -900,6 +960,7 @@ const getBarChartLayout = () => {
       ...MPL_AXIS,
       tickangle: -60,
       ticktext: Array(data.data.map(d => d.label)),
+      categoryorder: 'trace',
       showgrid: false,  // X axis is text: no vertical gridlines
     },
     showlegend: false,
@@ -1053,15 +1114,8 @@ const show = (HTMLElements, style = '') => {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 const getCurveFromEvent = event => {
-  const target = event.currentTarget;
-
-  for (let i = 0; i < target.children.length; i++) {
-    if (target.children[i].className === 'curve') {
-      return target.children[i].firstChild.nodeValue;
-    }
-  }
-
-  return null;
+  const text = event.currentTarget.querySelector(':scope > .curve');
+  return text ? text.dataset.curve : null;
 };
 
 const purgeHiddenCurves = () => setState({hidden_curves: []});
@@ -1247,6 +1301,10 @@ const stripMarkup = (value) => CELL_MARKUP.reduce(
   String(value).replace(/\\([*_])/g, (match, c) => PLACEHOLDERS[c])
 ).replace(/[\u0000\u0001]/g, c => LITERALS[c]);
 
+// Value of a cell, unwrapping `{value, description}` cells.
+const cellValue = (cell) =>
+  cell !== null && typeof cell === 'object' ? cell.value : cell;
+
 // Numeric value of a cell, or null if its text is not a single number.
 const cellNumber = (value) => {
   if (typeof value === 'number') return value;
@@ -1289,6 +1347,7 @@ const elementToLatex = (element) => nodeToLatex(element).trim();
  * would make all close numbers compare as equal.
  */
 const compareCells = (a, b) => {
+  [a, b] = [cellValue(a), cellValue(b)];
   const [numA, numB] = [cellNumber(a), cellNumber(b)];
   if (numA !== null && numB !== null) {
     return numA > numB ? 1 : numA < numB ? -1 : 0;
@@ -1411,18 +1470,28 @@ function renderTable() {
   const card = document.createElement("div");
   card.className = "w-full bg-white overflow-hidden mx-auto";
 
+  // A `{value, description}` cell shows its value with a hover icon.
+  const tableCell = (cell) => {
+    const value = cellValue(cell);
+    const desc = cell !== null && typeof cell === 'object' && cell.description;
+    return desc
+      ? gridjs.html(markupToHtml(String(value)) + descIconHTML(desc))
+      : formatCell(value);
+  };
+
   const buildColumns = () => plotData.columns.map(name => ({
     name,
     hidden: tableHiddenColumns.has(name),
     sort: { compare: compareCells },
-    formatter: formatCell,
+    formatter: tableCell,
   }));
 
   tableGrid = new gridjs.Grid({
     columns: buildColumns(),
     data: orderedData,
     sort: true,
-    search: true,
+    // Search the value only, not the description HTML.
+    search: { selector: (cell) => String(cellValue(cell)) },
   });
   if (prevGridHeight) {
     card.style.minHeight = `${prevGridHeight}px`;
@@ -1640,29 +1709,12 @@ const renderLegend = () => {
   show(container);
 
   legend.innerHTML = '';
-  const curvesDescription = window.metadata["solvers_description"];
 
   getCurves().forEach(curve => {
     const curve_data = data(curve);
-    const color = curve_data.color;
-    const symbolNumber = curve_data.marker;
-
-    let legendItem = createLegendItem(curve, color, symbolNumber);
-
-    // preserve compatibility with prev version
-    if(curvesDescription === null || curvesDescription === undefined) {
-      legend.appendChild(legendItem);
-      return;
-    }
-
-    let payload = createSolverDescription(
-      legendItem, {
-        description: curvesDescription[curve],
-      }
+    legend.appendChild(
+      createLegendItem(curve, curve_data.color, curve_data.marker % N_SYMBOLS)
     );
-    if (payload !== undefined) {
-      legend.appendChild(payload);
-    }
   });
 }
 
@@ -1724,8 +1776,15 @@ const createLegendItem = (curve, color, symbolNumber) => {
   // Create the HTML text node for the curve name in the legend
   const textContainer = document.createElement('div');
   textContainer.style.marginLeft = '0.5rem';
+  textContainer.style.flex = '1';
   textContainer.className = 'curve';
+  textContainer.setAttribute('data-curve', curve);
   textContainer.appendChild(document.createTextNode(curve));
+
+  const desc = data(curve).description;
+  if (desc) {
+    textContainer.insertAdjacentHTML('beforeend', descIconHTML(desc));
+  }
 
   // Create the horizontal bar in the legend to represent the curve
   const hBar = document.createElement('div');
@@ -1744,24 +1803,6 @@ const createLegendItem = (curve, color, symbolNumber) => {
   return item;
 }
 
-
-function createSolverDescription(legendItem, { description }) {
-  if (description === null || description === undefined || description === "")
-    return legendItem;
-
-  let descriptionContainer = document.createElement("div");
-  descriptionContainer.setAttribute("class", "curve-description-container")
-
-  descriptionContainer.innerHTML = `
-  <div class="curve-description-content text-sm">
-    <span class="curve-description-body">${description}</span>
-  </div>
-  `;
-
-  descriptionContainer.prepend(legendItem);
-
-  return descriptionContainer;
-}
 
 /**
  * Create the same svg symbol as plotly.

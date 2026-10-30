@@ -180,6 +180,7 @@ def get_solver_kwargs(
             'solver_name': str(solver),
             'solver_description': inspect.cleandoc(solver.__doc__ or ""),
             'dataset_name': str(dataset),
+            'dataset_description': inspect.cleandoc(dataset.__doc__ or ""),
             'idx_rep': rep,
             'sampling_strategy': sampling_strategy.capitalize(),
             'file_objective': objective._module_filename.name,

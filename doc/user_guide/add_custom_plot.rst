@@ -82,7 +82,10 @@ The :code:`options` dictionary keys define the arguments passed to
 :code:`dataset`, :code:`objective`, :code:`solver` will automatically
 try to match columns in the dataframe. Using :code:`...` as a value
 will populate the options with all unique values from the dataframe
-column :code:`{key}_name` (e.g. :code:`dataset_name`).
+column :code:`{key}_name` (e.g. :code:`dataset_name`). An option value can
+also be a :code:`{"value": ..., "description": ...}` dict, to show a hover
+icon with the :code:`description` HTML next to the selector. :code:`plot`
+and :code:`get_metadata` receive the plain value.
 
 
 Scatter Plot
@@ -93,7 +96,11 @@ each dictionary represents a trace in the plot. Each dictionary must contain:
 
 - :code:`x`: A list of x values.
 - :code:`y`: A list of y values.
-- :code:`label`: The label of the trace
+- :code:`label`: The label of the trace.
+- :code:`description` (optional): HTML shown by a hover icon next to the
+  label in the legend. A trace labeled with a solver, dataset or objective
+  name shows its description and fixed parameters by default. Set it to
+  override this, or to :code:`None` to hide the icon.
 - :code:`color` (optional): The color of the trace.
 - :code:`marker` (optional): The marker style of the trace.
 - :code:`y_low`, :code:`y_high` (optional): Lists of values to display uncertainty in the plot.
@@ -261,12 +268,19 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 
 String cells can carry simple formatting with :code:`**bold**`,
 :code:`*italic*` and :code:`__underlined__` markers. A literal marker is
-escaped with a backslash, as in :code:`r"a \* b"`.
+escaped with a backslash, as in :code:`r"a \* b"`. A cell holding a solver,
+dataset or objective name, with or without markers, gets a hover icon with
+its description. A cell can also be a
+:code:`{"value": ..., "description": ...}` dict, to set its hover HTML
+explicitly, or hide it with :code:`None`.
 
 In the html report, each column header can be clicked to sort on that column,
 and the arrow next to it can be toggled to switch between increasing and
 decreasing order. A search bar allows filtering the rows, and each column can
 be shown or hidden with the checkboxes below the table.
+
+Solver, dataset and objective names are already shortened (see
+:ref:`short_labels`):
 
 .. code-block:: python
 
@@ -349,3 +363,51 @@ of the label, ensuring that the same solver always gets the same color.
         **self.get_style(solver_name)
     }
 
+
+.. _short_labels:
+
+Shortened labels and hover descriptions
+---------------------------------------
+
+Parametrized class names (e.g. ``Solver[alpha=0.1,n_iter=100]``) can be
+verbose. The HTML report automatically shortens them, keeping only the
+parameters that *vary* across the results, and a hover icon next to each entry
+reveals its description: the class docstring and the full parameter list.
+Traces, table cells and option values that are a solver, dataset or objective
+name get it implicitly, unless they set an explicit :code:`description`. If
+names of different kinds share a short label, the description is taken from
+the solver, then the dataset, then the objective.
+
+This happens **before** :code:`plot` and :code:`get_metadata` are called: the
+``solver_name``, ``dataset_name`` and ``objective_name`` columns of the ``df``
+you receive already hold the short labels, so a custom plot that groups on
+those columns gets short labels for free. The full name of each row is kept in
+the ``*_full_name`` columns (``solver_full_name``, ``dataset_full_name``,
+``objective_full_name``), and the ``*_description`` columns
+(``solver_description``, ``dataset_description``, ``obj_description``) hold
+the hover HTML. A trace labeled with a short name gets its hover icon
+automatically:
+
+.. code-block:: python
+
+    def plot(self, df, dataset, objective, **kwargs):
+        traces = []
+        for solver, df_solver in df.groupby('solver_name'):
+            # `solver` is already the short label here.
+            traces.append({
+                "x": ..., "y": ..., "label": solver,
+                **self.get_style(solver),
+            })
+        return traces
+
+With another label, pass the matching ``*_description`` as the trace's
+``description``:
+
+.. code-block:: python
+
+    "label": f"{solver} ({dataset})",
+    "description": df_solver["solver_description"].iloc[0],
+
+The short labels are **display-only** and computed relative to the current
+results. Never write them back into persisted results, and use the
+``*_full_name`` columns as the canonical identity.
