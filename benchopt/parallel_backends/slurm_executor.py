@@ -112,6 +112,10 @@ def run_on_slurm(
                 run_one_solver, **kwargs
             )
             tasks.append(future)
+            # Jobs reload the data: don't keep it on the front node while the
+            # batch holds the kwargs.
+            if "dataset" in kwargs:
+                kwargs["dataset"]._data = None
 
     # Yield results as jobs finish (unordered)
     for t in as_completed(tasks):

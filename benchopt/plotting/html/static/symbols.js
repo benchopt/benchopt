@@ -568,6 +568,9 @@ Object.keys(SYMBOLDEFS).forEach(function(k) {
     drawing.symbolFuncs[n] = symDef.f;
 });
 
+// Number of base plotly symbols. Markers cycle over them, filled only.
+const N_SYMBOLS = Object.keys(SYMBOLDEFS).length;
+
 /**
  * Returns a <path></path> element that have to be placed in a <svg></svg> element.
  * 

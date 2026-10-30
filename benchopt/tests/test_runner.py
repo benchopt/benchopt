@@ -663,11 +663,11 @@ class TestSeed:
                     .split(), standalone_mode=False,
                 )
 
-        # With n_jobs=1, the dataset is loaded once regardless the numbe
+        # With n_jobs=1, the dataset is loaded once regardless the number
         # of repetitions.
-        # With n_jobs>1, the dataset is loaded once per repetition, plus once
-        # when creating loading the dataset in the main process, so 1 + n_reps.
-        n_match = 1 if n_jobs == 1 else 4
+        # With n_jobs>1, the dataset is loaded once per repetition. The main
+        # process does not load it as n_repetitions is given.
+        n_match = 1 if n_jobs == 1 else 3
         out.check_output("#DATA-LOAD", repetition=n_match)
 
 

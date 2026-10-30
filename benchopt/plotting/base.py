@@ -1,11 +1,13 @@
 from abc import ABC, abstractmethod
 import inspect
+import re
 import matplotlib.pyplot as plt
 
 from ..utils.dependencies_mixin import DependenciesMixin
 from ..utils.parametrized_name_mixin import ParametrizedNameMixin
 from ..utils.parametrized_name_mixin import product_param
 from ..utils.parametrized_name_mixin import sanitize
+from .short_labels import _DESCRIPTION_COLUMNS
 
 CMAP = plt.get_cmap('tab20')
 COLORS = [CMAP(i) for i in range(CMAP.N)]
@@ -33,15 +35,19 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         -------
         The plot data structure, depending on the plot type:
         - scatter: list of dict for each trace, requires: 'x', 'y',
-                'label', optional: 'marker', 'color', 'x_low',
-                'x_high'.
+                'label', optional: 'marker', 'color', 'x_low', 'x_high',
+                'description'.
         - bar_chart: list of dict for each bar, requires: 'y',
                 'label', optional: 'color', 'text'.
         - boxplot: list of dict for each box, requires: 'x', 'y',
                 'label', optional: 'color'.
-        - table: list of list, each inner list is a row of the table.
+        - table: list of list, each inner list is a row of the table. A cell
+                can be a ``{'value', 'description'}`` dict.
         - image: list of dict for each image, requires: 'image',
                 optional: 'label'.
+
+        Names in ``df`` are short labels. A trace or cell holding a solver,
+        dataset or objective name gets its description by default.
 
         Please refer to :ref:`add_custom_plot` for a complete description
         of the plot data.
@@ -152,20 +158,47 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                 if k in ["dataset", "solver", "objective"]:
                     options[k] = df[f'{k}_name'].unique().tolist()
                 elif k == "objective_column":
+                    # Skip the name columns added by `shorten_names`.
+                    not_metrics = ('objective_name', 'objective_full_name')
                     options["objective_column"] = [
                         c for c in df.columns
-                        if c.startswith('objective_') and c != 'objective_name'
+                        if c.startswith('objective_') and c not in not_metrics
                     ]
                 else:
                     options[k] = df[k].unique().tolist()
 
-        combinations = product_param(options)
+        # Hover HTML of each solver/dataset/objective name, solver first on a
+        # shared short label. An empty description shows no icon.
+        descriptions = {}
+        for col, desc_col in _DESCRIPTION_COLUMNS.items():
+            if desc_col in df:
+                names = df.drop_duplicates(col)[[col, desc_col]].values
+                for name, desc in names:
+                    descriptions.setdefault(name, desc or None)
+
+        options = {
+            k: [_with_description(v, descriptions) for v in values]
+            for k, values in options.items()
+        }
+        combinations = product_param({
+            k: [v['value'] for v in values] for k, values in options.items()
+        })
 
         plots = {}
         for kwargs in combinations:
             data = self.get_metadata(df, **kwargs)
             data["type"] = self.type
             data["data"] = self.plot(df, **kwargs)
+            if self.type == "scatter":
+                for trace in data["data"]:
+                    trace.setdefault(
+                        "description", descriptions.get(trace["label"])
+                    )
+            elif self.type == "table":
+                data["data"] = [
+                    [_describe_cell(c, descriptions) for c in row]
+                    for row in data["data"]
+                ]
             key_list = (
                 [self._get_name()] + list(kwargs.values())
             )
@@ -173,3 +206,30 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             plots[key] = data
 
         return plots, options
+
+
+def _with_description(value, descriptions):
+    """Return ``value`` as a ``{'value', 'description'}`` dict.
+
+    An explicit dict is kept as is; a plain value gets its description from
+    ``descriptions`` (``None`` if it is not a solver/dataset/objective name).
+    """
+    if isinstance(value, dict):
+        return value
+    return {"value": value, "description": descriptions.get(value)}
+
+
+# Cell markup, as rendered by the HTML report (see `CELL_MARKUP` in result.js).
+_CELL_MARKUP = [r"\*\*([^*]+)\*\*", r"__([^_]+)__", r"\*([^*]+)\*"]
+
+
+def _describe_cell(cell, descriptions):
+    """Wrap a string cell naming an object, ignoring its markup."""
+    if not isinstance(cell, str):
+        return cell
+    name = cell
+    for pattern in _CELL_MARKUP:
+        name = re.sub(pattern, r"\1", name)
+    if name not in descriptions:
+        return cell
+    return {"value": cell, "description": descriptions[name]}

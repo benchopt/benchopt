@@ -74,6 +74,7 @@ particular for logging, warnings and errors. The available options are:
 
 DEFAULT_BENCHMARK_CONFIG = {
     "plots": None,
+    "hidden_plots": None,
     "plot_configs": {},
     "data_home": None,
     "data_paths": {},
@@ -97,6 +98,16 @@ The available options are:
     - suboptimality_curve
     - relative_suboptimality_curve
     - bar_chart
+
+* ``hidden_plots``, *list*: Plot kinds to hide from the results, e.g. to drop
+  some of the default plots while keeping all the others. It is ignored when
+  plot kinds are explicitly selected with ``--kind`` in ``benchopt plot``.
+
+  .. code-block:: yaml
+
+    hidden_plots:
+    - boxplot
+    - table
 
 .. _plot_configs:
 
