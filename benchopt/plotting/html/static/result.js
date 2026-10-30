@@ -745,21 +745,42 @@ const flattenText = (svg) => {
 // Helvetica instead of the DejaVu Sans they are drawn with.
 const DEJAVU_URL =
   'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf';
+// Private name for the page copy, so the plots on screen keep their font.
+const EXPORT_FONT = 'DejaVu Sans Export';
 let dejaVuFont = null;
-const embedDejaVu = (pdf) => {
+const loadDejaVu = () => {
   dejaVuFont = dejaVuFont || fetch(DEJAVU_URL)
     .then(response => response.blob())
-    .then(blob => new Promise(resolve => {
+    .then(blob => Promise.all([
       // Base64 without walking the 750kB of glyphs one character at a time.
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result.split(',')[1]);
-      reader.readAsDataURL(blob);
-    }));
+      new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(blob);
+      }),
+      // Plotly lays the export out with it, or with the browser's fallback
+      // font when DejaVu is not installed, and the PDF text then overflows.
+      blob.arrayBuffer()
+        .then(buffer => new FontFace(EXPORT_FONT, buffer).load())
+        .then(face => document.fonts.add(face)),
+    ]))
+    .then(([base64]) => base64);
+  return dejaVuFont;
+};
+const embedDejaVu = (pdf) => loadDejaVu().then(base64 => {
+  pdf.addFileToVFS('DejaVuSans.ttf', base64);
+  pdf.addFont('DejaVuSans.ttf', EXPORT_FONT, 'normal');
+}).catch(err => console.warn('Falling back to Helvetica:', err));
 
-  return dejaVuFont.then(base64 => {
-    pdf.addFileToVFS('DejaVuSans.ttf', base64);
-    pdf.addFont('DejaVuSans.ttf', 'DejaVu Sans', 'normal');
-  }).catch(err => console.warn('Falling back to Helvetica:', err));
+// Shrink the title to fit in the figure width.
+const fitTitle = (layout, width) => {
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = `17px "${EXPORT_FONT}"`;
+  const lines = String((layout.title || {}).text || '')
+    .split(/<br\s*\/?>/).map(line => line.replace(/<[^>]*>/g, ''));
+  const widest = Math.max(...lines.map(line => ctx.measureText(line).width));
+  const size = Math.min(17, Math.floor(17 * (width - 20) / widest));
+  return {...layout.title, font: {...(layout.title || {}).font, size: size}};
 };
 
 // Write the PDF with jsPDF + svg2pdf.js.
@@ -954,25 +975,29 @@ const exportPDF = (kind) => {
   const width = plot.layout.width || plot.clientWidth;
   const height = plot.layout.height || plot.clientHeight;
 
-  // Render from a figure object, not the div, so the legend-on toggle only
-  // affects the export, not what's on screen.
-  let figure = plot;
+  // Render from a figure object, not the div, so the export changes do not
+  // affect what's on screen. plot.layout, not getLayout(): it carries what is
+  // on screen right now, including the axis ranges and the log dtick.
+  const layout = {...plot.layout};
+  let data = plot.data;
   if (kind === 'both') {
     // Drop the hidden curves
-    const data = getChartData().filter(
-      trace => trace.visible !== 'legendonly');
-    // plot.layout, not getLayout(): it carries what is on screen right now,
-    // including the axis ranges and the log dtick applied on resize.
-    const layout = {...plot.layout, showlegend: true};
+    data = getChartData().filter(trace => trace.visible !== 'legendonly');
+    layout.showlegend = true;
     layout.legend = {
       ...bestLegendCorner(data, layout),
       bgcolor: 'rgba(255, 255, 255, 0.8)',
       bordercolor: '#cccccc', borderwidth: 1,
     };
-    figure = {data: data, layout: layout};
   }
 
-  Plotly.toImage(figure, {format: 'svg', width: width, height: height})
+  loadDejaVu().catch(() => null)
+    .then(() => {
+      layout.font = {...layout.font, family: EXPORT_FONT};
+      layout.title = fitTitle(layout, width);
+      return Plotly.toImage({data: data, layout: layout},
+                            {format: 'svg', width: width, height: height});
+    })
     .then(dataUrl => svgToPDF(
       new DOMParser().parseFromString(
         decodeURIComponent(dataUrl.split(',')[1]), 'image/svg+xml')
