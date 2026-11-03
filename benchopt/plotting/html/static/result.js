@@ -1479,10 +1479,19 @@ function renderTable() {
       : formatCell(value);
   };
 
-  const buildColumns = () => plotData.columns.map(name => ({
+  // Grid.js has no initial sort option: the rows are already sorted, so set
+  // its sort state directly for the sort arrow to show this order. The
+  // `direction` on the column is needed too, as Grid.js resets the direction
+  // to it when first rendering a sorted column.
+  const sortIndex = plotData.columns.indexOf(tableAppliedOrder.column);
+  const sortDirection = tableAppliedOrder.ascending ? 1 : -1;
+
+  const buildColumns = () => plotData.columns.map((name, i) => ({
     name,
     hidden: tableHiddenColumns.has(name),
-    sort: { compare: compareCells },
+    sort: i === sortIndex
+      ? { compare: compareCells, direction: sortDirection }
+      : { compare: compareCells },
     formatter: tableCell,
   }));
 
@@ -1493,9 +1502,19 @@ function renderTable() {
     // Search the value only, not the description HTML.
     search: { selector: (cell) => String(cellValue(cell)) },
   });
+  const store = tableGrid.config.store;
+  store.dispatch(s => ({...s, sort: {columns: [
+    {index: sortIndex, direction: sortDirection, compare: compareCells},
+  ]}}));
   if (prevGridHeight) {
     card.style.minHeight = `${prevGridHeight}px`;
-    tableGrid.on('ready', () => card.style.minHeight = '');
+    // Grid.js' UMD build never emits 'ready': watch the store status instead.
+    const unsubscribe = store.subscribe(s => {
+      if (s.status === 3) {  // Grid.js Status.Rendered
+        card.style.minHeight = '';
+        unsubscribe();
+      }
+    });
   }
   tableGrid.render(card);
   tableGridKey = gridKey;
