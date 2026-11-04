@@ -29,6 +29,10 @@ FIX
   dataset in memory while submitting jobs. By `Hippolyte Verninas`_
   (:gh:`1020`)
 
+- The "Export LaTeX" button of the HTML report shows the table in a text box
+  when the clipboard is unavailable, and no longer adds an extra column. By
+  `Thomas Moreau`_ (:gh:`1023`)
+
 API
 ~~~
 
@@ -41,6 +45,17 @@ PLOT
 - Improve ``'image'`` plots in the HTML report: borderless grid that keeps
   each image's aspect ratio, and click-to-enlarge.
   By `Hippolyte Verninas`_ (:gh:`1017`)
+
+- The HTML report shortens solver, dataset and objective names to the
+  parameters that vary, with a hover icon showing the docstring and full
+  parameters. Custom plots receive the short names, with ``*_full_name`` and
+  ``*_description`` columns, and can set a ``description`` on traces, table
+  cells and option values.
+  By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`935`)
+
+- Add ``Download PDF`` button in the HTML interface to download the current
+  plot as a PDF file.
+  By `Jad Yehya`_ & `Hippolyte Verninas`_ (:gh:`989`)
 
 
 .. _changes_1_10:

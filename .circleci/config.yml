@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 jobs:
   build_docs:
     docker:
@@ -122,7 +122,7 @@ jobs:
 
             # Creating the version dropdown
             VERSIONS=$(ls -d [0-9]* | sort -Vr | jq -R -s -c 'split("\n")[:-1]')
-            cat > versions.json <<EOF
+            cat > versions.json \<<EOF
             {
               "stable": "stable",
               "dev": "dev",
@@ -141,8 +141,6 @@ jobs:
             fi
 
 workflows:
-  version: 2
-
   default:
     jobs:
       - build_docs:
