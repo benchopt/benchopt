@@ -9,7 +9,10 @@ slurm_additional_parameters:
   account: "myaccount"          # replace with your SLURM account
   # partition: gpu              # uncomment if needed
 
-# Limit simultaneous jobs (useful when the scheduler has quotas):
+# Limit simultaneous running jobs per job array:
 # slurm_array_parallelism: 50
+# Limit jobs in the queue (pending + running) across all arrays, for clusters
+# with a per-user job quota; new jobs are submitted as previous ones finish:
+# max_submitted_jobs: 100
 
 # Logs land in ./benchopt_run/ inside the benchmark directory.

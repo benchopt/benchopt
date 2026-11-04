@@ -25,8 +25,13 @@ FIX
 API
 ~~~
 
+- Add ``max_submitted_jobs`` to the ``submitit`` parallel config, to cap the
+  number of jobs in the SLURM queue across all job arrays.
+  By `Hippolyte Verninas`_ (:gh:`1021`)
+
 - Add a ``hidden_plots`` benchmark config option to hide some plot kinds,
   e.g. some of the default plots. By `Hippolyte Verninas`_ (:gh:`1019`)
+
 
 PLOT
 ~~~~
