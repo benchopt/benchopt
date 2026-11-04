@@ -192,14 +192,15 @@ const setFigSize = () => {
 // (Re)create the drag handles on the right ('x') and bottom ('y') edges.
 // Plotly.purge leaves these children in place, so clear any stale ones first.
 const addResizeHandles = (div) => {
-  // Clear from plot_container (the common ancestor) so handles left on the
-  // other chart type's div are removed too, not just those inside `div`.
-  document.getElementById('plot_container')
-    .querySelectorAll('.resize-handle').forEach(h => h.remove());
+  // Clear both figure divs so handles left on the other chart type's div are
+  // removed too. Direct children only: the legend has its own handle.
+  document.querySelectorAll(
+    '#plot_container > .resize-handle, #plot_with_legend_container > .resize-handle'
+  ).forEach(h => h.remove());
   ['x', 'y', 'xy'].forEach(axis => div.appendChild(makeResizeHandle(div, axis)));
 };
 
-const makeResizeHandle = (div, axis) => {
+const makeResizeHandle = (div, axis, onResize = resizeFig) => {
   const handle = document.createElement('div');
   handle.className = `resize-handle resize-handle-${axis}`;
   handle.addEventListener('pointerdown', (e) => {
@@ -213,7 +214,7 @@ const makeResizeHandle = (div, axis) => {
         div.style.width = `${Math.max(200, startW + ev.clientX - startX)}px`;
       if (axis !== 'x')
         div.style.height = `${Math.max(200, startH + ev.clientY - startY)}px`;
-      resizeFig(div);
+      onResize(div);
     };
     const onUp = () => {
       div.classList.remove('resizing');
@@ -390,7 +391,7 @@ const getScatterData = () => {
       curves.push({
         type: 'scatter',
         mode: 'lines',
-        legend: false,
+        showlegend: false,
         line: {
           width: 0,
           color: curveData.color,
@@ -420,7 +421,7 @@ const getScatterData = () => {
       curves.push({
         type: 'scatter',
         mode: 'lines',
-        legend: false,
+        showlegend: false,
         line: {
           width: 0,
           color: curveData.color,
@@ -645,6 +646,371 @@ const exportHTML = () => {
   return downloadBlob(blob, location.pathname.split("/").pop());
 };
 
+const exportLatex = (button) => {
+  // Copy the table as displayed by Grid.js to the clipboard as a booktabs
+  // LaTeX tabular, so the output matches the current sorting, search filter,
+  // visible columns and float precision.
+  const columns = Array.from(
+    document.querySelectorAll('#table_container .gridjs-th-content'),
+    elementToLatex);
+  const rows = Array.from(
+    document.querySelectorAll('#table_container .gridjs-table tbody tr'),
+    tr => Array.from(tr.querySelectorAll('td'), elementToLatex));
+
+  const title = (getPlotData() || {}).title;
+  let latex = "% Table generated with benchopt, needs \\usepackage{booktabs}\n";
+  if (title) {
+    // Caption above the table, kept on a single line.
+    latex += "\\begin{table}[h]\n\\centering\n\\caption{";
+    latex += escapeLatex(title.replace(/<br\s*\/?>/g, ", "));
+    latex += "}\n";
+  }
+  latex += '\\begin{tabular}{';
+  latex += 'l'.repeat(columns.length);
+  latex += '}\n\\toprule\n';
+  latex += columns.join(' & ');
+  latex += ' \\\\\n\\midrule\n';
+  latex += rows.map(r => r.join(' & ') + ' \\\\').join('\n');
+  latex += '\n\\bottomrule\n\\end{tabular}';
+  if (title) latex += "\n\\end{table}";
+
+  // Flash feedback on the button label (the trailing span on the desktop
+  // button, the link text itself in the mobile menu).
+  const label = button.querySelector('span:last-child') || button;
+  const original = label.textContent;
+  navigator.clipboard.writeText(latex)
+    .then(() => label.textContent = 'Copied!', () => {
+      // No clipboard access (e.g. file opened on a phone): show the LaTeX in
+      // a text box so it can be copied by hand.
+      let area = document.getElementById("table-export-text");
+      if (!area) {
+        area = document.createElement("textarea");
+        area.id = "table-export-text";
+        area.readOnly = true;
+        area.rows = 10;
+        area.className = "w-full mt-2 p-2 font-mono text-xs border border-gray-300 rounded-md";
+        area.addEventListener('blur', () => area.remove());
+        document.getElementById('table_container').appendChild(area);
+      }
+      area.value = latex;
+      area.focus();
+      area.select();
+      label.textContent = 'Copy below';
+    })
+    .then(() => setTimeout(() => label.textContent = original, 2500));
+  return false;
+};
+
+// svg2pdf lays <tspan>s out on its own and gets them wrong: the exponents of
+// the log ticks end up off the page.
+const flattenText = (svg) => {
+  svg.querySelectorAll('text').forEach(text => {
+    // Text nodes in rendering order, with where each one starts in the string.
+    const runs = [];
+    let index = 0;
+    const walk = node => node.childNodes.forEach(child => {
+      if (child.nodeType === Node.TEXT_NODE) {
+        runs.push({node: child, index: index, parent: node});
+        index += child.length;
+      } else {
+        walk(child);
+      }
+    });
+    walk(text);
+
+    const spans = runs.map(run => {
+      const content = run.node.data.replace(/−/g, '-')
+        .replace(/​/g, '');
+      if (content.trim() === '') return null;
+
+      const at = text.getStartPositionOfChar(run.index);
+      const style = getComputedStyle(run.parent);
+      const span = svgNode('tspan', {
+        x: at.x, y: at.y, fill: style.fill,
+        'font-family': style.fontFamily, 'font-size': style.fontSize,
+        'font-weight': style.fontWeight, 'font-style': style.fontStyle,
+      });
+      span.textContent = content;
+      return span;
+    });
+
+    // The runs carry their own position now, so the anchoring is already done.
+    text.setAttribute('text-anchor', 'start');
+    text.textContent = '';
+    spans.filter(span => span).forEach(span => text.appendChild(span));
+  });
+};
+
+// jsPDF only knows the standard PDF fonts, so the figures would come out in
+// Helvetica instead of the DejaVu Sans they are drawn with.
+const DEJAVU_URL =
+  'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf';
+// Private name for the page copy, so the plots on screen keep their font.
+const EXPORT_FONT = 'DejaVu Sans Export';
+let dejaVuFont = null;
+const loadDejaVu = () => {
+  dejaVuFont = dejaVuFont || fetch(DEJAVU_URL)
+    .then(response => response.blob())
+    .then(blob => Promise.all([
+      // Base64 without walking the 750kB of glyphs one character at a time.
+      new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(blob);
+      }),
+      // Plotly lays the export out with it, or with the browser's fallback
+      // font when DejaVu is not installed, and the PDF text then overflows.
+      blob.arrayBuffer()
+        .then(buffer => new FontFace(EXPORT_FONT, buffer).load())
+        .then(face => document.fonts.add(face)),
+    ]))
+    .then(([base64]) => base64);
+  return dejaVuFont;
+};
+const embedDejaVu = (pdf) => loadDejaVu().then(base64 => {
+  pdf.addFileToVFS('DejaVuSans.ttf', base64);
+  pdf.addFont('DejaVuSans.ttf', EXPORT_FONT, 'normal');
+}).catch(err => console.warn('Falling back to Helvetica:', err));
+
+// Shrink the title to fit in the figure width.
+const fitTitle = (layout, width) => {
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = `17px "${EXPORT_FONT}"`;
+  const lines = String((layout.title || {}).text || '')
+    .split(/<br\s*\/?>/).map(line => line.replace(/<[^>]*>/g, ''));
+  const widest = Math.max(...lines.map(line => ctx.measureText(line).width));
+  const size = Math.min(17, Math.floor(17 * (width - 20) / widest));
+  return {...layout.title, font: {...(layout.title || {}).font, size: size}};
+};
+
+// Write the PDF with jsPDF + svg2pdf.js.
+const svgToPDF = (svg, filename, width, height) => {
+  // svg2pdf measures text through getBBox, so the SVG has to be rendered:
+  // park it off-screen for the conversion.
+  svg.style.cssText = 'position:fixed;left:-10000px;top:0';
+  document.body.appendChild(svg);
+
+  flattenText(svg);
+
+  // The orientation has to match, jsPDF sorts the format to fit it otherwise.
+  const pdf = new window.jspdf.jsPDF({
+    unit: 'pt', format: [width, height],
+    orientation: width >= height ? 'landscape' : 'portrait',
+    putOnlyUsedFonts: true,  // or every export carries the 750kB of DejaVu
+  });
+  return embedDejaVu(pdf)
+    .then(() => pdf.svg(svg, {width: width, height: height, x: 0, y: 0}))
+    .then(() => pdf.save(filename + '.pdf'))
+    .catch(err => console.error('PDF export failed:', err))
+    .then(() => svg.remove());
+};
+
+const exportFilename = () => [state().plot_kind,
+  ...getPlotDropdowns().map(dropdown => state()[dropdown])].join('_');
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const svgNode = (tag, attrs) => {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const key in attrs) node.setAttribute(key, attrs[key]);
+  return node;
+};
+
+// The legend is plain HTML, so redraw it as an SVG, reading the position of
+// every piece from the live layout: the export then wraps exactly like what
+// is on screen, whatever width the resize handle was dragged to.
+const legendSVG = () => {
+  const all = Array.from(document.querySelectorAll('#plot_legend .curve'),
+                         label => label.parentElement);
+  // Hidden curves are filtered out
+  const hidden = all.filter(
+    item => !isVisible(item.querySelector('.curve').dataset.curve));
+  hidden.forEach(item => { item.style.display = 'none'; });
+  const items = all.filter(item => !hidden.includes(item));
+  const bounds = items.map(item => item.getBoundingClientRect());
+  const left = Math.min(...bounds.map(b => b.left));
+  const top = Math.min(...bounds.map(b => b.top));
+  const width = Math.ceil(Math.max(...bounds.map(b => b.right)) - left);
+  const height = Math.ceil(Math.max(...bounds.map(b => b.bottom)) - top);
+
+  const svg = svgNode('svg', {
+    xmlns: SVG_NS, width: width, height: height,
+    viewBox: `0 0 ${width} ${height}`,
+  });
+
+  // The HTML legend is left-aligned, the exported one is centred: shift each
+  // wrapped row (items sharing a top) by what is left over on its right.
+  const rowShift = bounds.map(box => {
+    const row = bounds.filter(other => Math.abs(other.top - box.top) < 1);
+    return (width - (Math.max(...row.map(b => b.right))
+                     - Math.min(...row.map(b => b.left)))) / 2
+           - (Math.min(...row.map(b => b.left)) - left);
+  });
+
+  items.forEach((item, i) => {
+    const box = bounds[i];
+    const group = svgNode('g', {transform: `translate(${rowShift[i]}, 0)`});
+    const at = el => {
+      const rect = el.getBoundingClientRect();
+      return {x: rect.left - left, y: rect.top - top,
+              w: rect.width, h: rect.height};
+    };
+
+    // The curve line, a top border on screen (see createLegendItem).
+    const hBar = item.querySelector('div[style*="border-top"]');
+    const bar = at(hBar);
+    // The stroke straddles y, the border is drawn below it: shift by half.
+    group.appendChild(svgNode('line', {
+      x1: bar.x, x2: bar.x + bar.w,
+      y1: bar.y + bar.h / 2, y2: bar.y + bar.h / 2,
+      stroke: getComputedStyle(hBar).borderTopColor, 'stroke-width': 2,
+    }));
+
+    // Marker: the path is drawn around (15, 15) of its holder <svg>, so line
+    // that point up with the middle of the box the <svg> actually occupies.
+    const symbol = item.querySelector('svg');
+    const marker = at(symbol);
+    const holder = svgNode('g', {
+      transform: `translate(${marker.x + marker.w / 2 - 15}, `
+                 + `${marker.y + marker.h / 2 - 15})`,
+    });
+    Array.from(symbol.children).forEach(
+      child => holder.appendChild(child.cloneNode(true)));
+    group.appendChild(holder);
+
+    const label = item.querySelector('.curve');
+    const style = getComputedStyle(label);
+    const text = svgNode('text', {
+      x: at(label).x, y: (box.top + box.bottom) / 2 - top,
+      // svg2pdf reads alignment-baseline (or vertical-align) only, it ignores
+      // dominant-baseline: with that one the text comes out half a line high.
+      'alignment-baseline': 'central',
+      'font-family': style.fontFamily, 'font-size': style.fontSize,
+      fill: style.color,
+    });
+    text.textContent = label.dataset.curve;
+    group.appendChild(text);
+
+    svg.appendChild(group);
+  });
+
+  hidden.forEach(item => { item.style.display = 'flex'; });
+  return {svg: svg, width: width, height: height};
+};
+
+// Matplotlib's loc='best', roughly: drop the legend in whichever corner of the
+// axes holds the fewest visible data points.
+const bestLegendCorner = (data, layout) => {
+  const corners = [
+    {x: 0.98, y: 0.98, xanchor: 'right', yanchor: 'top'},
+    {x: 0.02, y: 0.98, xanchor: 'left', yanchor: 'top'},
+    {x: 0.98, y: 0.02, xanchor: 'right', yanchor: 'bottom'},
+    {x: 0.02, y: 0.02, xanchor: 'left', yanchor: 'bottom'},
+  ];
+
+  // Log axes compared in decades, like the plot draws them.
+  const scale = axis => axis.type === 'log' ? Math.log10 : (v => v);
+  const xs = [], ys = [];
+  data.filter(trace => trace.visible === true && trace.x && trace.y)
+    .forEach(trace => {
+      const x = trace.x.map(scale(layout.xaxis));
+      const y = trace.y.map(scale(layout.yaxis));
+      x.forEach((xi, i) => {
+        if (isFinite(xi) && isFinite(y[i])) { xs.push(xi); ys.push(y[i]); }
+      });
+    });
+  if (xs.length === 0) return corners[0];
+
+  const range = values => values.reduce(
+    ([lo, hi], v) => [Math.min(lo, v), Math.max(hi, v)], [Infinity, -Infinity]);
+  const [xmin, xmax] = range(xs);
+  const [ymin, ymax] = range(ys);
+  const norm = (v, lo, hi) => hi > lo ? (v - lo) / (hi - lo) : 0.5;
+
+  const BOX = 0.4;  // share of the axes the legend is assumed to cover
+  const crowding = corner => xs.reduce((count, x, i) => {
+    const u = norm(x, xmin, xmax), v = norm(ys[i], ymin, ymax);
+    const inX = corner.xanchor === 'right' ? u > 1 - BOX : u < BOX;
+    const inY = corner.yanchor === 'top' ? v > 1 - BOX : v < BOX;
+    return count + (inX && inY ? 1 : 0);
+  }, 0);
+
+  return corners.reduce(
+    (best, corner) => crowding(corner) < crowding(best) ? corner : best,
+    corners[0]);
+};
+
+// Dropdown next to the PDF button, listing what the export can contain. The
+// arrow sits inside the button, so its click must not trigger the export.
+const togglePDFMenu = (event) => {
+  event.stopPropagation();
+  const menu = event.currentTarget.closest('.pdf-export-btn')
+    .querySelector('.pdf-menu');
+  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+  return false;
+};
+
+const closePDFMenu = () => {
+  hide(document.querySelectorAll('.pdf-menu'));
+  return false;
+};
+
+document.addEventListener('click', event => {
+  if (!event.target.closest('.pdf-export-btn')) closePDFMenu();
+});
+
+// kind: 'figure', 'legend' or 'both'. Defaults to legend-on-figure, except
+// for charts with no separate legend to add.
+const exportPDF = (kind) => {
+  closePDFMenu();
+  kind = kind || (isChart('scatter') ? 'both' : 'figure');
+  const filename = exportFilename()
+    + {figure: '', legend: '_legend', both: '_with_legend'}[kind];
+
+  if (kind === 'legend') {
+    const legend = legendSVG();
+    svgToPDF(legend.svg, filename, legend.width, legend.height);
+    return false;
+  }
+
+  const plot = getPlotDiv();
+  // Scale small plots (e.g. on a phone) up to matplotlib's default width.
+  const scale = Math.max(1, 460 / (plot.layout.width || plot.clientWidth));
+  const width = scale * (plot.layout.width || plot.clientWidth);
+  const height = scale * (plot.layout.height || plot.clientHeight);
+
+  // Render from a figure object, not the div, so the export changes do not
+  // affect what's on screen. plot.layout, not getLayout(): it carries what is
+  // on screen right now, including the axis ranges and the log dtick.
+  const layout = {...plot.layout};
+  let data = plot.data;
+  if (kind === 'both') {
+    // Drop the hidden curves
+    data = getChartData().filter(trace => trace.visible !== 'legendonly');
+    layout.showlegend = true;
+    layout.legend = {
+      ...bestLegendCorner(data, layout),
+      bgcolor: 'rgba(255, 255, 255, 0.8)',
+      bordercolor: '#cccccc', borderwidth: 1,
+    };
+  }
+
+  loadDejaVu().catch(() => null)
+    .then(() => {
+      layout.font = {...layout.font, family: EXPORT_FONT};
+      layout.title = fitTitle(layout, width);
+      return Plotly.toImage({data: data, layout: layout},
+                            {format: 'svg', width: width, height: height});
+    })
+    .then(dataUrl => svgToPDF(
+      new DOMParser().parseFromString(
+        decodeURIComponent(dataUrl.split(',')[1]), 'image/svg+xml')
+        .documentElement,
+      filename, width, height))
+    .catch(err => console.error('PDF export failed:', err));
+
+  return false;
+};
+
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * LEFT SIDEBAR MANAGEMENT
@@ -662,6 +1028,26 @@ const renderSidebar = () => {
   renderSuboptimalRelativeToggle();
   mapSelectorsToState();
   renderPlotDropdowns();
+  renderExportButtons();
+}
+
+// Tables export to LaTeX, everything else to PDF.
+const renderExportButtons = () => {
+  const isTable = isChart('table');
+  const [shown, hidden] = isTable
+    ? ['.latex-export-btn', '.pdf-export-btn']
+    : ['.pdf-export-btn', '.latex-export-btn'];
+  show(document.querySelectorAll(shown));
+  hide(document.querySelectorAll(hidden));
+
+  // Only scatter has a legend outside the figure, so it is the only chart with
+  // something to choose from.
+  (isChart('scatter') ? show : hide)(
+    document.querySelectorAll('.pdf-legend-choice'));
+  const toggle = document.getElementById('pdf-menu-toggle');
+  // Alone, the PDF button rounds on both sides again.
+  toggle.parentElement.classList.toggle('no-menu', !isChart('scatter'));
+  closePDFMenu();
 }
 
 const escapeHTML = (s) => String(s)
@@ -922,6 +1308,14 @@ const _getScale = (scale) => {
   }
 }
 
+// Plotly draws 10^n tick labels 25% bigger than the others (formatLog), so a
+// log axis has to ask for less to tick at the same size as a linear one.
+const TICK_SIZE = 12;
+const axisScale = (type) => ({
+  type: type,
+  tickfont: { size: type === 'log' ? TICK_SIZE / 1.25 : TICK_SIZE },
+});
+
 const MPL_AXIS = {
   showline: true,
   linecolor: 'black',
@@ -929,19 +1323,38 @@ const MPL_AXIS = {
   mirror: true,
   ticks: 'outside',
   tickcolor: 'black',
-  gridcolor: '#d9d9d9',
+  gridcolor: '#b0b0b0',
   griddash: 'dot',
-  gridwidth: 0.5,
+  gridwidth: 1,
   zeroline: false,
   automargin: true,
   exponentformat: 'power',
   minexponent: 2,
+  tickfont: { size: TICK_SIZE },
   minor: { ticks: 'outside', ticklen: 4, tickcolor: 'black', showgrid: false },
 };
 const MPL_LAYOUT = {
   plot_bgcolor: 'white',
   paper_bgcolor: 'white',
   font: { family: 'DejaVu Sans, Arial, sans-serif', color: 'black' },
+};
+
+const TITLE_LINE_HEIGHT = 22;  // one title line at the default 17px font
+const TITLE_GAP = 7;           // space left under the title
+
+const axisTitle = (text) => ({ text, standoff: 10, font: { size: 15 } });
+
+// Top margin sized from the title's line count; the title block is centered on
+// half of it, hence the 2x. Left/right/bottom are grown by the axes' automargin.
+const titleLayout = (text) => {
+  const lines = String(text).split(/<br\s*\/?>/).length;
+  return {
+    title: { text },
+    margin: {
+      l: 5, r: 5, b: 5,
+      t: 2 * (TITLE_LINE_HEIGHT * lines + TITLE_GAP) - 30,
+    },
+  };
 };
 
 const getBarChartLayout = () => {
@@ -953,8 +1366,8 @@ const getBarChartLayout = () => {
     },
     yaxis: {
       ...MPL_AXIS,
-      type: getScale().yaxis,
-      title: data["ylabel"],
+      ...axisScale(getScale().yaxis),
+      title: axisTitle(data["ylabel"]),
     },
     xaxis: {
       ...MPL_AXIS,
@@ -964,7 +1377,7 @@ const getBarChartLayout = () => {
       showgrid: false,  // X axis is text: no vertical gridlines
     },
     showlegend: false,
-    title: data["title"],
+    ...titleLayout(data["title"]),
     ...MPL_LAYOUT,
   };
 
@@ -1000,8 +1413,8 @@ const getBoxplotChartLayout = () => {
     },
     yaxis: {
       ...MPL_AXIS,
-      type: getScale().yaxis,
-      title: plot_info["ylabel"],
+      ...axisScale(getScale().yaxis),
+      title: axisTitle(plot_info["ylabel"]),
     },
     xaxis: {
       ...MPL_AXIS,
@@ -1009,7 +1422,7 @@ const getBoxplotChartLayout = () => {
       showgrid: typeof plot_info.data[0].x[0] !== "string",  // hide vertical gridlines for text X axis
     },
     showlegend: false,
-    title: plot_info["title"],
+    ...titleLayout(plot_info["title"]),
     ...MPL_LAYOUT,
   };
 
@@ -1042,16 +1455,16 @@ const getScatterChartLayout = () => {
     },
     xaxis: {
       ...MPL_AXIS,
-      type: getScale().xaxis,
-      title: customData.xlabel,
+      ...axisScale(getScale().xaxis),
+      title: axisTitle(customData.xlabel),
       tickangle: 0,
     },
     yaxis: {
       ...MPL_AXIS,
-      type: getScale().yaxis,
-      title: customData.ylabel,
+      ...axisScale(getScale().yaxis),
+      title: axisTitle(customData.ylabel),
     },
-    title: `${customData.title}`,
+    ...titleLayout(`${customData.title}`),
     ...MPL_LAYOUT,
   };
 
@@ -1323,7 +1736,15 @@ const formatCell = (value) => {
   return gridjs.html(markupToHtml(text));
 };
 
-const escapeLatex = (value) => value.replace(/([&%$#_{}])/g, '\\$1');
+// Single pass: escaping in several passes would re-escape the braces of the
+// `\textbackslash{}` replacements.
+const LATEX_ESCAPES = {
+  '\\': '\\textbackslash{}', '~': '\\textasciitilde{}',
+  '^': '\\textasciicircum{}',
+};
+const escapeLatex = (value) => value.replace(
+  /[\\~^&%$#_{}]/g, c => LATEX_ESCAPES[c] || `\\${c}`
+);
 
 // Recurse: Grid.js wraps formatted cells in a <span>, and markup can be
 // nested (`**__text__**`).
@@ -1598,97 +2019,14 @@ function renderTable() {
   precisionContainer.appendChild(labelPrec);
   precisionContainer.appendChild(btnInc);
 
-  // Export Button (Right)
-  const exportButton = document.createElement("button");
-  exportButton.id = "table-export";
-  exportButton.innerText = "Export LaTeX";
-  exportButton.className = "inline-flex items-center px-4 py-2 space-x-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500";
-
-  exportButton.addEventListener('click', () => {
-    exportTable();
-  });
-
   table_container.appendChild(card);
 
   footer.appendChild(precisionContainer);
-  footer.appendChild(exportButton);
   footerWrapper.appendChild(columnsContainer);
   footerWrapper.appendChild(footer);
   table_container.appendChild(footerWrapper);
 }
 
-
-async function exportTable() {
-  const button = document.getElementById("table-export");
-  const defaultText = button.innerHTML;
-  button.innerHTML = "Copying";
-
-  // Export the table as displayed in the Grid.js table, so that the LaTeX
-  // output matches the current sorting, search filter, visible columns and
-  // float precision.
-  const displayedColumns = Array.from(
-    document.querySelectorAll('#table_container .gridjs-th-content'),
-    elementToLatex
-  );
-  const displayedRows = Array.from(
-    document.querySelectorAll('#table_container .gridjs-table tbody tr')
-  ).map(tr => Array.from(tr.querySelectorAll('td'), elementToLatex));
-
-  const title = (getPlotData() || {}).title;
-  let value = "";
-  if (title) {
-    // Caption above the table, kept on a single line.
-    value += "\\begin{table}[h]\n\\centering\n\\caption{";
-    value += escapeLatex(title.replace(/<br\s*\/?>/g, ", "));
-    value += "}\n";
-  }
-  value += "\\begin{tabular}{l";
-  value += "c".repeat(displayedColumns.length - 1);
-  value += "}\n";
-  value += "\\hline\n";
-
-  value += displayedColumns[0];
-  displayedColumns.slice(1).forEach(metric => value += ` & ${metric}`);
-
-  value += " \\\\\n";
-  value += "\\hline\n";
-
-  displayedRows.forEach(rowData => {
-    value += rowData[0];
-    rowData.slice(1).forEach(cell => {
-      value += ` & ${cell}`;
-    });
-    value += " \\\\\n";
-  });
-
-  value += "\\hline\n";
-  value += "\\end{tabular}";
-  if (title) value += "\n\\end{table}";
-
-  try {
-    await navigator.clipboard.writeText(value);
-    button.innerHTML = "Copied in clipboard!";
-    setTimeout(() => button.innerHTML = defaultText, 2500);
-  } catch (err) {
-    // No clipboard access (e.g. file opened on a phone): show the LaTeX in a
-    // text box so it can be copied by hand.
-    let area = document.getElementById("table-export-text");
-    if (!area) {
-      area = document.createElement("textarea");
-      area.id = "table-export-text";
-      area.readOnly = true;
-      area.rows = 10;
-      area.className = "w-full mt-2 p-2 font-mono text-xs border border-gray-300 rounded-md";
-      area.addEventListener('blur', () => area.remove());
-      button.parentElement.after(area);
-    }
-    area.value = value;
-    area.focus();
-    area.select();
-    button.innerHTML = "Copy the LaTeX below";
-    setTimeout(() => button.innerHTML = defaultText, 2500);
-  }
-}
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1716,7 +2054,22 @@ const renderLegend = () => {
       createLegendItem(curve, curve_data.color, curve_data.marker % N_SYMBOLS)
     );
   });
+
+  // Width drag handle (the height follows from how the items wrap). Appended
+  // last since the loop above starts from an empty legend.
+  legend.appendChild(makeResizeHandle(legend, 'x', clampLegendWidth));
+  legend.style.width = legendWidth;
 }
+
+// Width the user dragged the legend to ('' until they do).
+let legendWidth = '';
+
+// The legend never gets wider than the column holding it.
+const clampLegendWidth = (legend) => {
+  const max = legend.parentElement.clientWidth;
+  if (legend.offsetWidth > max) legend.style.width = `${max}px`;
+  legendWidth = legend.style.width;
+};
 
 /**
  * Creates a legend item which contains the curve name,
@@ -1786,11 +2139,11 @@ const createLegendItem = (curve, color, symbolNumber) => {
     textContainer.insertAdjacentHTML('beforeend', descIconHTML(desc));
   }
 
-  // Create the horizontal bar in the legend to represent the curve
+  // The curve line, drawn as a top border. legendSVG() picks it out by that.
   const hBar = document.createElement('div');
-  hBar.style.height = '2px';
+  hBar.style.height = '0';
   hBar.style.width = '30px';
-  hBar.style.backgroundColor = color;
+  hBar.style.borderTop = `2px solid ${color}`;
   hBar.style.position = 'absolute';
   hBar.style.left = '1em';
   hBar.style.zIndex = 10;

@@ -42,6 +42,10 @@ PLOT
   cells and option values.
   By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`935`)
 
+- Add ``Download PDF`` button in the HTML interface to download the current
+  plot as a PDF file.
+  By `Jad Yehya`_ & `Hippolyte Verninas`_ (:gh:`989`)
+
 
 .. _changes_1_10:
 
