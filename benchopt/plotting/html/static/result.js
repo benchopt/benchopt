@@ -658,7 +658,7 @@ const exportLatex = (button) => {
     tr => Array.from(tr.querySelectorAll('td'), elementToLatex));
 
   const title = (getPlotData() || {}).title;
-  let latex = "";
+  let latex = "% Table generated with benchopt, needs \\usepackage{booktabs}\n";
   if (title) {
     // Caption above the table, kept on a single line.
     latex += "\\begin{table}[h]\n\\centering\n\\caption{";
