@@ -698,7 +698,7 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 }
 
 /* Dropdown next to the PDF button: what to put in the exported file.
-Split button: PDF and its chevron are fused, only the outer corners round.
+   Split button: PDF and its chevron are fused, only the outer corners round. */
 .pdf-export-btn:not(.no-menu) > a:first-child {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
