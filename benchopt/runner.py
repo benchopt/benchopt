@@ -7,7 +7,7 @@ from .callback import _Callback
 from .benchmark import Benchmark
 from .utils.sys_info import get_sys_info
 from .utils.pdb_helpers import exception_handler
-from .utils.terminal_output import TerminalOutput
+from .utils.rich_output import make_terminal_output
 from .parallel_backends import parallel_run
 from .parallel_backends import check_parallel_config
 from .results import save_results
@@ -16,6 +16,14 @@ from ._generate_runs import generate_run_kwargs
 
 FAILURE_STATUS = ['diverged', 'error', 'interrupted']
 SUCCESS_STATUS = ['done', 'max_runs', 'timeout']
+
+
+def _get_n_workers(parallel_config):
+    """Number of runs that can be executed concurrently, for the display."""
+    config = parallel_config or {}
+    return (
+        config.get('n_jobs') or config.get('slurm_array_parallelism') or 1
+    )
 
 
 class FailedRun(RuntimeError):
@@ -280,7 +288,10 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         Path to the output file where the results have been saved.
     """
     exit_code = 0
-    terminal = TerminalOutput(n_repetitions, show_progress)
+    terminal = make_terminal_output(
+        n_repetitions, show_progress, pdb=pdb,
+        n_jobs=_get_n_workers(parallel_config),
+    )
 
     # Resolve the output path before runs start so that run_output_base is
     # stable across all workers. A value containing a path separator is an
@@ -341,34 +352,54 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         benchmark, run_one_to_cvg_final, total_cvg_kwargs_generator,
         config=parallel_config, collect=collect
     )
+
+    log_file = output_path.with_suffix('.log')
     try:
-        for result, key, status, reason, cached in results_generator:
-            run_statistics.extend(result)
-            terminal.set(dataset=key[0], objective=key[1], solver=key[2])
-            terminal.show_status(status=status, reason=reason, cached=cached)
-            if status == 'interrupted':
-                raise SystemExit(1)
+        # The generator drives the run enumeration, so the whole display is
+        # held while the results are consumed.
+        with terminal.live(log_file=log_file, benchmark=benchmark.name):
+            for result, key, status, reason, cached in results_generator:
+                run_statistics.extend(result)
+                terminal.set(dataset=key[0], objective=key[1], solver=key[2])
+                terminal.show_status(
+                    status=status, reason=reason, cached=cached
+                )
+                if status == 'interrupted':
+                    raise SystemExit(1)
     except KeyboardInterrupt:
         print(end='', flush=True)
-        terminal.show_status('interrupted')
+        terminal.show_interrupted()
         raise
 
     import pandas as pd
-    df = pd.DataFrame(run_statistics)
+    with terminal.step("Collecting results"):
+        df = pd.DataFrame(run_statistics)
     if df.empty:
         terminal.savefile_status()
         return 1, None
 
     # Save output in parquet file at the resolved output path.
-    output_file = save_results(df, output_path)
+    with terminal.step("Saving results"):
+        output_file = save_results(df, output_path)
 
+    html_files = None
     if plot_result:
         try:
             from benchopt.plotting import plot_benchmark
-            plot_benchmark(output_file, benchmark, html=html, display=display)
+            with terminal.step("Rendering results"):
+                html_files = plot_benchmark(
+                    output_file, benchmark, html=html, display=display
+                )
         except Exception as e:
             print(f"Failed to plot the benchmark results: {e}")
             exit_code = 1
+
+    terminal.show_outputs(
+        results=output_file,
+        # Without `html`, `plot_benchmark` returns the matplotlib figures.
+        report=html_files[0] if html and html_files else None,
+        log=log_file,
+    )
 
     return exit_code, output_file
 

@@ -1,3 +1,4 @@
+import subprocess
 from contextlib import ExitStack
 
 try:
@@ -24,6 +25,22 @@ def get_slurm_executor(benchmark, config, timeout=100):
     executor = submitit.AutoExecutor(slurm_folder)
     executor.update_parameters(**config)
     return executor
+
+
+def cancel_jobs(jobs):
+    """Cancel the jobs, with one `scancel` call for all the job arrays.
+
+    The ids of jobs in an array are `<array_id>_<index>`: cancelling the
+    array cancels the jobs left in it, instead of one call per job.
+    """
+    arrays = set()
+    for job in jobs:
+        if getattr(job, "_cancel_command", None) == "scancel":
+            arrays.add(str(job.job_id).split("_")[0])
+        else:
+            job.cancel(check=False)
+    if arrays:
+        subprocess.call(["scancel", *sorted(arrays)])
 
 
 def harmonize_slurm_config(slurm_cfg):
@@ -86,10 +103,15 @@ def run_on_slurm(
 ):
 
     executors = {}
-    tasks = []
+    tasks, keys, terminal = [], [], None
 
     with ExitStack() as stack:
         for kwargs in run_kwargs_generator:
+            terminal = kwargs.get("terminal", terminal)
+            meta = kwargs.get("meta")
+            if meta is not None:
+                keys.append((meta["dataset_name"], meta["objective_name"],
+                             meta["solver_name"]))
             solver = kwargs.get("solver")
             if solver is not None:
                 job_slurm_config = get_solver_slurm_config(
@@ -117,13 +139,21 @@ def run_on_slurm(
             if "dataset" in kwargs:
                 kwargs["dataset"]._data = None
 
-    # Yield results as jobs finish (unordered)
-    for t in as_completed(tasks):
-        exc = t.exception()
-        if exc is not None:
-            # Cancel remaining tasks and raise error
-            for tt in tasks:
-                tt.cancel()
-            raise exc
+    if terminal is not None and len(keys) == len(tasks):
+        terminal.set_running_probe(lambda: [
+            key for key, job in zip(keys, tasks) if job.state == "RUNNING"
+        ])
 
-        yield t.results()[0]
+    # Yield results as jobs finish (unordered)
+    try:
+        for t in as_completed(tasks):
+            exc = t.exception()
+            if exc is not None:
+                raise exc
+
+            yield t.results()[0]
+    except BaseException:
+        # A job failed, or the run was interrupted, e.g. with Ctrl-C or from
+        # `benchopt monitor`: do not leave the remaining jobs running.
+        cancel_jobs(tasks)
+        raise

@@ -190,6 +190,31 @@ These keys will be passed to create an instance of |Cluster|_, that will be used
     coiled_worker_vm_types: |
         n1-standard-1
 
+.. _monitor_run:
+
+Monitoring the runs
+-------------------
+
+In a terminal, ``benchopt run`` displays the progress of the runs live, and
+writes the output of the solvers in a log file next to the results. Each run
+also stores a small snapshot of its progress in the ``runs_dir`` folder (see
+:ref:`config_benchopt`), so that it can be followed from another shell, e.g.
+for a run launched in a SLURM job or without a terminal:
+
+.. code-block:: bash
+
+    benchopt monitor        # pick one of the last runs with the arrow keys
+    benchopt monitor last   # follow the most recent run
+
+In the list of runs, press ``d`` to delete the snapshot of a finished run.
+The selected run is displayed live, finished or not: press ``esc`` to go
+back to the list, ``q`` to quit, ``p`` to quit and print its results, or ``k`` to interrupt a run in progress
+as Ctrl-C would: its results are saved and its SLURM jobs are cancelled. This
+works from any machine sharing the ``runs_dir`` folder, e.g. another login
+node of the cluster. Without a terminal, ``benchopt monitor`` only prints the
+list of runs, or the results of the selected one. Set the ``no_rich`` config option to fall back on the
+plain line by line output of ``benchopt run``.
+
 
 .. |update_params| replace:: ``update_parameters``
 .. _update_params: https://github.com/facebookincubator/submitit/blob/main/submitit/slurm/slurm.py#L386
