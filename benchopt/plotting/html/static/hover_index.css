@@ -697,10 +697,8 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
   color: #9ca3af;
 }
 
-/* Dropdown next to the PDF button: what to put in the exported file. The page's
-   utility sheet has no left-0/z-20/min-w/shadow-lg, so they live here. */
-/* Split button: PDF and its chevron are fused, only the outer corners round.
-   The utility sheet has no rounded-l-md/rounded-r-md. */
+/* Dropdown next to the PDF button: what to put in the exported file.
+Split button: PDF and its chevron are fused, only the outer corners round.
 .pdf-export-btn:not(.no-menu) > a:first-child {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
