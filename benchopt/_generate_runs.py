@@ -7,20 +7,15 @@ from .utils.run_context import RunContext, SeedContextError
 
 # Canonical loop nesting order when no grouping is requested (rep innermost).
 CANONICAL_AXES = ('dataset', 'objective', 'solver')
-# `repetition` is groupable but needs the generator hoist to nest above solver.
+# `repetition` is groupable but needs to be below dataset and objective.
 GROUPABLE_AXES = CANONICAL_AXES + ('repetition',)
 
 
 def _normalize_group_by(group_by):
     """Validate ``group_by`` and return it as a list.
 
-    ``repetition`` is a valid axis, but its cardinality is resolved per
-    (dataset, objective) (possibly from ``objective.cv``, where each rep is a
-    different fold), so it must nest *inside* ``dataset`` and ``objective`` --
-    i.e. both must also be in ``group_by``. It is otherwise free relative to
-    ``solver``: ``[dataset, objective, repetition]`` batches solvers under a
-    fold (sharing per-fold setup); ``[dataset, objective, solver]`` batches
-    reps under a config (sharing solver state).
+    ``repetition`` must come after ``dataset`` and ``objective``, as the number
+    of repetitions (e.g. CV folds) depends on them.
     """
     if not group_by:
         return []
@@ -35,8 +30,6 @@ def _normalize_group_by(group_by):
     if len(set(group_by)) != len(group_by):
         raise ValueError(f"Duplicate axes in `group_by`: {group_by}.")
     if 'repetition' in group_by:
-        # 'dataset' and 'objective' must not only be present but nest *outside*
-        # rep (the fold depends on them), i.e. appear before it in the order.
         outer = set(group_by[:group_by.index('repetition')])
         if not {'dataset', 'objective'} <= outer:
             raise ValueError(
@@ -47,65 +40,26 @@ def _normalize_group_by(group_by):
     return group_by
 
 
-def _ordered_axes(group_by):
-    """Loop nesting order with the ``group_by`` axes outermost.
-
-    ``group_by=None`` keeps the canonical ``dataset -> objective -> solver``
-    order, so the default run stream is unchanged. A str or list of axes moves
-    those axes to the front (outermost), making runs contiguous by that key.
-
-    The order also drives memory: only the outermost axis is streamed (see
-    :func:`_materialize_axes`), so list the heaviest, data-carrying axis first.
-    """
-    group_by = _normalize_group_by(group_by)
-    # Remaining axes keep canonical order; rep stays innermost by default.
-    rest = [a for a in GROUPABLE_AXES if a not in group_by]
-    return group_by + rest
-
-
-# `prepare` kwargs carry no `meta`, hence `.get('meta', {})` + fallback.
-_AXIS_KEY = {
-    'dataset': lambda kw: kw.get('meta', {}).get('dataset_name',
-                                                 kw.get('dataset')),
-    'objective': lambda kw: kw.get('meta', {}).get('objective_name',
-                                                   kw.get('objective')),
-    'solver': lambda kw: kw.get('meta', {}).get('solver_name',
-                                                kw.get('solver')),
-    'repetition': lambda kw: kw.get('meta', {}).get('idx_rep'),
-}
-
-
 def group_runs(run_kwargs_iter, group_by):
-    """Yield contiguous batches of run kwargs sharing the ``group_by`` key.
+    """Yield contiguous batches of run kwargs sharing the ``group_by`` axes.
 
-    Relies on the generator emitting runs already ordered by ``group_by`` (see
-    :func:`_ordered_axes`), so grouping is a lazy ``itertools.groupby`` with no
-    full materialization. ``group_by=None`` yields one run per batch, i.e. the
-    default one job per (dataset, objective, solver, repetition). Any config
-    grouping collapses that config's repetitions into a single batch (the #860
-    goal), since repetitions are always the innermost axis.
+    Runs must already be ordered by ``group_by`` (see `generate_run_kwargs`).
+    Without ``group_by``, each run is its own batch.
     """
     group_by = _normalize_group_by(group_by)
     if not group_by:
-        for run_kwargs in run_kwargs_iter:
-            yield [run_kwargs]
+        yield from ([run_kwargs] for run_kwargs in run_kwargs_iter)
         return
-    keys = [_AXIS_KEY[axis] for axis in group_by]
-
-    def _key(run_kwargs):
-        return tuple(k(run_kwargs) for k in keys)
-
-    for _, batch in itertools.groupby(run_kwargs_iter, key=_key):
+    # `str` as the objective is copied per run; missing axes give 'None'.
+    for _, batch in itertools.groupby(
+        run_kwargs_iter,
+        key=lambda kw: tuple(str(kw.get(axis)) for axis in group_by),
+    ):
         yield list(batch)
 
 
-def _enter_axis(terminal, axis, item, is_installed, i_solver=None):
-    """Run terminal side-effects for entering `item`; return False to skip.
-
-    ``i_solver`` is the solver's position in its axis loop; its only use is
-    gating ``terminal.skip`` so an objective-skip prints once per (dataset,
-    objective) -- so it is passed only for the solver axis.
-    """
+def _enter_axis(terminal, axis, item, is_installed, i_axis):
+    """Display `item` in the terminal; return False if it is not installed."""
     if axis == 'dataset':
         terminal.set(dataset=item)
         if not is_installed:
@@ -119,7 +73,7 @@ def _enter_axis(terminal, axis, item, is_installed, i_solver=None):
             return False
         terminal.display_objective()
     else:  # solver
-        terminal.set(solver=item, i_solver=i_solver)
+        terminal.set(solver=item, i_solver=i_axis)
         if not is_installed:
             terminal.show_status('not installed')
             return False
@@ -127,21 +81,10 @@ def _enter_axis(terminal, axis, item, is_installed, i_solver=None):
 
 
 def _materialize_axes(order, datasets, objectives, solvers):
-    """Build each axis's instances, keeping only the outermost lazy.
+    """Build each axis's instances, keeping only the outermost one lazy.
 
-    The outermost axis (``order[0]``) is iterated once, so it is left as a lazy
-    generator -- as in the ungrouped default on ``main``: its instances, and
-    the data they cache (e.g. ``Dataset._data``), are freed as the nest
-    advances instead of all being held resident. The inner axes are re-entered
-    per outer combination, so they are materialized (listed) and stay resident
-    for the whole run.
-
-    Ordering therefore matters for memory: only the *outermost* axis is
-    streamed. Put the heaviest, data-carrying axis (usually ``dataset``) first
-    in ``group_by`` so its data is freed as the run advances -- a heavy axis
-    placed after the first group_by axis keeps every one of its instances (and
-    their cached data) resident. E.g. ``group_by=['dataset', 'objective']``
-    streams datasets, whereas ``['objective', 'dataset']`` holds them all.
+    Inner axes are re-entered per outer item, so they are listed and stay in
+    memory. Put the heaviest axis (usually ``dataset``) first in ``group_by``.
     """
     from .benchmark import _list_parametrized_classes
     gens = {
@@ -178,16 +121,10 @@ def _run_meta(benchmark, dataset, objective, solver, rep, sampling_strategy,
 
 def _prepare_objective(benchmark, run_context, dataset, objective, solver,
                        n_repetitions, terminal):
-    """Resolve the repetition count, setting the objective's data if needed.
+    """Return the number of repetitions, or ``None`` if the objective skips.
 
-    The data is only loaded here when ``n_repetitions`` is None (it may come
-    from ``objective.cv``); otherwise each run loads it with its own context.
-    Called with the run's ``solver`` on the default (rep-innermost) path, where
-    each run reseeds with its own solver. When ``repetition`` is a group_by
-    level the fold is shared across solvers, so it is called with
-    ``solver=None``: the data must then be solver-independent, and a
-    ``get_seed(use_solver=True)`` in ``get_data``/``set_data`` fails fast here
-    with a clear error. Returns the repetition count, or ``None`` if skipped.
+    ``solver`` is None when ``repetition`` is a group_by level, as the fold is
+    then shared across solvers.
     """
     run_context.set_run_context(
         objective=objective, dataset=dataset, solver=solver, repetition=0,
@@ -232,14 +169,12 @@ def generate_run_kwargs(
 ):
     """Yield kwargs for each ``run_one_to_cvg`` call in the benchmark.
 
-    Walks the axes in ``group_by`` order (see :func:`_ordered_axes`) as one
-    recursive nest, holding the group_by axes constant outermost.
-    ``repetition`` is the innermost axis by default -- expanded per
-    (dataset, objective, solver) and shown as the ``(k / total)`` counter --
-    but becomes a display level (a ``|--rep k`` node) when it is a group_by
-    axis, so solvers batch under a shared fold.
+    The ``group_by`` axes are the outermost loops, so runs sharing them are
+    contiguous. ``repetition`` is the innermost axis unless it is in
+    ``group_by``.
     """
-    order = _ordered_axes(group_by)
+    group_by = _normalize_group_by(group_by)
+    order = group_by + [a for a in GROUPABLE_AXES if a not in group_by]
     # rep stays the innermost runtime counter unless it is a group_by level.
     rep_is_level = order[-1] != 'repetition'
     axis_items = _materialize_axes(order, datasets, objectives, solvers)
@@ -292,8 +227,7 @@ def generate_run_kwargs(
                     yield from _rec(depth + 1, chosen)
             return
         for i_axis, (item, is_installed) in enumerate(axis_items[axis]):
-            if not _enter_axis(terminal, axis, item, is_installed,
-                               i_solver=i_axis):
+            if not _enter_axis(terminal, axis, item, is_installed, i_axis):
                 continue
             chosen[axis] = item
             if last:
