@@ -51,7 +51,7 @@ DOC
 
 - Show how to install a requirement from source, e.g. a git branch, with a
   ``pip::`` requirement. See :ref:`specify_requirements`. Also fix a dead link
-  to the CLI documentation. By `Mark Santos`_
+  to the CLI documentation. By `Mark Santos`_ (:gh:`1027`)
 
 
 .. _changes_1_10:
