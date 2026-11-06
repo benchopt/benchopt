@@ -111,11 +111,9 @@ def run_on_slurm(
 ):
     """Submit each pre-grouped batch (see `group_runs`) as SLURM job(s).
 
-    ``run_batch`` is the batched run function (see the ``run_batch`` factory in
-    this package), passed in rather than imported to keep the dependency
-    one-directional. ``batch_n_jobs`` only sizes the job wall-time here (each
-    job runs its group in ``ceil(len / batch_n_jobs)`` waves). A batch is
-    further split by SLURM config (`_split_by_slurm_config`), since it can span
+    ``batch_n_jobs`` sizes the job wall-time here, with each
+    job running its group in ``ceil(len / batch_n_jobs)`` waves. A batch is
+    further split by SLURM config, since it can span
     several solvers with different `slurm_params`.
     """
     executors = {}
@@ -128,7 +126,11 @@ def run_on_slurm(
                 # A job runs its group in `waves` rounds, so it needs `waves`
                 # times the per-run timeout; different lengths get their own
                 # array.
-                waves = math.ceil(len(run_group) / batch_n_jobs)
+                n_workers = batch_n_jobs
+                if n_workers < 0:  # joblib convention: -1 is all the CPUs
+                    n_cpus = job_slurm_config.get("slurm_cpus_per_task", 1)
+                    n_workers = max(1, n_cpus + 1 + n_workers)
+                waves = math.ceil(len(run_group) / n_workers)
                 executor_config = (hashable_pytree(job_slurm_config), waves)
 
                 if executor_config not in executors:

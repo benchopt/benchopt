@@ -46,7 +46,6 @@ def group_runs(run_kwargs_iter, group_by):
     Runs must already be ordered by ``group_by`` (see `generate_run_kwargs`).
     Without ``group_by``, each run is its own batch.
     """
-    group_by = _normalize_group_by(group_by)
     if not group_by:
         yield from ([run_kwargs] for run_kwargs in run_kwargs_iter)
         return
@@ -59,7 +58,11 @@ def group_runs(run_kwargs_iter, group_by):
 
 
 def _enter_axis(terminal, axis, item, is_installed, i_axis):
-    """Display `item` in the terminal; return False if it is not installed."""
+    """Display `item` in the terminal; return False if it is not installed.
+
+    Used by the recursion in `generate_run_kwargs` to skip the subtree of an
+    item that is not installed.
+    """
     if axis == 'dataset':
         terminal.set(dataset=item)
         if not is_installed:
@@ -97,13 +100,16 @@ def _materialize_axes(order, datasets, objectives, solvers):
             for axis, g in gens.items()}
 
 
-def _run_meta(benchmark, dataset, objective, solver, rep, sampling_strategy,
-              obj_description):
+def _run_meta(benchmark, dataset, objective, solver, rep):
     """Build the per-run ``meta`` dict (feeds display and the cache key)."""
+    # for plotting purposes consider 'callback' as 'iteration'
+    sampling_strategy = solver._solver_strategy
+    if sampling_strategy == 'callback':
+        sampling_strategy = 'iteration'
     return {
         'base_seed': benchmark.seed,
         'objective_name': str(objective),
-        'obj_description': obj_description,
+        'obj_description': objective.__doc__ or "",
         'solver_name': str(solver),
         'solver_description': inspect.cleandoc(solver.__doc__ or ""),
         'dataset_name': str(dataset),
@@ -173,7 +179,7 @@ def generate_run_kwargs(
     contiguous. ``repetition`` is the innermost axis unless it is in
     ``group_by``.
     """
-    group_by = _normalize_group_by(group_by)
+    group_by = group_by or []
     order = group_by + [a for a in GROUPABLE_AXES if a not in group_by]
     # rep stays the innermost runtime counter unless it is a group_by level.
     rep_is_level = order[-1] != 'repetition'
@@ -190,12 +196,7 @@ def generate_run_kwargs(
         # Resolve inheritance now: `meta` feeds the cache key and must not
         # depend on which solver ran first in the process.
         solver._inherit_stopping_criterion(objective)
-        # for plotting purposes consider 'callback' as 'iteration'
-        sampling_strategy = solver._solver_strategy
-        if sampling_strategy == 'callback':
-            sampling_strategy = 'iteration'
-        meta = _run_meta(benchmark, dataset, objective, solver, rep,
-                         sampling_strategy, objective.__doc__ or "")
+        meta = _run_meta(benchmark, dataset, objective, solver, rep)
         run_ctx = base_ctx.set_run_context(
             objective=objective_rep, dataset=dataset, solver=solver,
             repetition=rep, base_seed=benchmark.seed,
@@ -208,6 +209,8 @@ def generate_run_kwargs(
         )
 
     def _rec(depth, chosen):
+        """Recursively instantiate the product of all components, skipping
+        incompatible parts of the tree."""
         axis = order[depth]
         last = depth + 1 == len(order)
         if axis == 'repetition':

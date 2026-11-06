@@ -256,7 +256,7 @@ def test_split_by_slurm_config():
     assert len(groups[0][1]) == 2
 
 
-@pytest.mark.parametrize("batch_n_jobs, waves", [(1, 2), (2, 1)])
+@pytest.mark.parametrize("batch_n_jobs, waves", [(1, 2), (2, 1), (-1, 2)])
 def test_run_on_slurm_grouped(mocked_submitit, batch_n_jobs, waves):
     # Two solvers grouped by dataset are collapsed into a single job that runs
     # them in `waves` rounds, with a wall-time sized for the whole batch.

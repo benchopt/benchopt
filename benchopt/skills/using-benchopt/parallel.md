@@ -71,7 +71,7 @@ slurm_additional_parameters:
 - `group_by` (see "Grouping runs" above) collapses runs into single jobs to cut
   scheduling overhead. `batch_n_jobs: N` (parallel config, `submitit` only) then runs each
   batch on N workers inside its job — request the matching CPUs (e.g.
-  `slurm_cpus_per_task`) or they oversubscribe. Runs with different SLURM configs
+  `slurm_cpus_per_task`) or they oversubscribe. `-1` uses all the job's CPUs. Runs with different SLURM configs
   are never grouped together.
 
 ### Dask

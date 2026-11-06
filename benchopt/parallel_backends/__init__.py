@@ -20,16 +20,14 @@ def is_distributed_frontal():
 
 
 def run_batch(run, n_jobs=1):
-    """Return a function that runs a whole batch of run-kwargs at once.
+    """Decorator to run a whole batch of run-kwargs at once.
 
     The returned ``run_batch(batch)`` runs ``run(**kwargs)`` for each kwargs
-    in one process if ``n_jobs <= 1`` (max cache/state reuse across the batch),
-    else across ``n_jobs`` sub-processes. Returning the batched function lets
-    it be passed to every backend -- including ``run_on_slurm`` -- without the
-    backend importing it back from this package.
+    in one process if ``n_jobs == 1`` (max cache/state reuse across the batch),
+    else across ``n_jobs`` sub-processes.
     """
     def _run_batch(batch):
-        if n_jobs <= 1:
+        if n_jobs == 1:
             return [run(**run_kwargs) for run_kwargs in batch]
         return Parallel(n_jobs=n_jobs)(
             delayed(run)(**run_kwargs) for run_kwargs in batch
@@ -127,10 +125,8 @@ def check_parallel_config(parallel_config_file, n_jobs, group_by=None):
     n_jobs: int or None
         Number of parallel jobs to run. If None, defaults to None.
     group_by: str or list or None
-        Axes to hold constant per batch of runs, from the CLI ``--group-by``
-        (comma-separated). When set, it overrides ``group_by`` from the
-        parallel config file. ``batch_n_jobs`` has no CLI flag and is only
-        read from the parallel config file.
+        Axes to hold constant per batch of runs. If None, default to
+        one run per (dataset, objective, solver, rep)
 
     Returns
     -------
@@ -177,12 +173,10 @@ def check_parallel_config(parallel_config_file, n_jobs, group_by=None):
     group_by = parallel_config.get('group_by')
     batch_n_jobs = parallel_config.get('batch_n_jobs', 1)
     if group_by is not None:
-        # Normalize str|list to a validated list, shared with the generator
-        # so both sides of the run stream agree on the nesting order.
+        # Normalized once here, for both the generator and the dispatch.
         parallel_config['group_by'] = _normalize_group_by(group_by)
     if 'batch_n_jobs' in parallel_config:
-        # On loky/dask a batch runs sequentially in its worker: a nested
-        # `Parallel` there uses threads sharing the batch's solver instances.
+        # On loky/dask a batch runs sequentially in its worker.
         assert backend == 'submitit', (
             "`batch_n_jobs` is only supported with the `submitit` backend. "
             f"Got backend={backend!r}."
@@ -193,8 +187,8 @@ def check_parallel_config(parallel_config_file, n_jobs, group_by=None):
         # bools are ints in Python, but never a valid `batch_n_jobs`
         assert (
             isinstance(batch_n_jobs, int)
-            and not isinstance(batch_n_jobs, bool) and batch_n_jobs >= 1
-        ), f"`batch_n_jobs` must be a positive integer. Got {batch_n_jobs}."
+            and not isinstance(batch_n_jobs, bool) and batch_n_jobs != 0
+        ), f"`batch_n_jobs` must be a non-zero integer. Got {batch_n_jobs}."
 
     if backend in ('dask', 'submitit'):
         print(f"Distributed run with backend: {backend}")

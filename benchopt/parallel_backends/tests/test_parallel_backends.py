@@ -251,11 +251,11 @@ def test_submitit_backend(monkeypatch):
     ),
     (
         {"backend": "submitit", "group_by": "dataset", "batch_n_jobs": 0},
-        "positive integer",
+        "non-zero integer",
     ),
     (
         {"backend": "submitit", "group_by": "dataset", "batch_n_jobs": True},
-        "positive integer",
+        "non-zero integer",
     ),
 ])
 def test_invalid_parallel_config(config, match):
