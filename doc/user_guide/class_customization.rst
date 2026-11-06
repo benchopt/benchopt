@@ -177,6 +177,13 @@ channel `pip` and the `conda` installer. The syntax is the following:
   install_cmd = 'conda'  # optional
   requirements = ['pip::pkg']  # pip package `pkg`
 
+To install a package from source, e.g. a branch, a tag or a commit of its git
+repository, give pip a direct reference after the package name:
+
+.. code-block:: python
+
+  requirements = ['pip::pkg @ git+https://github.com/org/pkg@branch']
+
 
 .. _specify_python_version:
 

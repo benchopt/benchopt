@@ -204,7 +204,7 @@ Available benchmarks
 .. |Python 3.10+| image:: https://img.shields.io/badge/python-3.10%2B-blue
    :target: https://www.python.org/downloads/release/python-3100/
 .. |Documentation| image:: https://img.shields.io/badge/documentation-latest-blue
-   :target: https://benchopt.github.io
+   :target: https://benchopt.github.io/dev/
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
 .. |SWH| image:: https://archive.softwareheritage.org/badge/origin/https://github.com/benchopt/benchopt/
