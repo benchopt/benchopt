@@ -46,6 +46,13 @@ PLOT
   plot as a PDF file.
   By `Jad Yehya`_ & `Hippolyte Verninas`_ (:gh:`989`)
 
+DOC
+~~~
+
+- Show how to install a requirement from source, e.g. a git branch, with a
+  ``pip::`` requirement. See :ref:`specify_requirements`. Also fix a dead link
+  to the CLI documentation. By `Mark Santos`_ (:gh:`1027`)
+
 
 .. _changes_1_10:
 
@@ -738,9 +745,9 @@ CLI
 ~~~
 
 - Add support for custom parameters in CLI for objectives, datasets, and
-  solvers, through the syntax ``-s solver_name[parameter=value]``. See the `CLI
-  documentation <https://benchopt.github.io/stable/cli.html>`_ for more details on the
-  syntax. By `Tom Dupré la Tour`_ (:gh:`362`).
+  solvers, through the syntax ``-s solver_name[parameter=value]``. See the
+  :ref:`CLI documentation <cli_ref>` for more details on the syntax.
+  By `Tom Dupré la Tour`_ (:gh:`362`).
 
 - Add ``--slurm`` option in ``benchopt run`` to allow running the benchmark on
   a SLURM cluster. See the :ref:`slurm_backend` for more details on the config.
