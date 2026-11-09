@@ -251,9 +251,8 @@ def test_split_by_slurm_config():
     # `benchopt prepare` passes the dataset directly, and has no solver --
     # such runs all share the top-level SLURM config.
     prepare = [{"dataset": "d1"}, {"dataset": "d2"}]
-    groups = _split_by_slurm_config(prepare, {})
-    assert len(groups) == 1
-    assert len(groups[0][1]) == 2
+    (_cfg, runs), = _split_by_slurm_config(prepare, {})
+    assert len(runs) == 2
 
 
 @pytest.mark.parametrize("batch_n_jobs, waves", [(1, 2), (2, 1), (-1, 2)])

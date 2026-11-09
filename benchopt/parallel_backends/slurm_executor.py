@@ -90,7 +90,7 @@ def _split_by_slurm_config(batch, slurm_config):
     with different `slurm_params` (e.g. ``group_by=['dataset']``), so it is
     never itself the SLURM job unit -- each same-config run of items is.
     """
-    groups, order = {}, []
+    groups = {}
     for kwargs in batch:
         solver = kwargs.get("solver")
         if solver is not None:
@@ -101,9 +101,8 @@ def _split_by_slurm_config(batch, slurm_config):
         cfg = hashable_pytree(job_slurm_config)
         if cfg not in groups:
             groups[cfg] = (job_slurm_config, [])
-            order.append(cfg)
         groups[cfg][1].append(kwargs)
-    return [groups[cfg] for cfg in order]
+    return groups.values()
 
 
 def run_on_slurm(

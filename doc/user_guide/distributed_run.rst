@@ -27,8 +27,8 @@ Grouping runs to reduce overhead
 When a run carries heavy fixed overhead -- loading a large dataset,
 initializing a GPU, or scheduling a job on a cluster -- running each
 ``(dataset, objective, solver, repetition)`` as its own execution unit is
-inefficient, as that setup is repeated for every run. ``group_by`` is a remedy:
-it collapses the runs sharing one or more axes into a single batch, run as one
+inefficient, as that setup is repeated for every run. To reduce overhead, ``group_by``
+collapses the runs sharing one or more axes into a single batch, run as one
 unit, so the shared setup is paid once and reused across the batch.
 
 ``group_by`` is an ordered list of axes to hold constant within a batch
@@ -44,25 +44,17 @@ unit, so the shared setup is paid once and reused across the batch.
     group_by: dataset             # one batch per dataset
     batch_n_jobs: 4               # 4 workers inside each batch (submitit)
 
-``batch_n_jobs`` runs a batch's runs on several workers; it is set only in the
-parallel config and is only supported with ``submitit`` (pair it with
-``slurm_cpus_per_task``). Negative values follow joblib, e.g. ``-1`` uses all
-the job's CPUs. It defaults to ``1`` (sequential in one process),
-which maximises the reuse above. Grouping never changes the results, only how
-runs are scheduled.
+On submitit, ``batch_n_jobs`` runs a batch's runs in parallel with ``joblib``.
+It can only be set in the parallel config. It defaults to ``1``, which
+maximises the reuse above. Grouping never changes the results, only how runs
+are scheduled.
 
-**Ordering controls memory (sequential runs).** In a sequential run the process
-holds the current dataset's data in memory; only the outermost axis is streamed,
-so listing the heaviest, data-carrying axis (usually ``dataset``) first lets its
-data be released as the run advances. When running in parallel this matters
-less, as each worker loads its own data.
-
-**Grouping repetitions (cross-validation folds).** With ``repetition`` in
-``group_by`` (e.g. ``dataset,objective,repetition``), each fold is prepared once
-and shared across solvers instead of once per solver. ``dataset`` and
-``objective`` must be listed before ``repetition``, and the fold data must be
-solver-independent -- if ``set_data`` seeds on the solver
-(``get_seed(use_solver=True)``) benchopt raises a clear error.
+**Grouping cross-validation folds.** With ``repetition`` in ``group_by`` (e.g.
+``dataset,objective,repetition``), each fold is prepared once and shared across
+solvers instead of once per solver. ``dataset`` and ``objective`` must be
+listed before ``repetition``, and the fold data must be solver-independent. If
+``set_data`` seeds on the solver (``get_seed(use_solver=True)``), benchopt
+raises an error.
 
 .. note::
 
