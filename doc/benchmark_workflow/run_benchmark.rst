@@ -94,11 +94,6 @@ To include multiple datasets/solvers, use multiple ``-d``/``-s`` flags, as in th
     The ``run`` command accepts other flags such as ``-j`` to run the benchmark in parallel with a given number of processes.
     The list of flags is available through ``benchopt run --help`` or in the :ref:`cli_ref` page.
 
-.. note::
-
-    In a sequential run, benchopt only keeps the current dataset's data in memory.
-    With ``--group-by`` (see :ref:`run_grouping`), this holds for the first listed axis only, so list the heaviest, data-carrying axis (usually ``dataset``) first.
-
 In addition, it is possible to specify the parameters of solvers and datasets by wrapping them in square brackets in comma separated format.
 
 The following snippet runs the ``solver1`` solver with its ``p1`` parameter set
