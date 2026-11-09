@@ -1,230 +1,241 @@
 import copy
 import inspect
+import itertools
 
 from .utils.parametrized_name_mixin import is_matched
-from .utils.run_context import RunContext
+from .utils.run_context import RunContext, SeedContextError
+
+# Canonical loop nesting order when no grouping is requested (rep innermost).
+CANONICAL_AXES = ('dataset', 'objective', 'solver')
+# `repetition` is groupable but needs to be below dataset and objective.
+GROUPABLE_AXES = CANONICAL_AXES + ('repetition',)
 
 
-def buffer_iterator(it):
-    """Buffer the output of an iterator to repeat it without recomputing."""
-    buffer = []
+def _normalize_group_by(group_by):
+    """Validate ``group_by`` and return it as a list.
 
-    def buffered_it(buffer):
-        for val in it:
-            buffer.append(val)
-            yield val
-
-    return buffered_it(buffer), buffer
-
-
-def _get_all_runs(benchmark, solvers=None, forced_solvers=None,
-                  datasets=None, objectives=None, terminal=None):
-    """Generator with all combinations to run for the benchmark.
-
-    Parameters
-    ----------
-    benchmark : benchopt.Benchmark object
-        Object to represent the benchmark.
-    solvers : list | None
-        List of solvers to include in the benchmark. If None
-        all solvers available are run.
-    forced_solvers : list | None
-        List of solvers to include in the benchmark and for
-        which one forces recomputation.
-    datasets : list | None
-        List of datasets to include. If None all available
-        datasets are used.
-    objectives : list | None
-        Filters to select specific objective parameters. If None,
-        all objective parameters are tested
-    terminal : TerminalOutput or None
-        Object to format string to display the terminal.
-
-    Yields
-    ------
-    dataset : BaseDataset instance
-    objective : BaseObjective instance
-    solver : BaseSolver instance
-    force : bool
+    ``repetition`` must come after ``dataset`` and ``objective``, as the number
+    of repetitions (e.g. CV folds) depends on them.
     """
-    from .benchmark import _list_parametrized_classes
+    if not group_by:
+        return []
+    if isinstance(group_by, str):
+        group_by = [group_by]
+    group_by = list(group_by)
+    unknown = [a for a in group_by if a not in GROUPABLE_AXES]
+    if unknown:
+        raise ValueError(
+            f"Unknown `group_by` axes {unknown}. Valid axes: {GROUPABLE_AXES}."
+        )
+    if len(set(group_by)) != len(group_by):
+        raise ValueError(f"Duplicate axes in `group_by`: {group_by}.")
+    if 'repetition' in group_by:
+        outer = set(group_by[:group_by.index('repetition')])
+        if not {'dataset', 'objective'} <= outer:
+            raise ValueError(
+                "'repetition' in `group_by` must nest inside 'dataset' and "
+                "'objective' (both must appear before it), since the fold "
+                f"depends on them. Got {group_by}."
+            )
+    return group_by
 
-    all_datasets = _list_parametrized_classes(*datasets)
-    all_solvers, solvers_buffer = buffer_iterator(
-        _list_parametrized_classes(*solvers)
-    )
-    for dataset, is_installed in all_datasets:
-        terminal.set(dataset=dataset)
+
+def group_runs(run_kwargs_iter, group_by):
+    """Yield contiguous batches of run kwargs sharing the ``group_by`` axes.
+
+    Runs must already be ordered by ``group_by`` (see `generate_run_kwargs`).
+    Without ``group_by``, each run is its own batch.
+    """
+    if not group_by:
+        yield from ([run_kwargs] for run_kwargs in run_kwargs_iter)
+        return
+    # `str` as the objective is copied per run; missing axes give 'None'.
+    for _, batch in itertools.groupby(
+        run_kwargs_iter,
+        key=lambda kw: tuple(str(kw.get(axis)) for axis in group_by),
+    ):
+        yield list(batch)
+
+
+def _enter_axis(terminal, axis, item, is_installed, i_axis):
+    """Display `item` in the terminal; return False if it is not installed.
+
+    Used by the recursion in `generate_run_kwargs` to skip the subtree of an
+    item that is not installed.
+    """
+    if axis == 'dataset':
+        terminal.set(dataset=item)
         if not is_installed:
             terminal.show_status('not installed', dataset=True)
-            continue
+            return False
         terminal.display_dataset()
-        all_objectives = _list_parametrized_classes(
-            *objectives, check_installed=False
-        )
-        for objective, is_installed in all_objectives:
-            terminal.set(objective=objective)
-            if not is_installed:
-                terminal.show_status('not installed', objective=True)
-                continue
-            terminal.display_objective()
-            for i_solver, (solver, is_installed) in enumerate(all_solvers):
-                terminal.set(solver=solver, i_solver=i_solver)
-
-                if not is_installed:
-                    terminal.show_status('not installed')
-                    continue
-
-                force = is_matched(
-                    str(solver), forced_solvers, default=False
-                )
-                yield dict(
-                    dataset=dataset, objective=objective, solver=solver,
-                    force=force, terminal=terminal
-                )
-            all_solvers = solvers_buffer
+    elif axis == 'objective':
+        terminal.set(objective=item)
+        if not is_installed:
+            terminal.show_status('not installed', objective=True)
+            return False
+        terminal.display_objective()
+    else:  # solver
+        terminal.set(solver=item, i_solver=i_axis)
+        if not is_installed:
+            terminal.show_status('not installed')
+            return False
+    return True
 
 
-def get_solver_kwargs(
-    benchmark, dataset, objective, solver, n_repetitions, max_runs,
-    timeout=None, force=False, collect=False, terminal=None,
-    run_context=None,
-):
-    """Run a benchmark for a given dataset, objective and solver.
+def _materialize_axes(order, datasets, objectives, solvers):
+    """Build each axis's instances, keeping only the outermost one lazy.
 
-    Parameters
-    ----------
-    benchmark : benchopt.Benchmark object
-        Object to represent the benchmark.
-    dataset : instance of BaseDataset
-        The dataset used for this benchmark.
-    objective : instance of BaseObjective
-        The objective to minimize.
-    solver : instance of BaseSolver
-        The solver to use.
-    n_repetitions : int
-        The number of repetitions to run. Defaults to 1.
-    max_runs : int
-        The maximum number of solver runs to perform to estimate
-        the convergence curve.
-    timeout : float
-        The maximum duration in seconds of the solver run.
-    force : bool
-        If force is set to True, ignore the cache and run the computations
-        for the solver anyway. Else, use the cache if available.
-    collect : bool
-        If set to True, only collect the results that have been put in cache,
-        and ignore the results that are not computed yet, default is False.
-    terminal : TerminalOutput or None
-        Object to format string to display the progress of the solver.
-    run_context : RunContext | None
-        Base context created in ``_run_benchmark`` carrying config fields
-        (``pdb``, ``run_output_base``).  Cloned here for each repetition
-        with the per-run fields filled in.
-
-    Returns
-    -------
-    args_run_one_to_cvg : dict
-        The dictionary of arguments to run_one_to_cvg.
+    Inner axes are re-entered per outer item, so they are listed and stay in
+    memory. Put the heaviest axis (usually ``dataset``) first in ``group_by``.
     """
-    run_context = run_context or RunContext()
+    from .benchmark import _list_parametrized_classes
+    gens = {
+        'dataset': _list_parametrized_classes(*datasets),
+        'objective': _list_parametrized_classes(*objectives,
+                                                check_installed=False),
+        'solver': _list_parametrized_classes(*solvers),
+    }
+    return {axis: (g if axis == order[0] else list(g))
+            for axis, g in gens.items()}
 
-    # Resolve inheritance now rather than at `_set_objective` run time: meta
-    # below feeds the cache key, so it must not depend on whether some other
-    # (solver, dataset) pair already triggered this resolution earlier on.
-    solver._inherit_stopping_criterion(objective)
 
-    # get sampling strategy
-    # for plotting purpose consider 'callback' as 'iteration'
+def _run_meta(benchmark, dataset, objective, solver, rep):
+    """Build the per-run ``meta`` dict (feeds display and the cache key)."""
+    # for plotting purposes consider 'callback' as 'iteration'
     sampling_strategy = solver._solver_strategy
     if sampling_strategy == 'callback':
         sampling_strategy = 'iteration'
+    return {
+        'base_seed': benchmark.seed,
+        'objective_name': str(objective),
+        'obj_description': objective.__doc__ or "",
+        'solver_name': str(solver),
+        'solver_description': inspect.cleandoc(solver.__doc__ or ""),
+        'dataset_name': str(dataset),
+        'dataset_description': inspect.cleandoc(dataset.__doc__ or ""),
+        'idx_rep': rep,
+        'sampling_strategy': sampling_strategy.capitalize(),
+        'file_objective': objective._module_filename.name,
+        **{f"p_obj_{k}": v for k, v in objective._parameters.items()},
+        'file_solver': f"solvers/{solver._module_filename.name}",
+        **{f"p_solver_{k}": v for k, v in solver._parameters.items()},
+        'file_dataset': f"datasets/{dataset._module_filename.name}",
+        **{f"p_dataset_{k}": v for k, v in dataset._parameters.items()},
+    }
 
-    # get objective description
-    # use `obj_` instead of `objective_` to avoid conflicts with
-    # the name of metrics in Objective.compute
-    obj_description = objective.__doc__ or ""
 
-    # Set run context with rep=0 so get_seed() works during _set_dataset.
-    run_context = run_context.set_run_context(
-        objective=objective, dataset=dataset, solver=solver,
-        repetition=0, base_seed=benchmark.seed,
+def _prepare_objective(benchmark, run_context, dataset, objective, solver,
+                       n_repetitions, terminal):
+    """Return the number of repetitions, or ``None`` if the objective skips.
+
+    ``solver`` is None when ``repetition`` is a group_by level, as the fold is
+    then shared across solvers.
+    """
+    run_context.set_run_context(
+        objective=objective, dataset=dataset, solver=solver, repetition=0,
+        base_seed=benchmark.seed,
     )
 
     # Only load the data on the front node when the number of repetitions
     # depends on it (CV splits). Otherwise, `skip` is checked by the worker.
     if n_repetitions is None:
-        skip, reason = objective._set_dataset(dataset)
+        try:
+            skip, reason = objective._set_dataset(dataset)
+        except SeedContextError as e:
+            if e.component != 'solver':
+                raise
+            raise ValueError(
+                "`group_by` with 'repetition' shares each fold across "
+                "solvers, so the data must not depend on the solver -- but "
+                "`get_data`/"
+                "`set_data` called `get_seed(use_solver=True)`. Remove "
+                "'repetition' from `group_by` or make the data "
+                "solver-independent."
+            ) from e
         if skip:
             terminal.skip(reason, objective=True)
-            return []
+            return None
 
         if hasattr(objective, "cv"):
             n_repetitions = objective.cv.get_n_splits(
                 **getattr(objective, "cv_metadata", {})
             )
         else:
-            # we set 1 by default so that the solver run at least once
+            # 1 by default so the solver runs at least once.
             n_repetitions = 1
-
     terminal.n_repetitions = n_repetitions
-
-    for rep in range(n_repetitions):
-        objective_rep = copy.copy(objective)
-
-        # Get meta
-        meta = {
-            'base_seed': benchmark.seed,
-            'objective_name': str(objective),
-            'obj_description': obj_description,
-            'solver_name': str(solver),
-            'solver_description': inspect.cleandoc(solver.__doc__ or ""),
-            'dataset_name': str(dataset),
-            'dataset_description': inspect.cleandoc(dataset.__doc__ or ""),
-            'idx_rep': rep,
-            'sampling_strategy': sampling_strategy.capitalize(),
-            'file_objective': objective._module_filename.name,
-            **{f"p_obj_{k}": v for k, v in objective._parameters.items()},
-            'file_solver': f"solvers/{solver._module_filename.name}",
-            **{f"p_solver_{k}": v for k, v in solver._parameters.items()},
-            'file_dataset': f"datasets/{dataset._module_filename.name}",
-            **{f"p_dataset_{k}": v for k, v in dataset._parameters.items()},
-        }
-
-        # Context for this repetition, used by get_seed() in run_one_to_cvg.
-        run_ctx = run_context.set_run_context(
-            objective=objective_rep, dataset=dataset, solver=solver,
-            repetition=rep, base_seed=benchmark.seed,
-        )
-
-        args_run_one_to_cvg = dict(
-            benchmark=benchmark, dataset=dataset, objective=objective_rep,
-            solver=solver, repetition=rep, meta=meta, timeout=timeout,
-            max_runs=max_runs, force=force, terminal=terminal,
-            run_context=run_ctx,
-        )
-
-        yield args_run_one_to_cvg
+    return n_repetitions
 
 
 def generate_run_kwargs(
     benchmark, solvers=None, forced_solvers=None, datasets=None,
     objectives=None, n_repetitions=1, max_runs=10, timeout=None,
-    collect=False, terminal=None, run_context=None,
+    collect=False, terminal=None, run_context=None, group_by=None,
 ):
     """Yield kwargs for each ``run_one_to_cvg`` call in the benchmark.
 
-    Combines the (dataset, objective, solver) enumeration with the per-run
-    metadata so that callers only need a single generator to drive the
-    benchmark execution.
+    The ``group_by`` axes are the outermost loops, so runs sharing them are
+    contiguous. ``repetition`` is the innermost axis unless it is in
+    ``group_by``.
     """
-    all_runs = _get_all_runs(
-        benchmark, solvers, forced_solvers, datasets, objectives,
-        terminal=terminal,
-    )
-    common_kwargs = dict(
-        benchmark=benchmark, n_repetitions=n_repetitions, max_runs=max_runs,
-        timeout=timeout, collect=collect, run_context=run_context,
-    )
-    for kwargs in all_runs:
-        yield from get_solver_kwargs(**common_kwargs, **kwargs)
+    group_by = group_by or []
+    order = group_by + [a for a in GROUPABLE_AXES if a not in group_by]
+    # rep stays the innermost runtime counter unless it is a group_by level.
+    rep_is_level = order[-1] != 'repetition'
+    axis_items = _materialize_axes(order, datasets, objectives, solvers)
+    terminal.set_levels(order if rep_is_level else order[:-1])
+    base_ctx = run_context or RunContext()
+
+    def _leaf(chosen):
+        dataset, objective = chosen['dataset'], chosen['objective']
+        solver, rep = chosen['solver'], chosen['repetition']
+        # A shallow copy carries the data if already set (reused in-process),
+        # else `_set_dataset` loads it at run time.
+        objective_rep = copy.copy(objective)
+        # Resolve inheritance now: `meta` feeds the cache key and must not
+        # depend on which solver ran first in the process.
+        solver._inherit_stopping_criterion(objective)
+        meta = _run_meta(benchmark, dataset, objective, solver, rep)
+        run_ctx = base_ctx.set_run_context(
+            objective=objective_rep, dataset=dataset, solver=solver,
+            repetition=rep, base_seed=benchmark.seed,
+        )
+        return dict(
+            benchmark=benchmark, dataset=dataset, objective=objective_rep,
+            solver=solver, repetition=rep, meta=meta, timeout=timeout,
+            max_runs=max_runs, terminal=terminal, run_context=run_ctx,
+            force=is_matched(str(solver), forced_solvers, default=False),
+        )
+
+    def _rec(depth, chosen):
+        """Recursively instantiate the product of all components, skipping
+        incompatible parts of the tree."""
+        axis = order[depth]
+        last = depth + 1 == len(order)
+        if axis == 'repetition':
+            n_reps = _prepare_objective(
+                benchmark, base_ctx, chosen['dataset'], chosen['objective'],
+                chosen.get('solver'), n_repetitions, terminal,
+            )
+            if n_reps is None:  # skipped (dataset, objective)
+                return
+            for rep in range(n_reps):
+                if rep_is_level:
+                    terminal.display_rep(rep)
+                chosen['repetition'] = rep
+                if last:
+                    yield _leaf(chosen)
+                else:
+                    yield from _rec(depth + 1, chosen)
+            return
+        for i_axis, (item, is_installed) in enumerate(axis_items[axis]):
+            if not _enter_axis(terminal, axis, item, is_installed, i_axis):
+                continue
+            chosen[axis] = item
+            if last:
+                yield _leaf(chosen)
+            else:
+                yield from _rec(depth + 1, chosen)
+
+    yield from _rec(0, {})
