@@ -77,6 +77,33 @@ def run_one_resolution(objective, solver, meta, stop_val):
 def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
                    timeout, max_runs, force=False, terminal=None,
                    run_context=None):
+    """Run ``_run_one_to_cvg`` and reset the solver state afterwards.
+
+    Solver instances are shared by all runs of a sequential benchmark, while
+    each run gets its own objective copy (and so its own data from
+    ``set_data``). Restoring the solver ``__dict__`` drops the references it
+    took to this run's data (``_objective``, anything set in
+    ``set_objective``/``run``), else every solver config pins a copy of the
+    data until the end of the benchmark.
+    """
+    state = solver.__dict__.copy()
+    try:
+        return _run_one_to_cvg(
+            benchmark, dataset, objective, solver, repetition, meta,
+            timeout, max_runs, force=force, terminal=terminal,
+            run_context=run_context,
+        )
+    finally:
+        warmed_up = solver.__dict__.get('_warmup_done')
+        solver.__dict__.clear()
+        solver.__dict__.update(state)
+        if warmed_up:  # keep warm-up a once-per-solver step
+            solver._warmup_done = True
+
+
+def _run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
+                    timeout, max_runs, force=False, terminal=None,
+                    run_context=None):
     """Run all repetitions of the solver for a value of stopping criterion.
 
     Parameters

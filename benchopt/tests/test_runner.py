@@ -791,3 +791,54 @@ def test_dataset_run_context_in_evaluate_result(no_debug_log, monkeypatch):
                  "--no-plot", "--no-cache"], standalone_mode=False)
 
     out.check_output("#DATASET-SEED-IN-EVAL#", repetition=1)
+
+
+def test_solver_releases_run_data(no_debug_log):
+    """Solvers must not keep a run's data alive once the run is over.
+
+    Each sequential run gets its own objective copy, hence its own data from
+    `set_data`. Solver instances are shared across runs, so any reference
+    they keep (`_objective`, attributes set in `set_objective`) would pin
+    one copy of the data per solver config.
+    """
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+        import gc, weakref
+        import numpy as np
+
+        REFS = []
+
+        class Data(np.ndarray):
+            pass
+
+        class Objective(TempObjective):
+            name = "test-objective"
+            sampling_strategy = "run_once"
+            def set_data(self, X, y):
+                # A fresh array per call, like a dtype conversion would do.
+                self.X = np.zeros(10).view(Data)
+                gc.collect()
+                alive = sum(r() is not None for r in REFS)
+                print(f"#ALIVE#{alive}")
+                REFS.append(weakref.ref(self.X))
+            def get_objective(self):
+                return dict(X=self.X, y=None, lmbd=1)
+    """
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        name = "test-solver"
+        sampling_strategy = 'run_once'
+        parameters = dict(p=[1, 2, 3])
+        def set_objective(self, X, y, lmbd):
+            self.X = X
+            super().set_objective(X, y, lmbd)
+    """
+    with temp_benchmark(objective=objective, solvers=[solver]) as bench:
+        with CaptureCmdOutput() as out:
+            run([str(bench.benchmark_dir), "-d", "test-dataset", "-n", "1",
+                 "--no-plot", "--no-cache"], standalone_mode=False)
+
+    # The previous run's objective can linger in single-slot references
+    # (terminal state, joblib pre-dispatch), but copies must not pile up.
+    out.check_output("#ALIVE#")
+    out.check_output("#ALIVE#[2-9]", repetition=0)
