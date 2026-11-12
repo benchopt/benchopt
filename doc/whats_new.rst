@@ -44,7 +44,7 @@ API
   value raises an error. ``skip`` receiving the data as keyword arguments and
   returning a ``(skip, reason)`` tuple are deprecated and will be removed in
   benchopt 1.12. See :ref:`skipping_solver`.
-  By `Thomas Moreau`_
+  By `Thomas Moreau`_ (:gh:`1031`)
 
 - Add a ``hidden_plots`` benchmark config option to hide some plot kinds,
   e.g. some of the default plots. By `Hippolyte Verninas`_ (:gh:`1019`)
