@@ -242,7 +242,7 @@ class RichOutput(TerminalOutput):
                     self._dump()
 
         threading.Thread(target=heartbeat, daemon=True).start()
-        finished = 'interrupted'
+        finished = 'error'
         try:
             if self.display:
                 with self._live_display(log_file):
@@ -250,11 +250,21 @@ class RichOutput(TerminalOutput):
             else:
                 yield
             finished = 'done'
+        except KeyboardInterrupt:
+            finished = 'interrupted'
+            raise
         finally:
             stop.set()
             self._meta['finished'] = finished
             self._dump()
             if self._results_file is not None:
+                # Closing line, so that the results alone tell how it ended.
+                try:
+                    self._results_file.write(
+                        json.dumps(dict(finished=finished)) + "\n"
+                    )
+                except Exception:
+                    pass
                 self._results_file.close()
                 self._results_file = None
 
@@ -771,7 +781,8 @@ class RichOutput(TerminalOutput):
         if stopped is not None:
             self._outputs = snapshot.get('outputs', {})
             mark = {'done': "[green]\u2713[/]",
-                    'interrupted': "[yellow]\u2717[/]"}
+                    'interrupted': "[yellow]\u2717[/]",
+                    'error': "[red]\u2717[/]"}
             self._make_progress(
                 started=snapshot['started'], stopped=stopped,
                 mark=mark.get(snapshot['finished'], "[red]\u2717[/]"),

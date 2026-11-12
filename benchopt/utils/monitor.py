@@ -16,7 +16,8 @@ MOVES = {
     '\x1b[B': 1, '\xe0P': 1, '\x00P': 1, 'j': 1,
 }
 STATE_STYLE = {
-    'running': 'cyan', 'done': 'green', 'interrupted': 'yellow', 'stale': 'red'
+    'running': 'cyan', 'done': 'green', 'interrupted': 'yellow',
+    'error': 'red', 'stale': 'red'
 }
 
 
@@ -39,7 +40,10 @@ def read_results(run, offset=0):
         return [], offset
     # The last line can be partly written: leave it for the next read.
     data = data[:data.rfind(b"\n") + 1]
-    return [json.loads(line) for line in data.splitlines()], offset + len(data)
+    lines = map(json.loads, data.splitlines())
+    # Skip the closing `{"finished": ...}` line: the snapshot has it too.
+    results = [line for line in lines if isinstance(line, list)]
+    return results, offset + len(data)
 
 
 def load_runs():
@@ -49,7 +53,7 @@ def load_runs():
 
 
 def run_state(run, now=None):
-    """`running`, `done`, `interrupted`, or `stale` if the run stopped
+    """`running`, `done`, `interrupted`, `error`, or `stale` if the run stopped
     updating its snapshot without finishing, e.g. it was killed."""
     if run['finished']:
         return run['finished']

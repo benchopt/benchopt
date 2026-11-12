@@ -375,6 +375,9 @@ def test_rich_output_writes_snapshots(tmp_path, monkeypatch):
     results, offset = read_results(snapshot)
     assert results == [[2, *KEY, 'done', None, False]]
     assert read_results(snapshot, offset) == ([], offset)
+    # The file ends with how the run finished, for tools reading it alone.
+    lines = Path(snapshot['path']).with_suffix(".jsonl").read_text()
+    assert json.loads(lines.splitlines()[-1]) == {"finished": "done"}
 
 
 def test_monitor_run_state():
@@ -488,5 +491,13 @@ def test_monitor_kill_run(tmp_path, monkeypatch):
                 time.sleep(0.1)
     assert terminal._meta['finished'] == 'interrupted'
     assert not list(tmp_path.glob("*.kill"))
+    last = next(tmp_path.glob("run-*.jsonl")).read_text().splitlines()[-1]
+    assert json.loads(last) == {"finished": "interrupted"}
+
+    # Any other exception ends the run in error.
+    with pytest.raises(ValueError):
+        with terminal.live(log_file=tmp_path / "run.log", benchmark="b"):
+            raise ValueError()
+    assert terminal._meta['finished'] == 'error'
 
     assert "Could not kill" in kill_run(dict(path=str(tmp_path / "x/y")))

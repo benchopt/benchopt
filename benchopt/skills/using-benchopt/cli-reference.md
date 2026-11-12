@@ -25,6 +25,18 @@ results from a long run (see [run.md](./run.md)).
 
 ---
 
+### `benchopt monitor`
+Display the last runs, in progress or finished, including SLURM ones.
+
+```bash
+benchopt monitor        # pick a run (interactive)
+benchopt monitor last   # most recent run; prints its results once without a terminal
+```
+
+Agents: read the run files instead, see [run.md](./run.md).
+
+---
+
 ### `benchopt install`
 Install solver/dataset requirements into a dedicated conda env.
 

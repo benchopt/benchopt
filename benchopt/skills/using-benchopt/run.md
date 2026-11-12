@@ -71,6 +71,17 @@ repetition)` cell, so a long run does **not** need manual chunking:
   to inspect progress.
 - **Resume**: re-run the same command *without* `--collect` (cached cells
   skipped, missing ones computed).
+- **Follow a run you did not launch** (SLURM, another shell): don't loop on
+  the interactive `benchopt monitor`. Read `<runs_dir>/<run_name>-<pid>.*`
+  (`runs_dir` config, default `~/.cache/benchopt/runs`):
+  - `.jsonl`: one line per result,
+    `[level, dataset, objective, solver, status, reason, cached]` (`level`
+    0/1/2 = dataset/objective/solver). Successes are `done`, `timeout` and
+    `max_runs`; tracebacks are in the log. The last line is
+    `{"finished": "done" | "interrupted" | "error"}`.
+  - `.json`: progress (`n_finished`, `total`, `counts`, `running`), `updated`
+    and `finished`. A hard kill (OOM, time limit) leaves no closing line:
+    `finished` null and `updated` over 60 s old means the run died.
 
 Gotchas that break cache matching or surprise you:
 
