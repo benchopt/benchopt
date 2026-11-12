@@ -736,6 +736,7 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 
 .image-grid {
   display: grid;
+  justify-content: center;
   gap: 2rem 1.5rem;
   align-items: start;
 }
