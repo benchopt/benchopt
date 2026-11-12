@@ -159,7 +159,7 @@ def _prepare_objective(benchmark, run_context, dataset, objective, solver,
             objective, (dataset,), terminal, run_context.pdb
         )
         if (status is None and n_repetitions is None
-                and objective._sets_cv()):
+                and objective._is_using_cv()):
             # The number of repetitions is the number of CV splits.
             objective._load_data()
     except SeedContextError as e:

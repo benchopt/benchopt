@@ -412,11 +412,12 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        cls.get_data = BaseDataset._cache_data(cls.get_data)
+        # Cache the output of `get_data` on the instance, once per class
+        # defining it.
+        if 'get_data' not in vars(cls):
+            return
+        get_data = cls.get_data
 
-    @staticmethod
-    def _cache_data(get_data):
-        """Cache the output of `Dataset.get_data` on the instance."""
         @functools.wraps(get_data)
         def cached_get_data(self):
             # Reload when the seed used for the cached data has changed.
@@ -434,7 +435,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
                     )
                 self._data = data
             return self._data
-        return cached_get_data
+        cls.get_data = cached_get_data
 
     def prepare(self):
         """Prepare the dataset for use (optional).
@@ -661,17 +662,17 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        cls.get_objective = BaseObjective._load_data_first(cls.get_objective)
+        # Set the data before `get_objective`, once per class defining it.
+        if 'get_objective' not in vars(cls):
+            return
+        get_objective = cls.get_objective
 
-    @staticmethod
-    def _load_data_first(get_objective):
-        """Set the data of the objective before `Objective.get_objective`."""
         @functools.wraps(get_objective)
         def get_objective_with_data(self):
             if self._dataset is not None:
                 self._load_data()
             return get_objective(self)
-        return get_objective_with_data
+        cls.get_objective = get_objective_with_data
 
     @abstractmethod
     def get_objective(self):
@@ -793,11 +794,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
         return objective_list
 
-    # Save the dataset object used to get the objective data so we can avoid
-    # hashing the data directly.
     @classmethod
     @functools.lru_cache(maxsize=None)
-    def _sets_cv(cls):
+    def _is_using_cv(cls):
         """Whether the objective may set a `cv` attribute, from its source.
 
         The number of repetitions then depends on the data, as the number of
@@ -829,6 +828,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         if dataset is not self._dataset:
             self._dataset, self._dataset_ready = dataset, False
 
+    # Save the dataset object used to get the objective data so we can avoid
+    # hashing the data directly.
     def _set_dataset(self, dataset):
         """Check `skip` and set the data; return ``(skip, reason)``."""
         if self._dataset_ready and self._dataset is dataset:
