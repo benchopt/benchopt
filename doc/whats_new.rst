@@ -52,6 +52,12 @@ API
 PLOT
 ~~~~
 
+- The "Suboptimal Curve" and "Relative Curve" toggles are replaced by a
+  ``Y_axis`` option of the ``objective_curve`` plot, so they no longer apply
+  to custom scatter plots. Views using the deprecated ``suboptimal_curve``
+  or ``relative_curve`` keys are converted to ``objective_curve_Y_axis``.
+  By `Hippolyte Verninas`_ (:gh:`1018`)
+
 - Improve ``'image'`` plots in the HTML report: borderless grid that keeps
   each image's aspect ratio, and click-to-enlarge.
   By `Hippolyte Verninas`_ (:gh:`1017`)
@@ -66,6 +72,13 @@ PLOT
 - Add ``Download PDF`` button in the HTML interface to download the current
   plot as a PDF file.
   By `Jad Yehya`_ & `Hippolyte Verninas`_ (:gh:`989`)
+
+TST
+~~~
+
+- Tests needing a conda env are skipped when no conda env is active, e.g. the
+  install tests of ``benchopt test``, instead of failing.
+  By `Thomas Moreau`_ (:gh:`1033`)
 
 DOC
 ~~~

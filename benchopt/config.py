@@ -95,8 +95,6 @@ The available options are:
 
     plots:
     - objective_curve
-    - suboptimality_curve
-    - relative_suboptimality_curve
     - bar_chart
 
 * ``hidden_plots``, *list*: Plot kinds to hide from the results, e.g. to drop
@@ -115,8 +113,7 @@ The available options are:
   the plot. Each view corresponds to a name, with specified values to select
   one options for the plots. Common options for all plot kinds include:
 
-    ``plot_kind``, ``scale``, ``with_quantiles``, ``suboptimal_curve``,
-    ``relative_curve``, ``hidden_curves``.
+    ``plot_kind``, ``scale``, ``with_quantiles``, ``hidden_curves``.
 
   Other options are specific to the plot kind and defined as the options in
   the plot definition, prefixed with the plot kind. Typically, when the plot
