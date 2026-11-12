@@ -138,10 +138,10 @@ class TerminalOutput:
         if i_solver is not None:
             self.i_solver = i_solver
 
-    def skip(self, reason=None, objective=False):
+    def skip(self, reason=None, objective=False, status='skip'):
         key = (self.dataset, self.objective, self.solver)
         if self.rep[key] == 0 and (not objective or self.i_solver == 0):
-            self.show_status(status='skip', objective=objective)
+            self.show_status(status=status, objective=objective)
             if reason is not None:
                 indent = ' ' * (2 if objective else 4)
                 print(f'{indent}Reason: {reason}')
@@ -184,7 +184,7 @@ class TerminalOutput:
         from ..runner import SUCCESS_STATUS
 
         if dataset or objective:
-            assert status in ['not installed', 'skip']
+            assert status in ['not installed', 'skip', 'error']
 
         key = (self.dataset, self.objective, self.solver)
         self.rep[key] += 1

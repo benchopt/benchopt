@@ -3,6 +3,7 @@ import inspect
 import itertools
 
 from .base import _is_legacy_skip, _parse_skip
+from .utils.pdb_helpers import exception_handler
 from .utils.parametrized_name_mixin import is_matched
 from .utils.run_context import RunContext, SeedContextError
 
@@ -126,6 +127,19 @@ def _run_meta(benchmark, dataset, objective, solver, rep):
     }
 
 
+def _skip_before_dispatch(component, args, terminal, pdb):
+    """Return ``(status, reason)`` from ``component.skip(*args)``.
+
+    The status is None to run, 'skip', or 'error' if `skip` fails. A failing
+    `skip` is handled as in a run (traceback, ``--pdb``), and its runs are not
+    created, as for a skip.
+    """
+    with exception_handler(terminal, pdb=pdb):
+        skip, reason = _parse_skip(component.skip(*args), component)
+        return ('skip' if skip else None), reason
+    return 'error', None
+
+
 def _prepare_objective(benchmark, run_context, dataset, objective, solver,
                        n_repetitions, terminal):
     """Return the number of repetitions, or ``None`` if the objective skips.
@@ -140,15 +154,21 @@ def _prepare_objective(benchmark, run_context, dataset, objective, solver,
 
     objective._attach_dataset(dataset)
     try:
-        if n_repetitions is None:
-            # The number of repetitions may depend on the data (CV splits).
-            skip, reason = objective._set_dataset(dataset)
-        elif not _is_legacy_skip(objective.skip, ('dataset',)):
-            # Loads the data only if `skip` needs it.
-            skip, reason = _parse_skip(objective.skip(dataset), objective)
+        if _is_legacy_skip(objective.skip, ('dataset',)):
+            # XXX: remove in benchopt 1.12. `skip(**data)` needs the data, so
+            # it runs here only when the data is loaded anyway.
+            status, reason = None, None
+            if n_repetitions is None:
+                skip, reason = objective._set_dataset(dataset)
+                status = 'skip' if skip else None
         else:
-            # XXX: remove in benchopt 1.12. `skip(**data)` runs in the worker.
-            skip, reason = False, None
+            # Loads the data only if `skip` needs it.
+            status, reason = _skip_before_dispatch(
+                objective, (dataset,), terminal, run_context.pdb
+            )
+            if status is None and n_repetitions is None:
+                # The number of repetitions may depend on the data (CV).
+                objective._load_data()
     except SeedContextError as e:
         if e.component != 'solver':
             raise
@@ -160,8 +180,8 @@ def _prepare_objective(benchmark, run_context, dataset, objective, solver,
             "'repetition' from `group_by` or make the data "
             "solver-independent."
         ) from e
-    if skip:
-        terminal.skip(reason, objective=True)
+    if status is not None:
+        terminal.skip(reason, objective=True, status=status)
         return None
 
     if n_repetitions is None:
@@ -202,9 +222,11 @@ def generate_run_kwargs(
         # XXX: remove in benchopt 1.12 the check for `skip(**objective_dict)`,
         # which runs in the worker.
         if not _is_legacy_skip(solver.skip, ('objective', 'dataset')):
-            skip, reason = _parse_skip(solver.skip(objective, dataset), solver)
-            if skip:
-                terminal.skip(reason)
+            status, reason = _skip_before_dispatch(
+                solver, (objective, dataset), terminal, base_ctx.pdb
+            )
+            if status is not None:
+                terminal.skip(reason, status=status)
                 return
         # A shallow copy carries the data if already set (reused in-process),
         # else `_set_dataset` loads it at run time.

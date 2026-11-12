@@ -462,36 +462,51 @@ def test_skip_before_dispatch(skip_on):
 
 
 @pytest.mark.parametrize("component", ["objective", "solver"])
-@pytest.mark.parametrize("output", [True, "", 1])
-def test_invalid_skip_output(component, output):
-    # A `skip` returning neither None nor a reason raises, so it gets fixed.
-    from benchopt._generate_runs import generate_run_kwargs
-    from benchopt.utils.terminal_output import TerminalOutput
+@pytest.mark.parametrize("output", [True, "", 1, "1 / 0"])
+def test_invalid_skip_output(component, output, no_debug_log):
+    # A `skip` returning neither None nor a reason, or failing, is reported as
+    # an error and acts as a skip: its runs are not created, the others run.
+    from benchopt.cli.main import run
 
+    output = output if output == "1 / 0" else repr(output)
     objective = f"""from benchopt.utils.temp_benchmark import TempObjective
 
     class Objective(TempObjective):
-        def skip(self, dataset): return {output!r}
+        parameters = {{"bad": [True, False]}}
+        def skip(self, dataset):
+            if self.bad: return {output}
     """
     solver = f"""from benchopt.utils.temp_benchmark import TempSolver
 
     class Solver(TempSolver):
         name = "test-solver"
-        def skip(self, objective, dataset): return {output!r}
+        sampling_strategy = "run_once"
+        parameters = {{"bad": [True, False]}}
+        def run(self, _): print("Solver#RUN")
+        def skip(self, objective, dataset):
+            if self.bad: return {output}
     """
     components = (
         dict(objective=objective) if component == "objective"
         else dict(solvers=[solver])
     )
-    match = f"{component.capitalize()}.skip` should return None"
-    with temp_benchmark(**components) as bench:
-        with pytest.raises(ValueError, match=match):
-            list(generate_run_kwargs(
-                bench, solvers=bench.check_solver_patterns(["test-solver"]),
-                datasets=bench.check_dataset_patterns(["test-dataset"]),
-                objectives=bench.check_objective_filters(None),
-                n_repetitions=1, terminal=TerminalOutput(1, False),
-            ))
+    with temp_benchmark(**components) as bench, CaptureCmdOutput() as out:
+        run([
+            str(bench.benchmark_dir), "-s", "test-solver",
+            "-d", "test-dataset", "--no-plot"
+        ], standalone_mode=False)
+
+    error = (
+        "ZeroDivisionError" if output == "1 / 0" else
+        f"{component.capitalize()}.skip` should return None"
+    )
+    out.check_output(error, repetition=1)
+    status = (
+        r"test-objective\[bad=True\] error" if component == "objective"
+        else r"test-solver\[bad=True\]: error"
+    )
+    out.check_output(status, repetition=1)
+    out.check_output(r"test-solver(\[bad=False\])?: done", repetition=1)
 
 
 def test_objective_save_final_results(no_debug_log):
