@@ -120,7 +120,7 @@ class TestInstallCmd:
             class Dataset(BaseDataset):
                 name = 'test_dataset'
                 {'def prepare(self): print("#PREPARE")' if has_prepare else ''}
-                def get_data(self): print("#GET_DATA")
+                def get_data(self): print("#GET_DATA"); return dict()
         """
         msg = "#PREPARE" if has_prepare else "#GET_DATA"
         dataset2 = dataset.replace("dataset", "dataset2")
