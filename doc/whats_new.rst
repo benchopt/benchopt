@@ -36,6 +36,10 @@ FIX
 API
 ~~~
 
+- Component classes are represented as ``Solver<name>``, e.g. in error
+  messages, instead of the default class representation.
+  By `Thomas Moreau`_ (:gh:`1032`)
+
 - ``Objective.skip(self, dataset)`` and ``Solver.skip(self, objective,
   dataset)`` receive the run components and are checked before launching the
   runs, so a skipped objective no longer starts a job for each solver.
