@@ -76,8 +76,12 @@ are deterministic and need no seeding.
 
 ### Optional methods
 
-- **`skip(**data)`**: return `(True, "reason")` to skip incompatible
-  dataset/objective combinations before any solver runs.
+- **`skip(self, dataset)`**: return a reason string to skip incompatible
+  dataset/objective combinations, or `None` to run; any other value raises.
+  It is checked before launching any solver run. Prefer parameters
+  (`dataset.n_samples`): `dataset.get_data()` works (cached) but loads the data
+  on the machine running `benchopt run`. The old `skip(**data)` and the
+  `(skip, reason)` tuple are deprecated.
 - **`get_one_result()`**: return a dummy solver result (same shape as
   `get_result()` would produce). Used by `benchopt test` to validate
   `evaluate_result` without running a real solver — omit it and that check is

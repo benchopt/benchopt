@@ -2,6 +2,7 @@ import copy
 import inspect
 import itertools
 
+from .base import _is_legacy_skip, _parse_skip
 from .utils.parametrized_name_mixin import is_matched
 from .utils.run_context import RunContext, SeedContextError
 
@@ -137,26 +138,33 @@ def _prepare_objective(benchmark, run_context, dataset, objective, solver,
         base_seed=benchmark.seed,
     )
 
-    # Only load the data on the front node when the number of repetitions
-    # depends on it (CV splits). Otherwise, `skip` is checked by the worker.
-    if n_repetitions is None:
-        try:
+    objective._attach_dataset(dataset)
+    try:
+        if n_repetitions is None:
+            # The number of repetitions may depend on the data (CV splits).
             skip, reason = objective._set_dataset(dataset)
-        except SeedContextError as e:
-            if e.component != 'solver':
-                raise
-            raise ValueError(
-                "`group_by` with 'repetition' shares each fold across "
-                "solvers, so the data must not depend on the solver -- but "
-                "`get_data`/"
-                "`set_data` called `get_seed(use_solver=True)`. Remove "
-                "'repetition' from `group_by` or make the data "
-                "solver-independent."
-            ) from e
-        if skip:
-            terminal.skip(reason, objective=True)
-            return None
+        elif not _is_legacy_skip(objective.skip, ('dataset',)):
+            # Loads the data only if `skip` needs it.
+            skip, reason = _parse_skip(objective.skip(dataset), objective)
+        else:
+            # XXX: remove in benchopt 1.12. `skip(**data)` runs in the worker.
+            skip, reason = False, None
+    except SeedContextError as e:
+        if e.component != 'solver':
+            raise
+        raise ValueError(
+            "`group_by` with 'repetition' shares each fold across "
+            "solvers, so the data must not depend on the solver -- but "
+            "`get_data`/"
+            "`set_data` called `get_seed(use_solver=True)`. Remove "
+            "'repetition' from `group_by` or make the data "
+            "solver-independent."
+        ) from e
+    if skip:
+        terminal.skip(reason, objective=True)
+        return None
 
+    if n_repetitions is None:
         if hasattr(objective, "cv"):
             n_repetitions = objective.cv.get_n_splits(
                 **getattr(objective, "cv_metadata", {})
@@ -188,8 +196,16 @@ def generate_run_kwargs(
     base_ctx = run_context or RunContext()
 
     def _leaf(chosen):
+        """Yield the run kwargs, unless the solver skips this objective."""
         dataset, objective = chosen['dataset'], chosen['objective']
         solver, rep = chosen['solver'], chosen['repetition']
+        # XXX: remove in benchopt 1.12 the check for `skip(**objective_dict)`,
+        # which runs in the worker.
+        if not _is_legacy_skip(solver.skip, ('objective', 'dataset')):
+            skip, reason = _parse_skip(solver.skip(objective, dataset), solver)
+            if skip:
+                terminal.skip(reason)
+                return
         # A shallow copy carries the data if already set (reused in-process),
         # else `_set_dataset` loads it at run time.
         objective_rep = copy.copy(objective)
@@ -201,7 +217,7 @@ def generate_run_kwargs(
             objective=objective_rep, dataset=dataset, solver=solver,
             repetition=rep, base_seed=benchmark.seed,
         )
-        return dict(
+        yield dict(
             benchmark=benchmark, dataset=dataset, objective=objective_rep,
             solver=solver, repetition=rep, meta=meta, timeout=timeout,
             max_runs=max_runs, terminal=terminal, run_context=run_ctx,
@@ -225,7 +241,7 @@ def generate_run_kwargs(
                     terminal.display_rep(rep)
                 chosen['repetition'] = rep
                 if last:
-                    yield _leaf(chosen)
+                    yield from _leaf(chosen)
                 else:
                     yield from _rec(depth + 1, chosen)
             return
@@ -234,7 +250,7 @@ def generate_run_kwargs(
                 continue
             chosen[axis] = item
             if last:
-                yield _leaf(chosen)
+                yield from _leaf(chosen)
             else:
                 yield from _rec(depth + 1, chosen)
 

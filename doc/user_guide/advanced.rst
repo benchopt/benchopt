@@ -16,31 +16,43 @@ Some solvers might not be able to run with all the datasets present
 in a benchmark. This is typically the case when some datasets are
 represented using sparse data or for datasets that are too large.
 
-In these cases, a solver can be skipped at runtime, depending on the
-characteristic of the objective. In order to define for which cases
-a solver should be skip, the user needs to implement a method
-:func:`~benchopt.BaseSolver.skip` in the solver class that will take
-the input as the :func:`~benchopt.BaseSolver.set_objective` method.
-This method should return a boolean value that evaluates to ``True``
-if the solver should be skipped, and a string giving the reason of
-why the solver is skipped, for display purposes. For instance,
-for a solver where the objective is set with keys `X, y, reg`,
-we get
+In these cases, a solver can be skipped by implementing the method
+:func:`~benchopt.BaseSolver.skip`, which receives the objective and the
+dataset of the run. It returns a string giving the reason to skip the
+solver, displayed in the output, or ``None`` to run it. Any other value
+raises an error, as it is most likely a bug in ``skip``. Similarly,
+:func:`~benchopt.BaseObjective.skip` receives the dataset and skips the
+runs of all solvers for this dataset.
+
+Both are checked before launching the runs, so a skipped configuration never
+starts a job. Checks on the parameters, such as ``objective.reg`` or
+``dataset.n_samples``, are free. If the check needs the data, call
+``dataset.get_data()`` or ``objective.get_objective()``. The data is then
+loaded on the machine running ``benchopt run``, once per dataset, as
+``get_data`` is cached. For instance, for an objective with a parameter
+``reg`` and a dataset giving ``X``, we get
 
 .. code-block::
 
     class Solver(BaseSolver):
         ...
-        def skip(self, X, y, reg):
+        def skip(self, objective, dataset):
             from scipy import sparse
 
-            if sparse.issparse(X):
-                return True, "solver does not support sparse data X."
+            if objective.reg == 0:
+                return "solver does not work with reg=0"
 
-            if reg == 0:
-                return True, "solver does not work with reg=0"
+            if sparse.issparse(dataset.get_data()["X"]):
+                return "solver does not support sparse data X."
 
-            return False, None
+.. note::
+
+    In older versions, ``skip`` received the data as keyword arguments,
+    e.g. ``Solver.skip(self, X, y, reg)`` with the output of
+    ``Objective.get_objective``, and ``Objective.skip(self, X, y)`` with the
+    output of ``Dataset.get_data``. It returned a ``(skip, reason)`` tuple.
+    Both still work, with a ``FutureWarning``, and the old signature is
+    checked once the run is launched. They will be removed in benchopt 1.12.
 
 .. _extra_objectives:
 

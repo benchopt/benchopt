@@ -185,9 +185,8 @@ class TestCmdTest:
         from benchopt.utils.temp_benchmark import TempSolver
         class Solver(TempSolver):
             name = "test solver"
-            def skip(self, p):
-                if p > 0: return True, "skip for p > 0"
-                return False, None
+            def skip(self, objective, dataset):
+                if dataset.p > 0: return "skip for p > 0"
             def set_objective(self, p): self.p = p
         """
 
@@ -349,7 +348,8 @@ class TestCmdTest:
         solver = """from benchopt.utils.temp_benchmark import TempSolver
         class Solver(TempSolver):
             name = "always-skip-solver"
-            def skip(self, **kwargs): return True, "incompatible by design"
+            def skip(self, objective, dataset):
+                return "incompatible by design"
         """
         with temp_benchmark(solvers=solver) as bench:
             with CaptureCmdOutput(exit=1) as out:
@@ -548,7 +548,7 @@ class TestCmdTest:
         class Solver(TempSolver):
             name = "skip-solver"
             @classmethod
-            def skip(cls, **kwargs): pytest.skip("incompatible")
+            def skip(cls, objective, dataset): pytest.skip("incompatible")
         """
         with temp_benchmark(
                 solvers=solver

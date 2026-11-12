@@ -36,6 +36,16 @@ FIX
 API
 ~~~
 
+- ``Objective.skip(self, dataset)`` and ``Solver.skip(self, objective,
+  dataset)`` receive the run components and are checked before launching the
+  runs, so a skipped objective no longer starts a job for each solver.
+  ``Dataset.get_data`` is cached, so a ``skip`` that needs the data loads it
+  once. ``skip`` returns the reason to skip, or ``None`` to run, and any other
+  value raises an error. ``skip`` receiving the data as keyword arguments and
+  returning a ``(skip, reason)`` tuple are deprecated and will be removed in
+  benchopt 1.12. See :ref:`skipping_solver`.
+  By `Thomas Moreau`_
+
 - Add a ``hidden_plots`` benchmark config option to hide some plot kinds,
   e.g. some of the default plots. By `Hippolyte Verninas`_ (:gh:`1019`)
 

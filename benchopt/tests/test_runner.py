@@ -16,10 +16,9 @@ def test_skip_api(n_jobs):
             name = "Objective-skip"
             parameters = dict(should_skip=[True, False])
 
-            def skip(self, X, y):
+            def skip(self, dataset):
                 if self.should_skip:
-                    return True, "Objective#SKIP"
-                return False, None
+                    return "Objective#SKIP"
     """
 
     solver = """from benchopt.utils.temp_benchmark import TempSolver
@@ -30,10 +29,9 @@ def test_skip_api(n_jobs):
         parameters = dict(should_skip=[True, False])
         def run(self, n_iter): print("Solver#RUN")
 
-        def skip(self, **obj):
+        def skip(self, objective, dataset):
             if self.should_skip:
-                return True, "Solver#SKIP"
-            return False, None
+                return "Solver#SKIP"
 
     """
 

@@ -94,9 +94,13 @@ repetition. Add `use_dataset=True` / `use_solver=True` to further differentiate 
 
 ### Optional methods
 
-- `skip(**objective_dict) -> (skip: bool, reason: str | None)`: declare
-  incompatibility with a given problem (e.g. needs a feature the objective
-  doesn't expose). Return `(True, "why")` to skip, `(False, None)` otherwise.
+- `skip(self, objective, dataset) -> str | None`: declare incompatibility with
+  a given problem (e.g. needs a feature the objective doesn't expose). Return
+  the reason to skip, or `None` to run; any other value raises. It is checked
+  before launching the run. Prefer parameters (`objective.reg`):
+  `objective.get_objective()` works but loads the data on the machine running
+  `benchopt run`. The old `skip(**objective_dict)` and the `(skip, reason)`
+  tuple are deprecated.
 - `warm_up()`: called once before timed runs; call `self.run_once()` here to
   absorb JIT/compilation costs out of the timings.
 - `pre_run_hook(stop_val)`: untimed per-run setup (e.g. JAX precompilation for
