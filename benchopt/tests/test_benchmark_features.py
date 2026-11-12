@@ -364,12 +364,16 @@ def test_group_by_repetition_solver_seed_error(no_debug_log):
     # reuses it across solvers, so the data must be solver-independent. A
     # `get_seed(use_solver=True)` in `set_data` must fail fast on the front
     # node with a clear `group_by` message, not a confusing internal error.
-    # No `-r`: the front node only loads the data when n_repetitions is None.
+    # No `-r` and a `cv`: the front node loads the data to count the folds.
     objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+    class Splitter:
+        def get_n_splits(self): return 2
 
     class Objective(TempObjective):
         def set_data(self, X, y):
             self.get_seed(use_solver=True)
+            self.cv = Splitter()
     """
     with temp_benchmark(objective=objective) as bench:
         with pytest.raises(ValueError, match="must not depend on the solver"):
@@ -379,9 +383,11 @@ def test_group_by_repetition_solver_seed_error(no_debug_log):
                 standalone_mode=False)
 
 
+@pytest.mark.parametrize("cv", [False, True])
 @pytest.mark.parametrize("n_reps", [None, 2])
-def test_dispatch_loads_data_only_if_needed(n_reps):
-    # The front node only loads the data when needed to count repetitions.
+def test_dispatch_loads_data_only_if_needed(n_reps, cv):
+    # The front node only loads the data when needed to count repetitions,
+    # i.e. without `-r` and when the objective sets a `cv` attribute.
     from benchopt._generate_runs import generate_run_kwargs
     from benchopt.utils.terminal_output import TerminalOutput
 
@@ -394,8 +400,20 @@ def test_dispatch_loads_data_only_if_needed(n_reps):
             print("GET_DATA")
             return dict(X=None, y=None)
     """
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
 
-    with temp_benchmark(datasets=dataset) as bench, CaptureCmdOutput() as out:
+    class Splitter:
+        def get_n_splits(self): return 3
+
+    class Objective(TempObjective):
+        def set_data(self, X, y):
+            self.cv = Splitter()
+    """
+
+    components = dict(datasets=dataset)
+    if cv:
+        components["objective"] = objective
+    with temp_benchmark(**components) as bench, CaptureCmdOutput() as out:
         all_kwargs = list(generate_run_kwargs(
             bench, solvers=bench.check_solver_patterns([]),
             datasets=bench.check_dataset_patterns(["test-dataset"]),
@@ -403,8 +421,9 @@ def test_dispatch_loads_data_only_if_needed(n_reps):
             n_repetitions=n_reps, terminal=TerminalOutput(n_reps, False),
         ))
 
-    assert len(all_kwargs) == 2 * (n_reps or 1)
-    out.check_output("GET_DATA", repetition=2 if n_reps is None else 0)
+    load = n_reps is None and cv
+    assert len(all_kwargs) == 2 * (n_reps or (3 if cv else 1))
+    out.check_output("GET_DATA", repetition=2 if load else 0)
 
 
 @pytest.mark.parametrize("skip_on", ["parameters", "data"])

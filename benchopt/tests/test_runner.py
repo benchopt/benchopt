@@ -542,9 +542,9 @@ class TestSeed:
                 # Check that get_seed() works with parallel runs.
                 run((cmd_str + " -j 2").split(), standalone_mode=False)
 
-        # get_data() runs once per -j1 call, and twice for the -j2 call (once
-        # during dispatch, once more in the worker).
-        seeds = out.check_output(r"(?m)^#SEED-data=.*", repetition=4)
+        # get_data() runs once per call: the objective does not set `cv`, so
+        # the data is not loaded during dispatch.
+        seeds = out.check_output(r"(?m)^#SEED-data=.*", repetition=3)
         assert len(set(seeds)) == 1, "Seeds are not equal"
 
     def test_seed_different(self, no_debug_log):

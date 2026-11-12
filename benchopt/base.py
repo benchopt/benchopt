@@ -1,4 +1,6 @@
+import ast
 import inspect
+import textwrap
 import functools
 import warnings
 from abc import ABC, abstractmethod
@@ -16,22 +18,49 @@ from .utils.parametrized_name_mixin import ParametrizedNameMixin
 from .utils.run_context_mixin import RunContextMixin
 
 
-def _skip_name(klass):
-    return f"{klass._base_class_name}<{klass.name}>.skip"
+def _call_skip(component, *args):
+    """Return ``(skip, reason)`` from ``component.skip(*args)``.
 
+    Its expected signature is the one of `skip` in the benchopt base class.
+    """
+    name = f"{type(component)!r}.skip"
+    base = next(
+        klass for klass in type(component).__mro__
+        if klass.__module__ == __name__ and 'skip' in vars(klass)
+    )
+    signature = inspect.signature(base.skip)
+    if tuple(inspect.signature(component.skip).parameters) == tuple(
+        signature.parameters
+    )[1:]:
+        output = component.skip(*args)
+    else:
+        # XXX: remove in benchopt 1.12, with the skip receiving the data.
+        warnings.warn(
+            f"`{name}` receives the data as keyword arguments, which is "
+            "deprecated and will be removed in benchopt 1.12. Define "
+            f"`skip{signature}` instead, so the skip can be checked without "
+            "loading the data.",
+            FutureWarning,
+        )
+        # It receives the output of the first argument: the objective of a
+        # solver, or the dataset of an objective.
+        upstream = args[0]
+        data = (
+            upstream.get_objective() if isinstance(upstream, BaseObjective)
+            else upstream.get_data()
+        )
+        output = component.skip(**data)
+        if isinstance(output, tuple):
+            return output
 
-def _parse_skip(output, klass, legacy=False):
-    """Return ``(skip, reason)`` from the output of ``klass.skip``."""
-    name = _skip_name(klass)
     # XXX: remove in benchopt 1.12, with the tuple output.
     if isinstance(output, tuple):
-        if not legacy:
-            warnings.warn(
-                f"`{name}` returns a `(skip, reason)` tuple, which is "
-                "deprecated and will be removed in benchopt 1.12. Return the "
-                "reason to skip, or None to run.",
-                FutureWarning,
-            )
+        warnings.warn(
+            f"`{name}` returns a `(skip, reason)` tuple, which is "
+            "deprecated and will be removed in benchopt 1.12. Return the "
+            "reason to skip, or None to run.",
+            FutureWarning,
+        )
         return output
     if output is None or output is False:
         return False, None
@@ -40,22 +69,6 @@ def _parse_skip(output, klass, legacy=False):
     raise ValueError(
         f"`{name}` should return None to run, or a non-empty string giving "
         f"the reason to skip. Got {output!r}."
-    )
-
-
-# XXX: remove in benchopt 1.12, with the skip receiving the data.
-def _is_legacy_skip(skip, names):
-    """Whether `skip` uses the deprecated signature, taking the data."""
-    return tuple(inspect.signature(skip).parameters) != names
-
-
-def _warn_legacy_skip(klass, signature):
-    warnings.warn(
-        f"`{_skip_name(klass)}` receives the data as keyword arguments, which "
-        "is deprecated and will be removed in benchopt 1.12. Define "
-        f"`skip{signature}` instead, so the skip can be checked without "
-        "loading the data.",
-        FutureWarning,
     )
 
 
@@ -193,7 +206,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         # objective so defaults can be specified at the benchmark level.
         self._inherit_stopping_criterion(objective)
 
-        skip, reason = self._skip(objective, objective._dataset)
+        skip, reason = _call_skip(self, objective, objective._dataset)
         if skip:
             return skip, reason
 
@@ -206,16 +219,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
         self.set_objective(**objective_dict)
         return False, None
-
-    def _skip(self, objective, dataset):
-        """Return ``(skip, reason)`` from `skip`."""
-        # XXX: remove in benchopt 1.12, with the skip receiving the data.
-        if _is_legacy_skip(self.skip, ('objective', 'dataset')):
-            _warn_legacy_skip(self, "(self, objective, dataset)")
-            return _parse_skip(
-                self.skip(**objective.get_objective()), self, legacy=True
-            )
-        return _parse_skip(self.skip(objective, dataset), self)
 
     @abstractmethod
     def set_objective(self, **objective_dict):
@@ -409,7 +412,29 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        cls.get_data = _cache_data(cls.get_data)
+        cls.get_data = BaseDataset._cache_data(cls.get_data)
+
+    @staticmethod
+    def _cache_data(get_data):
+        """Cache the output of `Dataset.get_data` on the instance."""
+        @functools.wraps(get_data)
+        def cached_get_data(self):
+            # Reload when the seed used for the cached data has changed.
+            if getattr(self, '_data', None) is None or (
+                self._used_seed is not None
+                and self._used_seed != self._compute_used_seed()
+            ):
+                # Cleared first, so a `super().get_data()` also reloads.
+                self._data = None
+                data = get_data(self)
+                if not isinstance(data, dict):
+                    raise ValueError(
+                        "The `get_data` method of the dataset should return a "
+                        f"dictionary containing the data. Got {data}."
+                    )
+                self._data = data
+            return self._data
+        return cached_get_data
 
     def prepare(self):
         """Prepare the dataset for use (optional).
@@ -636,7 +661,17 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        cls.get_objective = _load_data_first(cls.get_objective)
+        cls.get_objective = BaseObjective._load_data_first(cls.get_objective)
+
+    @staticmethod
+    def _load_data_first(get_objective):
+        """Set the data of the objective before `Objective.get_objective`."""
+        @functools.wraps(get_objective)
+        def get_objective_with_data(self):
+            if self._dataset is not None:
+                self._load_data()
+            return get_objective(self)
+        return get_objective_with_data
 
     @abstractmethod
     def get_objective(self):
@@ -760,6 +795,36 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
+    @classmethod
+    @functools.lru_cache(maxsize=None)
+    def _sets_cv(cls):
+        """Whether the objective may set a `cv` attribute, from its source.
+
+        The number of repetitions then depends on the data, as the number of
+        cross-validation splits. If the source cannot be read, assume so.
+        """
+        if hasattr(cls, 'cv'):
+            return True
+        skipped_modules = ('benchopt', 'abc', 'builtins')
+        for klass in cls.__mro__:
+            if klass.__module__.split('.')[0] in skipped_modules:
+                continue
+            try:
+                tree = ast.parse(textwrap.dedent(inspect.getsource(klass)))
+            except (OSError, TypeError, SyntaxError):
+                return True
+            for node in ast.walk(tree):
+                # `self.cv = ...` or `setattr(self, "cv", ...)`
+                if (isinstance(node, ast.Attribute) and node.attr == 'cv'
+                        and isinstance(node.ctx, ast.Store)):
+                    return True
+                if (isinstance(node, ast.Call)
+                        and getattr(node.func, 'id', None) == 'setattr'
+                        and len(node.args) > 1
+                        and getattr(node.args[1], 'value', None) == 'cv'):
+                    return True
+        return False
+
     def _attach_dataset(self, dataset):
         if dataset is not self._dataset:
             self._dataset, self._dataset_ready = dataset, False
@@ -770,20 +835,10 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             return False, None
 
         self._attach_dataset(dataset)
-        skip, reason = self._skip(dataset)
+        skip, reason = _call_skip(self, dataset)
         if not skip:
             self._load_data()
         return skip, reason
-
-    def _skip(self, dataset):
-        """Return ``(skip, reason)`` from `skip`."""
-        # XXX: remove in benchopt 1.12, with the skip receiving the data.
-        if _is_legacy_skip(self.skip, ('dataset',)):
-            _warn_legacy_skip(self, "(self, dataset)")
-            return _parse_skip(
-                self.skip(**dataset.get_data()), self, legacy=True
-            )
-        return _parse_skip(self.skip(dataset), self)
 
     def _load_data(self):
         """Call `set_data` with the data of the attached dataset."""
@@ -908,35 +963,3 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
         split_ = getattr(self, "split", self._default_split)
         return split_(cv_fold, *arrays)
-
-
-def _cache_data(get_data):
-    """Cache the output of `Dataset.get_data` on the instance."""
-    @functools.wraps(get_data)
-    def cached_get_data(self):
-        # Reload when the seed used for the cached data has changed.
-        if getattr(self, '_data', None) is None or (
-            self._used_seed is not None
-            and self._used_seed != self._compute_used_seed()
-        ):
-            # Cleared first, so a `super().get_data()` also reloads.
-            self._data = None
-            data = get_data(self)
-            if not isinstance(data, dict):
-                raise ValueError(
-                    "The `get_data` method of the dataset should return a "
-                    f"dictionary containing the data. Got {data}."
-                )
-            self._data = data
-        return self._data
-    return cached_get_data
-
-
-def _load_data_first(get_objective):
-    """Set the data of the objective before `Objective.get_objective`."""
-    @functools.wraps(get_objective)
-    def get_objective_with_data(self):
-        if self._dataset is not None:
-            self._load_data()
-        return get_objective(self)
-    return get_objective_with_data

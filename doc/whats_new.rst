@@ -40,10 +40,12 @@ API
   dataset)`` receive the run components and are checked before launching the
   runs, so a skipped objective no longer starts a job for each solver.
   ``Dataset.get_data`` is cached, so a ``skip`` that needs the data loads it
-  once. ``skip`` returns the reason to skip, or ``None`` to run, and any other
-  value raises an error. ``skip`` receiving the data as keyword arguments and
-  returning a ``(skip, reason)`` tuple are deprecated and will be removed in
-  benchopt 1.12. See :ref:`skipping_solver`.
+  once. Without ``-r``, the data is only loaded to count the repetitions when
+  the objective sets a ``cv`` attribute, detected in its code. ``skip`` returns
+  the reason to skip, or ``None`` to run, and any other value raises an error.
+  ``skip`` receiving the data as keyword arguments and returning a
+  ``(skip, reason)`` tuple are deprecated and will be removed in benchopt 1.12.
+  See :ref:`skipping_solver`.
   By `Thomas Moreau`_ (:gh:`1031`)
 
 - Add a ``hidden_plots`` benchmark config option to hide some plot kinds,

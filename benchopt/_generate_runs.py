@@ -2,6 +2,7 @@ import copy
 import inspect
 import itertools
 
+from .base import _call_skip
 from .utils.pdb_helpers import exception_handler
 from .utils.parametrized_name_mixin import is_matched
 from .utils.run_context import RunContext, SeedContextError
@@ -134,7 +135,7 @@ def _skip_before_dispatch(component, args, terminal, pdb):
     created, as for a skip.
     """
     with exception_handler(terminal, pdb=pdb):
-        skip, reason = component._skip(*args)
+        skip, reason = _call_skip(component, *args)
         return ('skip' if skip else None), reason
     return 'error', None
 
@@ -157,8 +158,9 @@ def _prepare_objective(benchmark, run_context, dataset, objective, solver,
         status, reason = _skip_before_dispatch(
             objective, (dataset,), terminal, run_context.pdb
         )
-        if status is None and n_repetitions is None:
-            # The number of repetitions may depend on the data (CV splits).
+        if (status is None and n_repetitions is None
+                and objective._sets_cv()):
+            # The number of repetitions is the number of CV splits.
             objective._load_data()
     except SeedContextError as e:
         if e.component != 'solver':
