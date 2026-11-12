@@ -45,6 +45,8 @@ class ParametrizedNameMixin():
         try:
             obj = cls(**parameters)
             obj.save_parameters(**parameters)
+            # State restored by `_release_state` once a run is done with it.
+            obj._init_state = obj.__dict__.copy()
         except Exception as exception:
             # get type (Dataset, Objective, or Solver) of class and its name
             cls_type = cls._base_class_name
@@ -59,6 +61,23 @@ class ParametrizedNameMixin():
             raise
 
         return obj
+
+    # Attributes kept by `_release_state`, e.g. to warm up only once.
+    _keep_state = ()
+
+    def _release_state(self):
+        """Reset the instance to its state after `get_instance`.
+
+        This drops what the runs stored on it (data, fitted state), so it can
+        be garbage collected. Attributes listed in `_keep_state` are kept.
+        """
+        init_state = self.__dict__.get('_init_state')
+        if init_state is None:
+            return
+        kept = {k: self.__dict__[k] for k in self._keep_state
+                if k in self.__dict__}
+        self.__dict__.clear()
+        self.__dict__.update(init_state, _init_state=init_state, **kept)
 
     @property
     @abstractmethod

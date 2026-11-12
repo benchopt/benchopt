@@ -53,13 +53,26 @@ class RunContextMixin:
             use_repetition=use_repetition,
         )
 
-        # Track the most restrictive seed parameters for later caching
-        for key in self._seed_params:
-            self._seed_params[key] |= locals()[key]
+        # Track the most restrictive seed parameters for later caching. The
+        # dict is rebound, not updated, so `_release_state` resets it.
+        flags = dict(
+            use_objective=use_objective, use_dataset=use_dataset,
+            use_solver=use_solver, use_repetition=use_repetition,
+        )
+        self._seed_params = {
+            key: used | flags[key] for key, used in self._seed_params.items()
+        }
 
         self._used_seed = seed
 
         return seed
+
+    def _seed_changed(self):
+        """Whether the seed of the current run differs from the used one."""
+        return (
+            self._used_seed is not None
+            and self._used_seed != self._compute_used_seed()
+        )
 
     def _compute_used_seed(self):
         """Recompute the stored seed with the current context and params.

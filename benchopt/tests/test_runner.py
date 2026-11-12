@@ -842,3 +842,78 @@ def test_solver_releases_run_data(no_debug_log):
     # (terminal state, joblib pre-dispatch), but copies must not pile up.
     out.check_output("#ALIVE#")
     out.check_output("#ALIVE#[2-9]", repetition=0)
+
+
+@pytest.mark.parametrize("parallel", ["sequential", "group_by"])
+def test_components_share_state_then_release(parallel, no_debug_log):
+    """Consecutive runs share the components' state, released afterwards.
+
+    Data is loaded once per dataset and set once per (dataset, objective),
+    and at most one state per component kind stays alive in a process.
+    """
+    dataset = """from benchopt import BaseDataset
+
+    class Dataset(BaseDataset):
+        name = "test-dataset"
+        parameters = {"n": [1, 2]}
+        def get_data(self):
+            print("#GET_DATA#")
+            return dict(X=None, y=None)
+    """
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+        import gc, weakref
+        import numpy as np
+
+        REFS = []
+
+        class Data(np.ndarray):
+            pass
+
+        def n_alive():
+            gc.collect()
+            return sum(r() is not None for r in REFS)
+
+        class Objective(TempObjective):
+            name = "test-objective"
+            parameters = {"p": [1, 2]}
+            def set_data(self, X, y):
+                print(f"#SET_DATA#ALIVE#{n_alive()}")
+                self.X = np.zeros(10).view(Data)
+                REFS.append(weakref.ref(self.X))
+            def get_objective(self):
+                return dict(X=self.X.copy().view(Data), y=None, lmbd=1)
+    """
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+        import gc, weakref
+
+        REFS = []
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            sampling_strategy = 'run_once'
+            parameters = dict(q=[1, 2])
+            def set_objective(self, X, y, lmbd):
+                gc.collect()
+                alive = sum(r() is not None for r in REFS)
+                print(f"#SET_OBJECTIVE#ALIVE#{alive}")
+                self.X = X
+                REFS.append(weakref.ref(X))
+    """
+    extra = (
+        [] if parallel == "sequential"
+        else ["-j", "2", "--group-by", "dataset"]
+    )
+    with temp_benchmark(
+        datasets=[dataset], objective=objective, solvers=[solver]
+    ) as bench, CaptureCmdOutput() as out:
+        run([str(bench.benchmark_dir), "-d", "test-dataset", "-r", "2",
+             "--no-plot", "--no-cache", *extra], standalone_mode=False)
+
+        from joblib.externals.loky import get_reusable_executor
+        get_reusable_executor().shutdown(wait=True)
+
+    out.check_output("#GET_DATA#", repetition=2)
+    out.check_output("#SET_DATA#", repetition=4)
+    out.check_output("#SET_OBJECTIVE#", repetition=16)
+    # The previous state may linger, but states must not pile up.
+    out.check_output("#ALIVE#[2-9]", repetition=0)

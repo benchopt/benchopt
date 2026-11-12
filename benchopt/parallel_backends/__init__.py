@@ -4,6 +4,7 @@ from joblib import parallel_config
 from joblib import Parallel, delayed
 
 from .._generate_runs import group_runs, _normalize_group_by
+from ..utils.run_context import use_components
 
 _DISTRIBUTED_FRONTAL = False
 
@@ -35,6 +36,22 @@ def run_batch(run, n_jobs=1):
     return _run_batch
 
 
+def _release_dispatched(batches):
+    """Release the front node state of the runs sent to other processes.
+
+    The workers reload it, as only the parameters are pickled. As in a run,
+    the state of the components shared with the next run is kept.
+    """
+    for batch in batches:
+        for run_kwargs in batch:
+            use_components(*(
+                run_kwargs[key] for key in ('dataset', 'objective', 'solver')
+                if key in run_kwargs
+            ))
+        yield batch
+    use_components()
+
+
 def _dispatch(backend, benchmark, run, run_kwargs_iter, config,
               group_by=None, batch_n_jobs=1):
     """Run ``run(**kwargs)`` for each kwargs on the chosen backend, yielding
@@ -45,6 +62,9 @@ def _dispatch(backend, benchmark, run, run_kwargs_iter, config,
     state loaded on their front-end instance.
     """
     batches = group_runs(run_kwargs_iter, group_by)
+    in_process = backend == 'loky' and config.get('n_jobs') in (None, 1)
+    if not in_process:
+        batches = _release_dispatched(batches)
     run_one_batch = run_batch(run, batch_n_jobs)
     if backend == 'submitit':
         from .slurm_executor import run_on_slurm

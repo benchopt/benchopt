@@ -152,17 +152,24 @@ callback (default to 1).
 Data loading and memory
 -----------------------
 
-Benchopt loads each dataset once and keeps its data in memory to run all the
-solvers on it, which avoids reloading the data for every solver. The data is
-released when the run moves to the next dataset. With ``--group-by`` (see
-:ref:`run_grouping`), this only holds for the first listed axis, while the
-other axes keep all their instances in memory. List the heaviest,
-data-carrying axis (usually ``dataset``) first.
+Consecutive runs in a process share the state of their components: the data
+returned by ``Dataset.get_data``, what ``Objective.set_data`` stores, and what
+the solver stores in ``set_objective`` and ``run``. The state of an objective
+depends on its dataset, and the state of a solver on both. Once a run uses
+another component, the state of the previous one is released: the instance
+goes back to its state after creation, so its data can be freed. Each process
+thus keeps at most one state per component, and loads each dataset once per
+block of consecutive runs using it.
 
-Solvers with a costly setup, such as the warmup described above, can also
-benefit from sharing in parallel runs. ``--group-by solver`` runs each solver
-on all datasets in the same worker, at the cost of keeping all the datasets'
-data in that worker's memory.
+The order of the runs therefore decides what is shared. By default, the runs
+are ordered by dataset, then objective, then solver, so each dataset is loaded
+once and ``set_data`` is called once per objective. With ``--group-by`` (see
+:ref:`run_grouping`), the listed axes come first. For instance,
+``--group-by solver`` runs each solver on all datasets in a row, sharing its
+state, but reloads each dataset for every solver.
+
+Attributes stored on an instance during a run do not survive a release. The
+warmup described above is kept, so it runs once per solver and process.
 
 
 .. |update_params| replace:: ``update_parameters``

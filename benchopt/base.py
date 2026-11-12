@@ -92,6 +92,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     _base_class_name = 'Solver'
     sampling_strategy = None
+    # Warm up once per solver, not once per run.
+    _keep_state = ('_warmup_done',)
 
     @classproperty
     def _stopping_criterion(cls):
@@ -404,10 +406,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             self._data = self.get_data()
         # We compare to the last seed (computed with the most restrictive
         # parameters) to check if the data should be recomputed.
-        elif (
-            self._used_seed is not None
-            and self._used_seed != self._compute_used_seed()
-        ):
+        elif self._seed_changed():
             self._data = self.get_data()
 
         if not isinstance(self._data, dict):
@@ -710,7 +709,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
     def _set_dataset(self, dataset):
-        if self._dataset_ready and self._dataset is dataset:
+        # The data is set again if its seed changed, e.g. for a new repetition.
+        if (self._dataset_ready and self._dataset is dataset
+                and not self._seed_changed()):
             return False, None
 
         self._dataset = dataset

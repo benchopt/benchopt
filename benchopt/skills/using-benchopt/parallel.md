@@ -32,8 +32,12 @@ benchopt run . --group-by dataset,objective    # hold these constant per batch
 
 - Axes: `dataset`, `objective`, `solver`, `repetition`; comma-separated,
   outermost first. Also settable as `group_by:` in the parallel config (CLI wins).
-- **Order controls memory (sequential runs):** only the outermost axis is
-  streamed, so list the heaviest, data-carrying axis (usually `dataset`) first.
+- **Order controls reuse:** consecutive runs in a process share the dataset
+  data, the objective's `set_data` state and the solver state, released once a
+  run uses another component (at most one state per component in memory). The
+  listed axes come first: `--group-by solver` shares solver state but reloads
+  each dataset per solver. Don't rely on `self` attributes surviving across
+  components; `warm_up` runs once per solver and process.
 - `repetition` shares a cross-validation fold across solvers (e.g.
   `dataset,objective,repetition`; `dataset`/`objective` must precede it). The
   fold data must be solver-independent — if `set_data` calls
