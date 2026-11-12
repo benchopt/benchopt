@@ -86,7 +86,12 @@ def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
     check_in_cache = getattr(run, "check_call_in_cache", None)
 
     def _to_dispatch():
+        # `terminal` is only present for benchmark runs, not for `prepare`.
+        terminal = None
         for run_kwargs in run_kwargs_generator:
+            terminal = run_kwargs.get('terminal')
+            if terminal is not None:
+                terminal.start_run(run_kwargs['meta'])
             if (check_in_cache is not None
                     and not run_kwargs.get('force', False)
                     and check_in_cache(**run_kwargs)):
@@ -102,6 +107,9 @@ def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
                 ready.append(([], key, 'not run yet', "", False))
             else:
                 yield run_kwargs
+
+        if terminal is not None:
+            terminal.all_dispatched()
 
     for item in _dispatch(backend, benchmark, run, _to_dispatch(), config,
                           group_by=group_by, batch_n_jobs=batch_n_jobs):

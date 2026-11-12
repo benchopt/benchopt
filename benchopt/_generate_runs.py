@@ -179,6 +179,9 @@ def generate_run_kwargs(
     contiguous. ``repetition`` is the innermost axis unless it is in
     ``group_by``.
     """
+    terminal.set_n_configs(
+        benchmark.get_n_configs(solvers, datasets, objectives)
+    )
     group_by = group_by or []
     order = group_by + [a for a in GROUPABLE_AXES if a not in group_by]
     # rep stays the innermost runtime counter unless it is a group_by level.

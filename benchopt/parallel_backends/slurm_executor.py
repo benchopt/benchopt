@@ -1,4 +1,5 @@
 import math
+import subprocess
 from contextlib import ExitStack
 
 try:
@@ -25,6 +26,22 @@ def get_slurm_executor(benchmark, config, timeout=100):
     executor = submitit.AutoExecutor(slurm_folder)
     executor.update_parameters(**config)
     return executor
+
+
+def cancel_jobs(jobs):
+    """Cancel the jobs, with one `scancel` call for all the job arrays.
+
+    The ids of jobs in an array are `<array_id>_<index>`: cancelling the
+    array cancels the jobs left in it, instead of one call per job.
+    """
+    arrays = set()
+    for job in jobs:
+        if getattr(job, "_cancel_command", None) == "scancel":
+            arrays.add(str(job.job_id).split("_")[0])
+        else:
+            job.cancel(check=False)
+    if arrays:
+        subprocess.call(["scancel", *sorted(arrays)])
 
 
 def harmonize_slurm_config(slurm_cfg):
@@ -116,7 +133,7 @@ def run_on_slurm(
     several solvers with different `slurm_params`.
     """
     executors = {}
-    tasks = []
+    tasks, task_keys, terminal = [], [], None
     with ExitStack() as stack:
         for batch in batches:
             for job_slurm_config, run_group in _split_by_slurm_config(
@@ -147,21 +164,37 @@ def run_on_slurm(
                 tasks.append(executors[executor_config].submit(
                     run_batch, run_group,
                 ))
+                terminal = run_group[0].get("terminal", terminal)
+                task_keys.append([
+                    (m["dataset_name"], m["objective_name"], m["solver_name"])
+                    for m in (kw.get("meta") for kw in run_group)
+                    if m is not None
+                ])
                 # Jobs reload the data: don't keep it on the front node while
                 # the batch holds the kwargs.
                 for kwargs in run_group:
                     if "dataset" in kwargs:
                         kwargs["dataset"]._data = None
 
-    # Yield results as jobs finish (unordered)
-    for t in as_completed(tasks):
-        exc = t.exception()
-        if exc is not None:
-            # Cancel remaining tasks and raise error
-            for tt in tasks:
-                tt.cancel()
-            raise exc
+    if terminal is not None:
+        # ponytail: all runs of a RUNNING job count as running, even if
+        # `batch_n_jobs` runs them in waves.
+        terminal.set_running_probe(lambda: [
+            key for keys, job in zip(task_keys, tasks)
+            if job.state == "RUNNING" for key in keys
+        ])
 
-        # A job returns the list of its batch's results; yield each in turn.
-        for res in t.results()[0]:
-            yield res
+    # Yield results as jobs finish (unordered)
+    try:
+        for t in as_completed(tasks):
+            exc = t.exception()
+            if exc is not None:
+                raise exc
+
+            # A job returns the list of its batch's results; yield each.
+            yield from t.results()[0]
+    except BaseException:
+        # A job failed, or the run was interrupted, e.g. with Ctrl-C or from
+        # `benchopt monitor`: do not leave the remaining jobs running.
+        cancel_jobs(tasks)
+        raise

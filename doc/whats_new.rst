@@ -13,6 +13,11 @@ Version 1.10.1 -- in developement
 CLI
 ~~~
 
+- ``benchopt run`` now displays a live ``rich`` interface, and the new
+  ``benchopt monitor`` command displays it for the runs in progress or the last
+  ones, e.g. for runs launched on SLURM or without a terminal.
+  By `Hippolyte Verninas`_ (:gh:`995`)
+
 - Group runs into fewer execution units with ``group_by`` (and optional
   intra-group parallelism via ``batch_n_jobs``) to reduce per-run overhead when
   running in parallel, by sharing setup across the runs of a batch. ``group_by``
@@ -23,6 +28,10 @@ CLI
 
 FIX
 ~~~
+
+- The ``submitit`` backend now cancels the remaining SLURM jobs when the run is
+  interrupted, e.g. with Ctrl-C, and not only when a job fails.
+  By `Hippolyte Verninas`_ (:gh:`995`)
 
 - The front node no longer calls ``Dataset.get_data`` before dispatching runs
   when ``-r`` is set, and the ``submitit`` backend no longer keeps every
