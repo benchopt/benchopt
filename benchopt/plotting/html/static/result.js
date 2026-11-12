@@ -1569,7 +1569,8 @@ const renderImages = () => {
   const ncols = plotData.ncols || Math.min(plotData.data.length, 3);
   const grid = document.createElement('div');
   grid.className = 'image-grid';
-  grid.style.gridTemplateColumns = `repeat(${ncols}, minmax(0, 1fr))`;
+  // Columns shrink to fit the page but never exceed 512px.
+  grid.style.gridTemplateColumns = `repeat(${ncols}, minmax(0, 512px))`;
 
   plotData.data.forEach(imgData => {
     const cell = document.createElement('figure');
