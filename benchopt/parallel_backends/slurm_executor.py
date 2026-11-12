@@ -1,3 +1,4 @@
+import math
 import subprocess
 from contextlib import ExitStack
 
@@ -98,50 +99,89 @@ def hashable_pytree(pytree):
         return pytree
 
 
+def _split_by_slurm_config(batch, slurm_config):
+    """Sub-partition a `group_runs` batch into ``(job_slurm_config, runs)``
+    pairs, one per distinct SLURM config found in the batch.
+
+    A batch shares its `group_by` key, but can still span several solvers
+    with different `slurm_params` (e.g. ``group_by=['dataset']``), so it is
+    never itself the SLURM job unit -- each same-config run of items is.
+    """
+    groups = {}
+    for kwargs in batch:
+        solver = kwargs.get("solver")
+        if solver is not None:
+            job_slurm_config = get_solver_slurm_config(solver, slurm_config)
+        else:
+            job_slurm_config = slurm_config
+
+        cfg = hashable_pytree(job_slurm_config)
+        if cfg not in groups:
+            groups[cfg] = (job_slurm_config, [])
+        groups[cfg][1].append(kwargs)
+    return groups.values()
+
+
 def run_on_slurm(
-    benchmark, slurm_config, run_one_solver, run_kwargs_generator
+    benchmark, slurm_config, run_batch, batches, batch_n_jobs=1
 ):
+    """Submit each pre-grouped batch (see `group_runs`) as SLURM job(s).
 
+    ``batch_n_jobs`` sizes the job wall-time here, with each
+    job running its group in ``ceil(len / batch_n_jobs)`` waves. A batch is
+    further split by SLURM config, since it can span
+    several solvers with different `slurm_params`.
+    """
     executors = {}
-    tasks, keys, terminal = [], [], None
-
+    tasks, task_keys, terminal = [], [], None
     with ExitStack() as stack:
-        for kwargs in run_kwargs_generator:
-            terminal = kwargs.get("terminal", terminal)
-            meta = kwargs.get("meta")
-            if meta is not None:
-                keys.append((meta["dataset_name"], meta["objective_name"],
-                             meta["solver_name"]))
-            solver = kwargs.get("solver")
-            if solver is not None:
-                job_slurm_config = get_solver_slurm_config(
-                    solver, slurm_config
-                )
-            else:
-                job_slurm_config = slurm_config
-            executor_config = hashable_pytree(job_slurm_config)
+        for batch in batches:
+            for job_slurm_config, run_group in _split_by_slurm_config(
+                batch, slurm_config
+            ):
+                # A job runs its group in `waves` rounds, so it needs `waves`
+                # times the per-run timeout; different lengths get their own
+                # array.
+                n_workers = batch_n_jobs
+                if n_workers < 0:  # joblib convention: -1 is all the CPUs
+                    n_cpus = job_slurm_config.get("slurm_cpus_per_task", 1)
+                    n_workers = max(1, n_cpus + 1 + n_workers)
+                waves = math.ceil(len(run_group) / n_workers)
+                executor_config = (hashable_pytree(job_slurm_config), waves)
 
-            if executor_config not in executors:
-                executor = get_slurm_executor(
-                    benchmark,
-                    job_slurm_config,
-                    timeout=kwargs.get("timeout"),
-                )
-                stack.enter_context(executor.batch())
-                executors[executor_config] = executor
+                if executor_config not in executors:
+                    timeout = run_group[0].get("timeout")
+                    if timeout is not None:
+                        timeout *= waves
+                    executor = get_slurm_executor(
+                        benchmark,
+                        job_slurm_config,
+                        timeout=timeout,
+                    )
+                    stack.enter_context(executor.batch())
+                    executors[executor_config] = executor
 
-            future = executors[executor_config].submit(
-                run_one_solver, **kwargs
-            )
-            tasks.append(future)
-            # Jobs reload the data: don't keep it on the front node while the
-            # batch holds the kwargs.
-            if "dataset" in kwargs:
-                kwargs["dataset"]._data = None
+                tasks.append(executors[executor_config].submit(
+                    run_batch, run_group,
+                ))
+                terminal = run_group[0].get("terminal", terminal)
+                task_keys.append([
+                    (m["dataset_name"], m["objective_name"], m["solver_name"])
+                    for m in (kw.get("meta") for kw in run_group)
+                    if m is not None
+                ])
+                # Jobs reload the data: don't keep it on the front node while
+                # the batch holds the kwargs.
+                for kwargs in run_group:
+                    if "dataset" in kwargs:
+                        kwargs["dataset"]._data = None
 
-    if terminal is not None and len(keys) == len(tasks):
+    if terminal is not None:
+        # ponytail: all runs of a RUNNING job count as running, even if
+        # `batch_n_jobs` runs them in waves.
         terminal.set_running_probe(lambda: [
-            key for key, job in zip(keys, tasks) if job.state == "RUNNING"
+            key for keys, job in zip(task_keys, tasks)
+            if job.state == "RUNNING" for key in keys
         ])
 
     # Yield results as jobs finish (unordered)
@@ -151,7 +191,8 @@ def run_on_slurm(
             if exc is not None:
                 raise exc
 
-            yield t.results()[0]
+            # A job returns the list of its batch's results; yield each.
+            yield from t.results()[0]
     except BaseException:
         # A job failed, or the run was interrupted, e.g. with Ctrl-C or from
         # `benchopt monitor`: do not leave the remaining jobs running.

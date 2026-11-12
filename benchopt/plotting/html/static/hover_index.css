@@ -348,6 +348,10 @@ input:checked+.slider:before {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  position: relative; /* anchors the width drag handle */
+  /* so the dragged width is the full box: the clamp compares it to the parent */
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 #legend_title {
@@ -402,61 +406,58 @@ input:checked+.slider:before {
   visibility: visible;
 }
 
-/* Description solver when hovered */
-.curve-description-container {
-  position: relative;
-  display: inline-flex;
+/*----------------------------------------*/
+/***** Param hover icon *****/
+/*----------------------------------------*/
+
+.param-icon {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-left: 4px;
+  vertical-align: -3px;
+  color: #2563eb;
+  cursor: pointer;
+  flex: none;
+  transition: color .15s ease, transform .15s ease;
 }
+.param-icon:hover { color: #1d4ed8; transform: scale(1.2); }
+.param-icon * { pointer-events: none; }
 
-.curve-description-content {
-  display: flex;
-  flex-direction: column;
-  visibility: hidden;
-  background-color: rgb(55 65 81);
-  color: #fff;
-  border-radius: 6px;
-  padding-top: 0.5em;
-  padding-bottom: 0.6em;
-  padding-left: 0.5em;
-  padding-right: 0.5rem;
-  opacity: 90%;
+#params-tooltip {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  background: #1f2937;
+  color: #f9fafb;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  max-width: 20rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, .4);
+}
+#params-tooltip .param-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #374151;
+}
+#params-tooltip table { border-collapse: collapse; }
+#params-tooltip .param-key {
+  color: #93c5fd;
+  font-weight: 600;
+  padding: 1px 12px 1px 0;
+  white-space: nowrap;
+}
+#params-tooltip .param-val { word-break: break-all; }
 
-  width: max-content;
-  max-width: 80ch;
-  max-height: 500px;
+/* Free-text description (e.g. solver docstring) above the params table. */
+#params-tooltip .param-desc {
   white-space: pre-wrap;
-
-  /* position description with respect to container and put it top-center */
-  position: absolute;
-  transform: translate(0, -100%);
-  z-index: 99999;
-}
-
-/* Show description when hovered */
-.curve-description-container:hover .curve-description-content {
-  visibility: visible;
-}
-
-/*Arrow at the bottom of the description*/
-.curve-description-container .curve-description-content::after {
-  content: " ";
-  position: absolute;
-  top: 100%;
-  left: 20px;
-  margin-left: -5px;
-  border-width: 7px;
-  border-style: solid;
-  border-color: rgb(55 65 81) transparent transparent transparent;
-}
-
-.curve-description-title {
-  margin-bottom: 1em;
-  font-weight: bolder;
-}
-
-.curve-description-body {
   max-height: 450px;
   overflow-y: auto;
+  margin-bottom: 6px;
 }
 
 /*Plot config styling as a bag of tags*/
@@ -553,7 +554,9 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
      keeps the figure (and its right handle) clear of the scrollbar. */
   flex: none;
   position: relative;
-  max-width: calc(100% - 1rem);
+  /* Margin, not padding, so it stays outside the box Plotly measures. */
+  margin: 1.5rem;
+  max-width: calc(100% - 4rem); /* 3rem of margin + 1rem clear of the scrollbar */
 }
 
 /* Drag handles on the right, bottom, and bottom-right corner of the figure. */
@@ -628,13 +631,41 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
     transparent 78%);
 }
 
-/* Compact size readout, tucked into the figure's bottom-right corner (left of
-   the diagonal handle). Stays out of the way until you hover the figure or
+/* Shift the figure's own handles out into its margin, so they sit beside the
+   plot instead of over it. Scoped to the figure divs: the legend carries a
+   .resize-handle-x too, and that one belongs on the legend's edge. */
+#plot_container,
+#plot_with_legend_container {
+  --handle: 10px;      /* thickness of the drag bands */
+  --handle-xy: 20px;   /* corner grip */
+  --handle-gap: 4px;   /* clear space between a band and the plot */
+  --handle-offset: calc(-1 * (var(--handle) + var(--handle-gap)));
+}
+#plot_container > .resize-handle-x,
+#plot_with_legend_container > .resize-handle-x {
+  right: var(--handle-offset);
+  width: var(--handle);
+}
+#plot_container > .resize-handle-y,
+#plot_with_legend_container > .resize-handle-y {
+  bottom: var(--handle-offset);
+  height: var(--handle);
+}
+#plot_container > .resize-handle-xy,
+#plot_with_legend_container > .resize-handle-xy {
+  right: var(--handle-offset);
+  bottom: var(--handle-offset);
+  width: var(--handle-xy);
+  height: var(--handle-xy);
+}
+
+/* Compact size readout, tucked into the figure's bottom-right corner (the
+   handles sit outside it). Stays out of the way until you hover the figure or
    drag a handle. JS appends it into the current figure div. */
 #figsize_controls {
   position: absolute;
   bottom: 0.5rem;
-  right: 1.5rem;
+  right: 0.5rem;
   z-index: 7;
   gap: 0.25rem;
   padding: 0.15rem 0.4rem;
@@ -665,6 +696,36 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 #figsize_controls .unit {
   color: #9ca3af;
 }
+
+/* Dropdown next to the PDF button: what to put in the exported file.
+   Split button: PDF and its chevron are fused, only the outer corners round. */
+.pdf-export-btn:not(.no-menu) > a:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+#pdf-menu-toggle {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left-color: rgba(255, 255, 255, 0.4);
+}
+
+.pdf-menu {
+  top: 100%;
+  /* Right-aligned: the button sits at the right edge of the toolbar, a
+     left-aligned menu runs off the page. */
+  right: 0;
+  z-index: 20;
+  min-width: 100%;
+  white-space: nowrap;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.pdf-menu a:hover {
+  background-color: #f3f4f6;
+}
+
 /* Image grid: no boxes, images keep their own aspect ratio */
 .image-title {
   font-size: 1.25rem;
@@ -768,3 +829,4 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 #image-modal button:hover, #image-modal button:focus-visible {
   background: rgba(255, 255, 255, 0.3);
 }
+

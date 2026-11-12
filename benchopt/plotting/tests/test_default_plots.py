@@ -1,6 +1,7 @@
 import pytest
 import pandas as pd
 
+from benchopt.plotting.base import BasePlot
 from benchopt.plotting.default_plots import ObjectiveCurvePlot
 
 
@@ -141,3 +142,87 @@ def test_objective_curve_quantiles_ordered():
 
     for low, mid, high in zip(trace['x_low'], trace['x'], trace['x_high']):
         assert low <= mid <= high
+
+
+# Short names with their hover HTML, as given by `shorten_names`. "Lasso" is
+# both a solver and a dataset, and "S" has an empty description.
+DESC_DF = pd.DataFrame({
+    'solver_name': ['Lasso', 'S'],
+    'solver_description': ['solver Lasso', ''],
+    'dataset_name': ['Lasso', 'D'],
+    'dataset_description': ['dataset Lasso', 'dataset D'],
+    'objective_name': ['O', 'O'],
+    'obj_description': ['objective O', 'objective O'],
+})
+
+
+def test_scatter_and_options_descriptions():
+    # Names get their description implicitly, solver first; an explicit
+    # `description` is kept, and plots receive plain option values.
+    received = []
+
+    class Plot(BasePlot):
+        name = 'scatter'
+        type = 'scatter'
+        options = {
+            'dataset': ...,
+            'ref': lambda df: [{'value': 'v', 'description': 'custom'}, 'S'],
+        }
+
+        def plot(self, df, dataset, ref):
+            received.append((dataset, ref))
+            return [
+                {'x': [0], 'y': [0], 'label': 'Lasso'},
+                {'x': [0], 'y': [0], 'label': 'S'},
+                {'x': [0], 'y': [0], 'label': 'D'},
+                {'x': [0], 'y': [0], 'label': 'O', 'description': None},
+                {'x': [0], 'y': [0], 'label': 'x', 'description': 'custom'},
+                {'x': [0], 'y': [0], 'label': 'other'},
+            ]
+
+        def get_metadata(self, df, dataset, ref):
+            return {'title': 'scatter'}
+
+    plots, options = Plot()._get_all_plots(DESC_DF)
+    assert sorted(received) == [
+        ('D', 'S'), ('D', 'v'), ('Lasso', 'S'), ('Lasso', 'v')
+    ]
+    assert options == {
+        'dataset': [
+            {'value': 'Lasso', 'description': 'solver Lasso'},
+            {'value': 'D', 'description': 'dataset D'},
+        ],
+        'ref': [
+            {'value': 'v', 'description': 'custom'},
+            {'value': 'S', 'description': None},
+        ],
+    }
+    traces = next(iter(plots.values()))['data']
+    assert {t['label']: t['description'] for t in traces} == {
+        'Lasso': 'solver Lasso', 'S': None, 'D': 'dataset D', 'O': None,
+        'x': 'custom', 'other': None,
+    }
+
+
+def test_table_cells_descriptions():
+    # String cells naming an object get its description, in any column and
+    # through markup; explicit `{value, description}` cells are kept.
+    custom = {'value': 'x', 'description': 'custom'}
+
+    class Plot(BasePlot):
+        name = 'table'
+        type = 'table'
+        options = {}
+
+        def plot(self, df):
+            return [['Lasso', 1.0], [custom, '**O**'], [3, 'other']]
+
+        def get_metadata(self, df):
+            return {'title': 'table', 'columns': ['a', 'b']}
+
+    plots, _ = Plot()._get_all_plots(DESC_DF)
+    assert next(iter(plots.values()))['data'] == [
+        [{'value': 'Lasso', 'description': 'solver Lasso'}, 1.0],
+        [custom, {'value': '**O**', 'description': 'objective O'}],
+        [3, 'other'],
+    ]

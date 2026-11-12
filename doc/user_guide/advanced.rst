@@ -147,6 +147,24 @@ callback (default to 1).
             self.run_once()  # For sampling_strategy == 'callback'
 
 
+.. _data_memory:
+
+Data loading and memory
+-----------------------
+
+Benchopt loads each dataset once and keeps its data in memory to run all the
+solvers on it, which avoids reloading the data for every solver. The data is
+released when the run moves to the next dataset. With ``--group-by`` (see
+:ref:`run_grouping`), this only holds for the first listed axis, while the
+other axes keep all their instances in memory. List the heaviest,
+data-carrying axis (usually ``dataset``) first.
+
+Solvers with a costly setup, such as the warmup described above, can also
+benefit from sharing in parallel runs. ``--group-by solver`` runs each solver
+on all datasets in the same worker, at the cost of keeping all the datasets'
+data in that worker's memory.
+
+
 .. |update_params| replace:: ``update_parameters``
 .. _update_params: https://github.com/facebookincubator/submitit/blob/main/submitit/slurm/slurm.py#L386
 

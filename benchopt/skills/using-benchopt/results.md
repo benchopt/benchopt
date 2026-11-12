@@ -175,7 +175,17 @@ implement `plot(df, **options)` (returns data shaped by `type`) and
 consistent color/marker per solver. The `name` then appears in the HTML menu and
 works as a `plot_kind` in `plot_configs` (above). Table cells accept
 `**bold**`, `*italic*` and `__underlined__` markers, rendered in the HTML
-report and in the LaTeX export; escape a literal marker with `r"a \* b"`. For the per-type return schema
+report and in the LaTeX export; escape a literal marker with `r"a \* b"`.
+
+The `df` passed to `plot` holds short labels: solver/dataset/objective names
+keep only the parameters that vary (`Lasso[alpha=0.1]`). The full name is in
+`solver_full_name`/`dataset_full_name`/`objective_full_name`, and the hover
+HTML (docstring + full parameters) in `solver_description`/
+`dataset_description`/`obj_description`. Traces, table cells and option values
+equal to one of these names get the hover icon automatically. To set or
+override it, give a trace a `"description"` key, or pass a cell/option as a
+`{"value": ..., "description": ...}` dict (`"description": None` hides it).
+For the per-type return schema
 and a full example, see the custom-plot doc:
 https://benchopt.github.io/stable/user_guide/add_custom_plot.html
 

@@ -1,6 +1,5 @@
 """Utilities to load classes and module from filenames and class names.
 """
-from abc import ABCMeta
 import ast
 import sys
 import inspect
@@ -19,6 +18,7 @@ except ImportError:
 
 from .safe_import import safe_import_context
 from .class_property import classproperty
+from .parametrized_name_mixin import ComponentMeta
 
 SKIP_IMPORT = False
 
@@ -47,7 +47,7 @@ def skip_import_ctx(skip=True):
         _unskip_import()
 
 
-class FailedImport(ABCMeta):
+class FailedImport(ComponentMeta):
     """MetaClass for fake classes mimicking components that cannot be imported.
 
     This class should be used as a metaclass so that the class type can be
