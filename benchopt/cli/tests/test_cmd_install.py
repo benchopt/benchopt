@@ -48,19 +48,19 @@ class TestInstallCmd:
         with pytest.raises(click.BadParameter, match=re.escape(match)):
             install([invalid_benchmark], 'benchopt', standalone_mode=False)
 
-    def test_invalid_dataset(self):
+    def test_invalid_dataset(self, fake_conda_env):
         with temp_benchmark() as bench:
             with pytest.raises(click.BadParameter, match="invalid_dataset"):
                 cmd = f"{bench.benchmark_dir} -d invalid_dataset -y".split()
                 install(cmd, 'benchopt', standalone_mode=False)
 
-    def test_invalid_solver(self):
+    def test_invalid_solver(self, fake_conda_env):
         with temp_benchmark() as bench:
             with pytest.raises(click.BadParameter, match="invalid_solver"):
                 cmd = f"{bench.benchmark_dir} -s invalid_solver -y".split()
                 install(cmd, 'benchopt', standalone_mode=False)
 
-    def test_valid_call(self):
+    def test_valid_call(self, fake_conda_env):
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             install(
                f"{bench.benchmark_dir} -d test-dataset -s test-solver "
@@ -71,7 +71,7 @@ class TestInstallCmd:
         out.check_output("already available ✓", repetition=3)
         out.check_output("- simulated", repetition=0)
 
-    def test_invalid_install_cmd(self):
+    def test_invalid_install_cmd(self, fake_conda_env):
         # Solver with an invalid install command
         invalid_solver = """
         import fake_module
@@ -112,7 +112,7 @@ class TestInstallCmd:
     @pytest.mark.parametrize(
         "has_prepare", [True, False], ids=["with_prepare", "no_prepare"]
     )
-    def test_prepare_data(self, has_prepare):
+    def test_prepare_data(self, fake_conda_env, has_prepare):
 
         # solver with missing dependency specified
         dataset = f"""from benchopt import BaseDataset
@@ -199,7 +199,7 @@ class TestInstallCmd:
                 env_name=test_env_name, raise_on_not_installed=True
             )
 
-    def test_error_with_missing_requirements(self):
+    def test_error_with_missing_requirements(self, fake_conda_env):
 
         # solver with missing dependency specified
         missing_deps_cls = """import invalid_module
@@ -303,6 +303,7 @@ class TestInstallCmd:
                 ], 'benchopt', standalone_mode=False)
         out.check_output(re.escape(DUMMY_PACKAGE_REQ.split("::")[-1]))
 
+    @pytest.mark.requires_conda
     def test_install_in_current_env_detects_fresh_package(
             self, uninstall_dummy_package_current_env
     ):
@@ -341,7 +342,7 @@ class TestInstallCmd:
         out.check_output("missing deps", repetition=0)
         out.check_output("not importable", repetition=0)
 
-    def test_gpu_flag(self, no_debug_log):
+    def test_gpu_flag(self, fake_conda_env, no_debug_log):
 
         solver1 = """from benchopt.utils.temp_benchmark import TempSolver
 

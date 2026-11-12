@@ -9,6 +9,7 @@ from benchopt.benchmark import Benchmark
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.conda_env_cmd import delete_conda_env
+from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 
 _DUMMY_PACKAGE_DIR = pathlib.Path(__file__).parent / "dummy_package"
@@ -58,6 +59,9 @@ def pytest_configure(config):
     matplotlib.use("Agg")
 
     config.addinivalue_line("markers", "requires_install")
+    config.addinivalue_line(
+        "markers", "requires_conda: needs an active conda env, else skipped."
+    )
 
     # Create the benchmark for which the tests are run. If it is not provided,
     # we use a temporary benchmark with a dummy dataset and solver.
@@ -90,12 +94,21 @@ def require_solver_installed(solver_class):
 
 
 def pytest_collection_modifyitems(config, items):
-    if not config.getoption("--skip-install"):
-        return
-    skip_install = pytest.mark.skip(reason="Skipping installs in this run")
+    skip_install = config.getoption("--skip-install")
+    # Tests creating or installing in conda envs, through the `use_env`
+    # fixture or the `requires_conda` marker, need an active conda env.
+    no_conda = list_conda_envs()[0] is None
     for item in items:
-        if "requires_install" in item.keywords:
-            item.add_marker(skip_install)
+        if skip_install and "requires_install" in item.keywords:
+            item.add_marker(
+                pytest.mark.skip(reason="Skipping installs in this run")
+            )
+        if no_conda and (
+            "requires_conda" in item.keywords or "use_env" in item.fixturenames
+        ):
+            item.add_marker(
+                pytest.mark.skip(reason="Requires an active conda env")
+            )
 
 
 def _get_skip_reason(report):
@@ -265,6 +278,15 @@ def warn_override(request):
     os.environ["BENCHOPT_WARN_NONUNIQUE_FILES"] = "1"
     yield
     os.environ["BENCHOPT_WARN_NONUNIQUE_FILES"] = "0"
+
+
+@pytest.fixture
+def fake_conda_env(monkeypatch):
+    """Report an active conda env, for `benchopt install` calls that do not
+    install anything."""
+    monkeypatch.setattr(
+        "benchopt.cli.main.list_conda_envs", lambda: ("base", ["base"])
+    )
 
 
 @pytest.fixture(scope='session')
