@@ -128,13 +128,10 @@ class DependenciesMixin:
                         install_in_conda_env(*cls.requirements,
                                              env_name=env_name)
                     else:
-                        # get details of class
-                        cls_type = cls._base_class_name
-
                         raise AttributeError(
-                            f"Could not find dependencies for {cls.name} "
-                            f"{cls_type} while it is not importable. This is "
-                            "probably due to missing dependency specification."
+                            f"Could not find dependencies for {cls!r} while "
+                            "it is not importable. This is probably due to "
+                            "missing dependency specification."
                             " The dependencies should be specified in class "
                             "attribute `requirements`.\n"
                             "Examples:\n"

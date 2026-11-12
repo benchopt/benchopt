@@ -310,6 +310,103 @@ def test_objective_cv_splitter(no_debug_log):
     out.check_output("OK", repetition=4)
 
 
+def test_dataset_gc_default_config(tmp_path, no_debug_log):
+    # In the default config the dataset is the outermost loop axis, so each
+    # dataset instance (and the data it caches) is released as the run advances
+    # instead of all datasets being pinned at once. Each `get_data` records how
+    # many Dataset instances are alive; only the current one (+ at most one
+    # predecessor awaiting collection) should be, never all of them.
+    log = tmp_path / "alive.log"
+    n_datasets = 5
+    dataset = f"""from benchopt.utils.temp_benchmark import TempDataset
+    import gc, weakref
+
+    class Dataset(TempDataset):
+        name = "big"
+        parameters = {{'k': {list(range(n_datasets))}}}
+        _alive = []
+
+        def get_data(self):
+            Dataset._alive.append(weakref.ref(self))
+            gc.collect()
+            n_alive = sum(r() is not None for r in Dataset._alive)
+            with open(r"{log}", "a") as f:
+                print(n_alive, file=f)
+            return dict(X=None, y=None)
+    """
+    # A few objective/solver parameters exercise the materialized inner axes.
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
+        parameters = {'reg': [0, 1]}
+    """
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        parameters = {'step': [0, 1]}
+        sampling_strategy = 'run_once'
+    """
+
+    with temp_benchmark(
+            objective=objective, solvers=solver, datasets=dataset
+    ) as bench:
+        run([str(bench.benchmark_dir), *"-n 1 -r 1 --no-plot".split()],
+            standalone_mode=False)
+
+    counts = [int(x) for x in log.read_text().split()]
+    assert len(counts) >= n_datasets, counts
+    # Never all datasets resident at once (that would be `n_datasets`).
+    assert max(counts) <= 2, counts
+
+
+def test_group_by_repetition_solver_seed_error(no_debug_log):
+    # Fold-sharing (`group_by` with 'repetition') prepares each fold once and
+    # reuses it across solvers, so the data must be solver-independent. A
+    # `get_seed(use_solver=True)` in `set_data` must fail fast on the front
+    # node with a clear `group_by` message, not a confusing internal error.
+    # No `-r`: the front node only loads the data when n_repetitions is None.
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
+        def set_data(self, X, y):
+            self.get_seed(use_solver=True)
+    """
+    with temp_benchmark(objective=objective) as bench:
+        with pytest.raises(ValueError, match="must not depend on the solver"):
+            run([str(bench.benchmark_dir),
+                 *("-n 1 --no-plot "
+                   "--group-by dataset,objective,repetition").split()],
+                standalone_mode=False)
+
+
+@pytest.mark.parametrize("n_reps", [None, 2])
+def test_dispatch_loads_data_only_if_needed(n_reps):
+    # The front node only loads the data when needed to count repetitions.
+    from benchopt._generate_runs import generate_run_kwargs
+    from benchopt.utils.terminal_output import TerminalOutput
+
+    dataset = """from benchopt import BaseDataset
+
+    class Dataset(BaseDataset):
+        name = "test-dataset"
+        parameters = {"seed": [0, 1]}
+        def get_data(self):
+            print("GET_DATA")
+            return dict(X=None, y=None)
+    """
+
+    with temp_benchmark(datasets=dataset) as bench, CaptureCmdOutput() as out:
+        all_kwargs = list(generate_run_kwargs(
+            bench, solvers=bench.check_solver_patterns([]),
+            datasets=bench.check_dataset_patterns(["test-dataset"]),
+            objectives=bench.check_objective_filters(None),
+            n_repetitions=n_reps, terminal=TerminalOutput(n_reps, False),
+        ))
+
+    assert len(all_kwargs) == 2 * (n_reps or 1)
+    out.check_output("GET_DATA", repetition=2 if n_reps is None else 0)
+
+
 def test_objective_save_final_results(no_debug_log):
     save_final = """
     from benchopt.utils.temp_benchmark import TempObjective
@@ -517,12 +614,12 @@ def test_paths_config_key(test_case, n_jobs):
         expected_home = Path(
             expected_home.format(bench_dir=bench.benchmark_dir.as_posix())
         ).resolve()
-        out.check_output(re.escape(f"HOME:{expected_home}"), repetition=n_jobs)
+        out.check_output(re.escape(f"HOME:{expected_home}"), repetition=1)
 
         expected_path = Path(
             expected_path.format(bench_dir=bench.benchmark_dir.as_posix())
         ).resolve()
-        out.check_output(re.escape(f"PATH:{expected_path}"), repetition=n_jobs)
+        out.check_output(re.escape(f"PATH:{expected_path}"), repetition=1)
 
 
 @pytest.mark.parametrize("n_runs,n_reps", [(1, 3), (2, 2), (5, 1)])

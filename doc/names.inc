@@ -54,6 +54,10 @@
 
 .. _Damien Lesens: https://damienlesens.github.io/
 
+.. _Bruno Aristimunha: https://bruaristimunha.github.io/
+
 .. _Eduardo Montesuma: https://eddardd.github.io/
 
 .. _Felix Divo: https://felix.divo.link
+
+.. _Mark Santos: https://www.markstudios.com
