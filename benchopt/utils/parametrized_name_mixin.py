@@ -11,6 +11,8 @@ class ComponentMeta(ABCMeta):
     """Metaclass of the components, to represent them as `Solver<name>`."""
     def __repr__(cls):
         name, base_name = cls.name, getattr(cls, '_base_class_name', None)
+        # Default repr for `ParametrizedNameMixin` and the 3 base classes,
+        # which have no `name`.
         if not isinstance(name, str) or base_name is None:
             return super().__repr__()
         return f"{base_name}<{name}>"
