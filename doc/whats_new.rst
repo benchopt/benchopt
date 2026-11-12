@@ -46,6 +46,12 @@ API
 PLOT
 ~~~~
 
+- The "Suboptimal Curve" and "Relative Curve" toggles are replaced by a
+  ``Y_axis`` option of the ``objective_curve`` plot, so they no longer apply
+  to custom scatter plots. Views using the deprecated ``suboptimal_curve``
+  or ``relative_curve`` keys are converted to ``objective_curve_Y_axis``.
+  By `Hippolyte Verninas`_ (:gh:`1018`)
+
 - Improve ``'image'`` plots in the HTML report: borderless grid that keeps
   each image's aspect ratio, and click-to-enlarge.
   By `Hippolyte Verninas`_ (:gh:`1017`)
