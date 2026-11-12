@@ -96,8 +96,8 @@ repetition. Add `use_dataset=True` / `use_solver=True` to further differentiate 
 
 - `skip(self, objective, dataset) -> str | None`: declare incompatibility with
   a given problem (e.g. needs a feature the objective doesn't expose). Return
-  the reason to skip, or `None` to run; any other value raises. It is checked
-  before launching the run. Prefer parameters (`objective.reg`):
+  the reason to skip, or `None`/no return to run; any other value raises. It
+  is checked before launching the run. Prefer parameters (`objective.reg`):
   `objective.get_objective()` works but loads the data on the machine running
   `benchopt run`. The old `skip(**objective_dict)` and the `(skip, reason)`
   tuple are deprecated.

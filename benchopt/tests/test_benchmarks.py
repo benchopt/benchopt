@@ -65,7 +65,7 @@ def test_dataset_get_data(benchmark, dataset_class):
         "dummy", dataset, "dummy", repetition=0, base_seed=0
     )
 
-    data = dataset._get_data()
+    data = dataset.get_data()
     assert isinstance(data, (tuple, dict)), (
         "Output of get_data should be a 2-tuple or a dict."
     )

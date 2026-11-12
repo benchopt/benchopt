@@ -51,8 +51,9 @@ loaded on the machine running ``benchopt run``, once per dataset, as
     e.g. ``Solver.skip(self, X, y, reg)`` with the output of
     ``Objective.get_objective``, and ``Objective.skip(self, X, y)`` with the
     output of ``Dataset.get_data``. It returned a ``(skip, reason)`` tuple.
-    Both still work, with a ``FutureWarning``, and the old signature is
-    checked once the run is launched. They will be removed in benchopt 1.12.
+    Both still work, with a ``FutureWarning``, and are checked before
+    launching the runs, but the old signature always loads the data. They will
+    be removed in benchopt 1.12.
 
 .. _extra_objectives:
 

@@ -16,9 +16,13 @@ from .utils.parametrized_name_mixin import ParametrizedNameMixin
 from .utils.run_context_mixin import RunContextMixin
 
 
+def _skip_name(klass):
+    return f"{klass._base_class_name}<{klass.name}>.skip"
+
+
 def _parse_skip(output, klass, legacy=False):
     """Return ``(skip, reason)`` from the output of ``klass.skip``."""
-    name = f"{klass.__class__.__name__}.skip"
+    name = _skip_name(klass)
     # XXX: remove in benchopt 1.12, with the tuple output.
     if isinstance(output, tuple):
         if not legacy:
@@ -47,10 +51,10 @@ def _is_legacy_skip(skip, names):
 
 def _warn_legacy_skip(klass, signature):
     warnings.warn(
-        f"`{klass.__class__.__name__}.skip` receives the data as keyword "
-        f"arguments, which is deprecated and will be removed in benchopt 1.12."
-        f" Define `skip{signature}` instead, so the skip is checked before "
-        "launching the runs.",
+        f"`{_skip_name(klass)}` receives the data as keyword arguments, which "
+        "is deprecated and will be removed in benchopt 1.12. Define "
+        f"`skip{signature}` instead, so the skip can be checked without "
+        "loading the data.",
         FutureWarning,
     )
 
@@ -189,13 +193,9 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         # objective so defaults can be specified at the benchmark level.
         self._inherit_stopping_criterion(objective)
 
-        legacy = _is_legacy_skip(self.skip, ('objective', 'dataset'))
-        if not legacy:
-            skip, reason = _parse_skip(
-                self.skip(objective, objective._dataset), self
-            )
-            if skip:
-                return skip, reason
+        skip, reason = self._skip(objective, objective._dataset)
+        if skip:
+            return skip, reason
 
         objective_dict = objective.get_objective()
 
@@ -204,17 +204,18 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             "a dictionary to be passed to `set_objective`"
         )
 
-        # XXX: remove in benchopt 1.12, with the skip receiving the data.
-        if legacy:
-            _warn_legacy_skip(self, "(self, objective, dataset)")
-            skip, reason = _parse_skip(
-                self.skip(**objective_dict), self, legacy=True
-            )
-            if skip:
-                return skip, reason
-
         self.set_objective(**objective_dict)
         return False, None
+
+    def _skip(self, objective, dataset):
+        """Return ``(skip, reason)`` from `skip`."""
+        # XXX: remove in benchopt 1.12, with the skip receiving the data.
+        if _is_legacy_skip(self.skip, ('objective', 'dataset')):
+            _warn_legacy_skip(self, "(self, objective, dataset)")
+            return _parse_skip(
+                self.skip(**objective.get_objective()), self, legacy=True
+            )
+        return _parse_skip(self.skip(objective, dataset), self)
 
     @abstractmethod
     def set_objective(self, **objective_dict):
@@ -408,8 +409,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        if 'get_data' in cls.__dict__:
-            cls.get_data = _cache_data(cls.__dict__['get_data'])
+        cls.get_data = _cache_data(cls.get_data)
 
     def prepare(self):
         """Prepare the dataset for use (optional).
@@ -460,9 +460,6 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             instanciated by calling ``Objective.set_data(**data)``.
         """
         ...
-
-    def _get_data(self):
-        return self.get_data()
 
     @staticmethod
     def _prepare(dataset, base_seed=0):
@@ -639,8 +636,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        if 'get_objective' in cls.__dict__:
-            cls.get_objective = _load_data_first(cls.__dict__['get_objective'])
+        cls.get_objective = _load_data_first(cls.get_objective)
 
     @abstractmethod
     def get_objective(self):
@@ -774,17 +770,20 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             return False, None
 
         self._attach_dataset(dataset)
-        # XXX: remove in benchopt 1.12, with the skip receiving the data.
-        if _is_legacy_skip(self.skip, ('dataset',)):
-            _warn_legacy_skip(self, "(self, dataset)")
-            skip, reason = _parse_skip(
-                self.skip(**dataset.get_data()), self, legacy=True
-            )
-        else:
-            skip, reason = _parse_skip(self.skip(dataset), self)
+        skip, reason = self._skip(dataset)
         if not skip:
             self._load_data()
         return skip, reason
+
+    def _skip(self, dataset):
+        """Return ``(skip, reason)`` from `skip`."""
+        # XXX: remove in benchopt 1.12, with the skip receiving the data.
+        if _is_legacy_skip(self.skip, ('dataset',)):
+            _warn_legacy_skip(self, "(self, dataset)")
+            return _parse_skip(
+                self.skip(**dataset.get_data()), self, legacy=True
+            )
+        return _parse_skip(self.skip(dataset), self)
 
     def _load_data(self):
         """Call `set_data` with the data of the attached dataset."""

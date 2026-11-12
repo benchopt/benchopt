@@ -66,7 +66,7 @@ def test_skip_api_removed():
 
 @pytest.mark.parametrize('n_jobs', [1, 2])
 def test_legacy_skip_signature(n_jobs):
-    # `skip` receiving the data as kwargs still runs in the worker.
+    # `skip` receiving the data as kwargs still works, loading the data.
     objective = """from benchopt.utils.temp_benchmark import TempObjective
 
         class Objective(TempObjective):
@@ -126,7 +126,7 @@ def test_legacy_skip_warns(component, legacy):
         dict(objective=objective) if component == 'objective'
         else dict(solvers=[solver])
     )
-    match = f"{component.capitalize()}.skip"
+    match = rf"{component.capitalize()}<[^>]*>\.skip"
     # Every run is skipped, so the run produces no result and exits with 1.
     with temp_benchmark(**components) as benchmark, \
             CaptureCmdOutput(exit=1) as out:

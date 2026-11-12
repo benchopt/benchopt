@@ -498,7 +498,7 @@ def test_invalid_skip_output(component, output, no_debug_log):
 
     error = (
         "ZeroDivisionError" if output == "1 / 0" else
-        f"{component.capitalize()}.skip` should return None"
+        rf"{component.capitalize()}<[^>]*>\.skip` should return None"
     )
     out.check_output(error, repetition=1)
     status = (

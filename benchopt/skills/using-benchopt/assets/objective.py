@@ -39,10 +39,10 @@ class Objective(BaseObjective):
         return dict(beta=np.zeros(self.X.shape[1]))
 
     # Optional: skip incompatible dataset/objective combinations, before
-    # launching any run. dataset.get_data() is cached, but loads the data.
+    # launching any run. Better decide on the parameters, which is free:
+    # dataset.get_data() works (cached) but loads the data.
     # def skip(self, dataset):
-    #     X = dataset.get_data()["X"]
-    #     if X.shape[0] < X.shape[1]:
+    #     if dataset.n_samples < dataset.n_features:
     #         return "underdetermined system not supported"
 
     # Optional: save artefacts (models, arrays) alongside the parquet.
