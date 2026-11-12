@@ -10,6 +10,17 @@ What's new
 Version 1.10.1 -- in developement
 ---------------------------------
 
+CLI
+~~~
+
+- Group runs into fewer execution units with ``group_by`` (and optional
+  intra-group parallelism via ``batch_n_jobs``) to reduce per-run overhead when
+  running in parallel, by sharing setup across the runs of a batch. ``group_by``
+  is settable from the CLI (``--group-by dataset,objective``) and accepts
+  ``repetition`` to share a cross-validation fold across solvers. See
+  :ref:`run_grouping`. By `Bruno Aristimunha`_ and `Thomas Moreau`_ (:gh:`903`)
+
+
 FIX
 ~~~
 
@@ -24,6 +35,10 @@ FIX
 
 API
 ~~~
+
+- Component classes are represented as ``Solver<name>``, e.g. in error
+  messages, instead of the default class representation.
+  By `Thomas Moreau`_ (:gh:`1032`)
 
 - Add a ``hidden_plots`` benchmark config option to hide some plot kinds,
   e.g. some of the default plots. By `Hippolyte Verninas`_ (:gh:`1019`)
@@ -41,6 +56,17 @@ PLOT
   ``*_description`` columns, and can set a ``description`` on traces, table
   cells and option values.
   By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`935`)
+
+- Add ``Download PDF`` button in the HTML interface to download the current
+  plot as a PDF file.
+  By `Jad Yehya`_ & `Hippolyte Verninas`_ (:gh:`989`)
+
+DOC
+~~~
+
+- Show how to install a requirement from source, e.g. a git branch, with a
+  ``pip::`` requirement. See :ref:`specify_requirements`. Also fix a dead link
+  to the CLI documentation. By `Mark Santos`_ (:gh:`1027`)
 
 
 .. _changes_1_10:
@@ -734,9 +760,9 @@ CLI
 ~~~
 
 - Add support for custom parameters in CLI for objectives, datasets, and
-  solvers, through the syntax ``-s solver_name[parameter=value]``. See the `CLI
-  documentation <https://benchopt.github.io/stable/cli.html>`_ for more details on the
-  syntax. By `Tom Dupré la Tour`_ (:gh:`362`).
+  solvers, through the syntax ``-s solver_name[parameter=value]``. See the
+  :ref:`CLI documentation <cli_ref>` for more details on the syntax.
+  By `Tom Dupré la Tour`_ (:gh:`362`).
 
 - Add ``--slurm`` option in ``benchopt run`` to allow running the benchmark on
   a SLURM cluster. See the :ref:`slurm_backend` for more details on the config.

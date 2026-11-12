@@ -5,6 +5,17 @@ from dataclasses import dataclass, replace as dc_replace
 from .run_context_mixin import RunContextMixin
 
 
+class SeedContextError(ValueError):
+    """Raised by :meth:`RunContext.get_seed` when a component requested for the
+    seed is absent from the current context (e.g. ``use_solver=True`` while no
+    solver is set). Carries ``component`` so callers can tailor the message.
+    """
+
+    def __init__(self, component, message):
+        super().__init__(message)
+        self.component = component
+
+
 def _sanitize_path_component(name):
     """Replace filesystem-unsafe characters in a component name.
 
@@ -28,8 +39,8 @@ class RunContext:
     Config fields (set once in ``_run_benchmark``):
         run_output_base, pdb
 
-    Per-run fields (filled via ``dataclasses.replace`` in
-    ``get_solver_kwargs`` for each dataset × objective × solver × rep):
+    Per-run fields (filled via ``dataclasses.replace`` in ``set_run_context``
+    for each dataset × objective × solver × rep):
         base_seed, objective_name, dataset_name, solver_name, repetition
     """
     # Config fields — set once per benchmark invocation
@@ -59,7 +70,8 @@ class RunContext:
         }
         for component, (use, value) in use_flags.items():
             if use and value is None:
-                raise ValueError(
+                raise SeedContextError(
+                    component,
                     f"get_seed(use_{component}=True) was called but no "
                     f"{component} is defined in the current run context. This "
                     "happens for instance during `benchopt prepare`, where "
@@ -90,12 +102,17 @@ class RunContext:
     def set_run_context(self, objective, dataset, solver, repetition,
                         base_seed):
         """Clone base_ctx with per-run fields and assign to each component."""
+        # Keep a missing component as None (not the string "None") so the
+        # get_seed "component not in context" guard fires for it -- e.g. the
+        # solver during fold preparation (`group_by` with 'repetition').
+        def _name(component):
+            return None if component is None else str(component)
         ctx = dc_replace(
             self,
             base_seed=str(base_seed),
-            objective_name=str(objective),
-            dataset_name=str(dataset),
-            solver_name=str(solver),
+            objective_name=_name(objective),
+            dataset_name=_name(dataset),
+            solver_name=_name(solver),
             repetition=repetition,
         )
         ctx.attach(objective, dataset, solver)

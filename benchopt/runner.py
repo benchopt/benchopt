@@ -328,11 +328,16 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         run_one_to_cvg_cached.check_call_in_cache
     )
 
+    # Read before `parallel_run` pops it from `parallel_config`, so the
+    # generator orders runs to match how they'll be grouped for dispatch.
+    group_by = (parallel_config or {}).get('group_by')
+
     total_cvg_kwargs_generator = generate_run_kwargs(
         benchmark, solvers=solvers, forced_solvers=forced_solvers,
         datasets=datasets, objectives=objectives,
         n_repetitions=n_repetitions, max_runs=max_runs, timeout=timeout,
         collect=collect, terminal=terminal, run_context=base_run_context,
+        group_by=group_by,
     )
 
     run_statistics = []

@@ -19,6 +19,49 @@ This will run all computations on the local machine where the command is invoked
 Note that ``joblib`` tries to mitigate oversubscription by reducing the number of threads that are used in C-level parallelism -- such as in BLAS calls.
 This means that these parallel runs might be slower than their sequential counterpart on the same machine, and shouldn't be compared to each other.
 
+.. _run_grouping:
+
+Grouping runs to reduce overhead
+--------------------------------
+
+When a run carries heavy fixed overhead -- loading a large dataset,
+initializing a GPU, or scheduling a job on a cluster -- running each
+``(dataset, objective, solver, repetition)`` as its own execution unit is
+inefficient, as that setup is repeated for every run. To reduce overhead, ``group_by``
+collapses the runs sharing one or more axes into a single batch, run as one
+unit, so the shared setup is paid once and reused across the batch.
+
+``group_by`` is an ordered list of axes to hold constant within a batch
+(outermost first), passed on the CLI or in the parallel config:
+
+.. prompt:: bash $
+
+    benchopt run . --group-by dataset,objective
+
+.. code-block:: yaml
+    :caption: ./config_parallel.yml
+
+    group_by: dataset             # one batch per dataset
+    batch_n_jobs: 4               # 4 workers inside each batch (submitit)
+
+On submitit, ``batch_n_jobs`` runs a batch's runs in parallel with ``joblib``.
+It can only be set in the parallel config. It defaults to ``1``, which
+maximises the reuse above. Grouping never changes the results, only how runs
+are scheduled.
+
+**Grouping cross-validation folds.** With ``repetition`` in ``group_by`` (e.g.
+``dataset,objective,repetition``), each fold is prepared once and shared across
+solvers instead of once per solver. ``dataset`` and ``objective`` must be
+listed before ``repetition``, and the fold data must be solver-independent. If
+``set_data`` seeds on the solver (``get_seed(use_solver=True)``), benchopt
+raises an error.
+
+.. note::
+
+    On ``submitit``, runs with different SLURM configurations (e.g. solvers with
+    different ``slurm_params``) are never grouped together, and unless
+    ``slurm_time`` is set the job wall-time is sized for the whole batch.
+
 .. _distributed_run:
 
 Distributed computations with ``dask`` or ``submitit``
