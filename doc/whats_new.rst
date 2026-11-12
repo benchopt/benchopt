@@ -40,10 +40,10 @@ API
   messages, instead of the default class representation.
   By `Thomas Moreau`_ (:gh:`1032`)
 
-- ``Objective.skip(self, dataset)`` and ``Solver.skip(self, objective,
-  dataset)`` are checked before launching the runs, and return the reason to
-  skip or ``None``. The old signature and the ``(skip, reason)`` tuple are
-  deprecated. See :ref:`skipping_solver`.
+- ``Dataset.skip(self)``, ``Objective.skip(self, dataset)`` and
+  ``Solver.skip(self, objective, dataset)`` are checked before launching the
+  runs, and return the reason to skip or ``None``. The old signature and the
+  ``(skip, reason)`` tuple are deprecated. See :ref:`skipping_solver`.
   By `Thomas Moreau`_ (:gh:`1031`)
 
 - Add a ``hidden_plots`` benchmark config option to hide some plot kinds,

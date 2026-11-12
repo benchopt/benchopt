@@ -438,10 +438,13 @@ def test_skip_before_dispatch(skip_on):
 
     class Dataset(BaseDataset):
         name = "test-dataset"
-        parameters = {"n": [1, 2]}
+        parameters = {"n": [1, 2, 3]}
         def get_data(self):
             print("GET_DATA")
             return dict(X=None, y=None, n=self.n)
+        def skip(self):
+            if self.n > 2:
+                return "too many"
     """
     objective = f"""from benchopt.utils.temp_benchmark import TempObjective
 
@@ -475,12 +478,13 @@ def test_skip_before_dispatch(skip_on):
             n_repetitions=1, terminal=TerminalOutput(1, False),
         ))
 
-    # Keep n <= max_n and n >= min_n: 2 runs for each n.
+    # Keep n <= 2, n <= max_n and n >= min_n: 2 runs for each n.
     assert len(all_kwargs) == 4
+    out.check_output("Reason: too many", repetition=1)
     out.check_output("GET_DATA", repetition=2 if on_data else 0)
 
 
-@pytest.mark.parametrize("component", ["objective", "solver"])
+@pytest.mark.parametrize("component", ["dataset", "objective", "solver"])
 @pytest.mark.parametrize("output", [True, "", 1, "1 / 0"])
 def test_invalid_skip_output(component, output, no_debug_log):
     # A `skip` returning neither None nor a reason, or failing, is reported as
@@ -505,10 +509,17 @@ def test_invalid_skip_output(component, output, no_debug_log):
         def skip(self, objective, dataset):
             if self.bad: return {output}
     """
-    components = (
-        dict(objective=objective) if component == "objective"
-        else dict(solvers=[solver])
-    )
+    dataset = f"""from benchopt.utils.temp_benchmark import TempDataset
+
+    class Dataset(TempDataset):
+        parameters = {{"bad": [True, False]}}
+        def skip(self):
+            if self.bad: return {output}
+    """
+    components = dict(
+        dataset=dict(datasets=[dataset]), objective=dict(objective=objective),
+        solver=dict(solvers=[solver]),
+    )[component]
     with temp_benchmark(**components) as bench, CaptureCmdOutput() as out:
         run([
             str(bench.benchmark_dir), "-s", "test-solver",
@@ -520,10 +531,11 @@ def test_invalid_skip_output(component, output, no_debug_log):
         rf"{component.capitalize()}<[^>]*>\.skip` should return None"
     )
     out.check_output(error, repetition=1)
-    status = (
-        r"test-objective\[bad=True\] error" if component == "objective"
-        else r"test-solver\[bad=True\]: error"
-    )
+    status = dict(
+        dataset=r"test-dataset\[bad=True\] error",
+        objective=r"test-objective\[bad=True\] error",
+        solver=r"test-solver\[bad=True\]: error",
+    )[component]
     out.check_output(status, repetition=1)
     out.check_output(r"test-solver(\[bad=False\])?: done", repetition=1)
 

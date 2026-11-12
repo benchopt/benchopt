@@ -273,12 +273,18 @@ def test_solver_run(
         RunContext().set_run_context(
             objective, dataset, solver, repetition=0, base_seed=benchmark.seed
         )
-        objective._set_dataset(dataset)
-        skip, reason = solver._set_objective(objective)
-        if not skip:
+        objective._attach_dataset(dataset)
+        solver._attach_objective(objective)
+        for component in [dataset, objective, solver]:
+            reason = component._skip_reason()
+            if reason is not None:
+                reasons.append(reason)
+                break
+        else:
+            objective._set_dataset(dataset)
+            solver._set_objective(objective)
             _test_solver_one_objective(solver, objective)
             return
-        reasons.append(reason)
 
     reasons = sorted(set(reasons))
     if len(reasons) == 1:

@@ -2,7 +2,6 @@ import copy
 import inspect
 import itertools
 
-from .base import _call_skip
 from .utils.pdb_helpers import exception_handler
 from .utils.parametrized_name_mixin import is_matched
 from .utils.run_context import RunContext, SeedContextError
@@ -59,16 +58,20 @@ def group_runs(run_kwargs_iter, group_by):
         yield list(batch)
 
 
-def _enter_axis(terminal, axis, item, is_installed, i_axis):
+def _enter_axis(terminal, axis, item, is_installed, i_axis, pdb):
     """Display `item` in the terminal; return False if it is not installed.
 
     Used by the recursion in `generate_run_kwargs` to skip the subtree of an
-    item that is not installed.
+    item that is not installed, or of a dataset that skips.
     """
     if axis == 'dataset':
         terminal.set(dataset=item)
         if not is_installed:
             terminal.show_status('not installed', dataset=True)
+            return False
+        status, reason = _skip_before_dispatch(item, terminal, pdb)
+        if status is not None:
+            terminal.show_status(status, reason=reason, dataset=True)
             return False
         terminal.display_dataset()
     elif axis == 'objective':
@@ -127,16 +130,16 @@ def _run_meta(benchmark, dataset, objective, solver, rep):
     }
 
 
-def _skip_before_dispatch(component, args, terminal, pdb):
-    """Return ``(status, reason)`` from ``component.skip(*args)``.
+def _skip_before_dispatch(component, terminal, pdb):
+    """Return ``(status, reason)`` from ``component.skip``.
 
     The status is None to run, 'skip', or 'error' if `skip` fails. A failing
     `skip` is handled as in a run (traceback, ``--pdb``), and its runs are not
     created, as for a skip.
     """
     with exception_handler(terminal, pdb=pdb):
-        skip, reason = _call_skip(component, *args)
-        return ('skip' if skip else None), reason
+        reason = component._skip_reason()
+        return ('skip' if reason is not None else None), reason
     return 'error', None
 
 
@@ -156,7 +159,7 @@ def _prepare_objective(benchmark, run_context, dataset, objective, solver,
     try:
         # Loads the data only if `skip` needs it.
         status, reason = _skip_before_dispatch(
-            objective, (dataset,), terminal, run_context.pdb
+            objective, terminal, run_context.pdb
         )
         if (status is None and n_repetitions is None
                 and objective._is_using_cv()):
@@ -212,9 +215,8 @@ def generate_run_kwargs(
         """Yield the run kwargs, unless the solver skips this objective."""
         dataset, objective = chosen['dataset'], chosen['objective']
         solver, rep = chosen['solver'], chosen['repetition']
-        status, reason = _skip_before_dispatch(
-            solver, (objective, dataset), terminal, base_ctx.pdb
-        )
+        solver._attach_objective(objective)
+        status, reason = _skip_before_dispatch(solver, terminal, base_ctx.pdb)
         if status is not None:
             terminal.skip(reason, status=status)
             return
@@ -258,7 +260,15 @@ def generate_run_kwargs(
                     yield from _rec(depth + 1, chosen)
             return
         for i_axis, (item, is_installed) in enumerate(axis_items[axis]):
-            if not _enter_axis(terminal, axis, item, is_installed, i_axis):
+            if axis == 'dataset':
+                # Set for a `skip` loading the data.
+                base_ctx.set_run_context(
+                    objective=None, dataset=item, solver=None,
+                    repetition=None, base_seed=benchmark.seed,
+                )
+            if not _enter_axis(
+                terminal, axis, item, is_installed, i_axis, base_ctx.pdb
+            ):
                 continue
             chosen[axis] = item
             if last:

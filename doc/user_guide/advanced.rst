@@ -22,9 +22,11 @@ dataset of the run. It returns a string giving the reason to skip the
 solver, displayed in the output, or ``None`` to run it. Any other value
 raises an error, as it is most likely a bug in ``skip``. Similarly,
 :func:`~benchopt.BaseObjective.skip` receives the dataset and skips the
-runs of all solvers for this dataset.
+runs of all solvers for this dataset, and :func:`~benchopt.BaseDataset.skip`
+takes no argument and skips all the runs of the dataset, e.g. for
+incompatible parameters.
 
-Both are checked before launching the runs, so a skipped configuration never
+They are checked before launching the runs, so a skipped configuration never
 starts a job. Checks on the parameters, such as ``objective.reg`` or
 ``dataset.n_samples``, are free. If the check needs the data, call
 ``dataset.get_data()`` or ``objective.get_objective()``. The data is then

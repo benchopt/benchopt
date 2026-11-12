@@ -216,7 +216,7 @@ class TerminalOutput:
         print_normalize(f"{tag} {status_print}")
 
         if status == 'skip' and reason is not None:
-            indent = ' ' * (2 if objective else 4)
+            indent = ' ' * (2 if dataset or objective else 4)
             print(f'{indent}Reason: {reason}')
 
     def debug(self, msg):

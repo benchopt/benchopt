@@ -152,7 +152,7 @@ class TestCmdTest:
             if error_type is not None:
                 out.check_output(error_type, repetition=3)
 
-    @pytest.mark.parametrize('params, exit_code, n_data', [
+    @pytest.mark.parametrize('params, exit_code, n_checked', [
         ([0], None, 1),
         ([0, 1, 2], None, 1),
         ([2, 1, 0], None, 3),
@@ -162,7 +162,7 @@ class TestCmdTest:
         "valid", "first", "last", "invalid", "invalid_multiple"
     ])
     def test_setting_test_parameters(
-            self, params, exit_code, n_data
+            self, params, exit_code, n_checked
     ):
         dataset = """
         from benchopt.utils.temp_benchmark import TempDataset
@@ -186,6 +186,7 @@ class TestCmdTest:
         class Solver(TempSolver):
             name = "test solver"
             def skip(self, objective, dataset):
+                print(f"Skip#{dataset.p}")
                 if dataset.p > 0: return "skip for p > 0"
             def set_objective(self, p): self.p = p
         """
@@ -201,7 +202,9 @@ class TestCmdTest:
                 )
 
             out.check_output("test session starts", repetition=1)
-            out.check_output("Dataset#", repetition=n_data)
+            # Configs are checked until one runs, and only its data is loaded.
+            out.check_output("Skip#", repetition=n_checked)
+            out.check_output("Dataset#", repetition=int(exit_code is None))
             if exit_code is not None:
                 out.check_output("Skipped every test_solver_run variants")
                 out.check_output("skip for p > 0")

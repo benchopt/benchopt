@@ -185,6 +185,7 @@ Dataset Example
 Optional features
 ~~~~~~~~~~~~~~~~~
 
+- :func:`~benchopt.BaseDataset.skip`: skip incompatible dataset parameters.
 - :func:`~benchopt.BaseDataset.prepare`: expensive one-time setup (downloads,
   extraction, preprocessing), cached by joblib. Default to ``get_data()`` if
   not implemented.

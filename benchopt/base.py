@@ -2,7 +2,6 @@ import ast
 import inspect
 import textwrap
 import functools
-import warnings
 from abc import ABC, abstractmethod
 from traceback import print_exc
 
@@ -16,60 +15,6 @@ from .utils.class_property import classproperty
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
 from .utils.run_context_mixin import RunContextMixin
-
-
-def _call_skip(component, *args):
-    """Return ``(skip, reason)`` from ``component.skip(*args)``.
-
-    Its expected signature is the one of `skip` in the benchopt base class.
-    """
-    name = f"{type(component)!r}.skip"
-    base = next(
-        klass for klass in type(component).__mro__
-        if klass.__module__ == __name__ and 'skip' in vars(klass)
-    )
-    signature = inspect.signature(base.skip)
-    if tuple(inspect.signature(component.skip).parameters) == tuple(
-        signature.parameters
-    )[1:]:
-        output = component.skip(*args)
-    else:
-        # XXX: remove in benchopt 1.12, with the skip receiving the data.
-        warnings.warn(
-            f"`{name}` receives the data as keyword arguments, which is "
-            "deprecated and will be removed in benchopt 1.12. Define "
-            f"`skip{signature}` instead, so the skip can be checked without "
-            "loading the data.",
-            FutureWarning,
-        )
-        # It receives the output of the first argument: the objective of a
-        # solver, or the dataset of an objective.
-        upstream = args[0]
-        data = (
-            upstream.get_objective() if isinstance(upstream, BaseObjective)
-            else upstream.get_data()
-        )
-        output = component.skip(**data)
-        if isinstance(output, tuple):
-            return output
-
-    # XXX: remove in benchopt 1.12, with the tuple output.
-    if isinstance(output, tuple):
-        warnings.warn(
-            f"`{name}` returns a `(skip, reason)` tuple, which is "
-            "deprecated and will be removed in benchopt 1.12. Return the "
-            "reason to skip, or None to run.",
-            FutureWarning,
-        )
-        return output
-    if output is None or output is False:
-        return False, None
-    if isinstance(output, str) and output:
-        return True, output
-    raise ValueError(
-        f"`{name}` should return None to run, or a non-empty string giving "
-        f"the reason to skip. Got {output!r}."
-    )
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
@@ -168,6 +113,12 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             or 'iteration'
         )
 
+    def _attach_objective(self, objective):
+        self._objective = objective
+
+    def _skip_reason(self):
+        return super()._skip_reason(self._objective, self._objective._dataset)
+
     @classmethod
     def _inherit_stopping_criterion(cls, objective):
         """Inherit the stopping criterion from an objective if needed."""
@@ -192,23 +143,12 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         objective: benchopt.BaseObjective
             The objective function for the current optimization problem.
 
-        Returns
-        -------
-        skip : bool
-            Whether this solver should be skipped or not for this objective.
-        reason : str | None
-            The reason why it should be skipped for display purposes.
-            If skip is False, the reason should be None.
         """
-        self._objective = objective
+        self._attach_objective(objective)
 
         # If not set, inherit sampling_strategy and stopping_criterion from
         # objective so defaults can be specified at the benchmark level.
         self._inherit_stopping_criterion(objective)
-
-        skip, reason = _call_skip(self, objective, objective._dataset)
-        if skip:
-            return skip, reason
 
         objective_dict = objective.get_objective()
 
@@ -218,7 +158,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         )
 
         self.set_objective(**objective_dict)
-        return False, None
 
     @abstractmethod
     def set_objective(self, **objective_dict):
@@ -436,6 +375,20 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
                 self._data = data
             return self._data
         cls.get_data = cached_get_data
+
+    def skip(self):
+        """Hook to decide if the ``Dataset`` should be skipped.
+
+        It is called before launching the runs, so skipping here removes the
+        runs of all objectives and solvers, e.g. for incompatible parameters.
+
+        Returns
+        -------
+        reason : str | None
+            The reason to skip this dataset, displayed in the output, or None
+            to run it. Any other value raises an error.
+        """
+        return None
 
     def prepare(self):
         """Prepare the dataset for use (optional).
@@ -828,18 +781,15 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         if dataset is not self._dataset:
             self._dataset, self._dataset_ready = dataset, False
 
+    def _skip_reason(self):
+        return super()._skip_reason(self._dataset)
+
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
     def _set_dataset(self, dataset):
-        """Check `skip` and set the data; return ``(skip, reason)``."""
-        if self._dataset_ready and self._dataset is dataset:
-            return False, None
-
+        """Set the data of `dataset`, if not already set."""
         self._attach_dataset(dataset)
-        skip, reason = _call_skip(self, dataset)
-        if not skip:
-            self._load_data()
-        return skip, reason
+        self._load_data()
 
     def _load_data(self):
         """Call `set_data` with the data of the attached dataset."""
