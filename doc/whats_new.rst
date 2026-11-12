@@ -61,6 +61,13 @@ PLOT
   plot as a PDF file.
   By `Jad Yehya`_ & `Hippolyte Verninas`_ (:gh:`989`)
 
+TST
+~~~
+
+- Tests needing a conda env are skipped when no conda env is active, e.g. the
+  install tests of ``benchopt test``, instead of failing.
+  By `Thomas Moreau`_ (:gh:`1033`)
+
 DOC
 ~~~
 
