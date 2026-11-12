@@ -101,7 +101,7 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if skip_install and "requires_install" in item.keywords:
             item.add_marker(
-                pytest.mark.skip(reason="Skipping installs in this run")
+                pytest.mark.skip(reason="Skipping env-based tests in this run")
             )
         if no_conda and (
             "requires_conda" in item.keywords or "use_env" in item.fixturenames
