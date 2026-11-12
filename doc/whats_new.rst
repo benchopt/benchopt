@@ -36,6 +36,10 @@ FIX
 API
 ~~~
 
+- Component classes are represented as ``Solver<name>``, e.g. in error
+  messages, instead of the default class representation.
+  By `Thomas Moreau`_ (:gh:`1032`)
+
 - Add a ``hidden_plots`` benchmark config option to hide some plot kinds,
   e.g. some of the default plots. By `Hippolyte Verninas`_ (:gh:`1019`)
 
