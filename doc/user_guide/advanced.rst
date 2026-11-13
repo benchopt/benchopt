@@ -29,9 +29,10 @@ incompatible parameters.
 They are checked before launching the runs, so a skipped configuration never
 starts a job. Checks on the parameters, such as ``objective.reg`` or
 ``dataset.n_samples``, are free. If the check needs the data, call
-``dataset.get_data()`` or ``objective.get_objective()``. The data is then
-loaded on the machine running ``benchopt run``, once per dataset, as
-``get_data`` is cached. For instance, for an objective with a parameter
+``dataset.get_data()`` or ``objective.get_objective()``. The data of the first
+repetition is then loaded on the machine running ``benchopt run``, once per
+dataset, as ``get_data`` is cached. ``get_seed`` can only use the components
+that ``skip`` receives. For instance, for an objective with a parameter
 ``reg`` and a dataset giving ``X``, we get
 
 .. code-block::

@@ -434,16 +434,18 @@ def test_skip_before_dispatch(skip_on):
     from benchopt.utils.terminal_output import TerminalOutput
 
     on_data = skip_on == "data"
-    dataset = """from benchopt import BaseDataset
+    dataset = f"""from benchopt import BaseDataset
 
     class Dataset(BaseDataset):
         name = "test-dataset"
-        parameters = {"n": [1, 2, 3]}
+        parameters = {{"n": [1, 2, 3]}}
         def get_data(self):
             print("GET_DATA")
+            self.get_seed(use_repetition=True)
             return dict(X=None, y=None, n=self.n)
         def skip(self):
-            if self.n > 2:
+            print("DATASET#SKIP")
+            if {"self.get_data()['n']" if on_data else "self.n"} > 2:
                 return "too many"
     """
     objective = f"""from benchopt.utils.temp_benchmark import TempObjective
@@ -453,6 +455,7 @@ def test_skip_before_dispatch(skip_on):
         def set_data(self, X, y, n): self.n = n
         def get_objective(self): return dict(X=None, y=None, n=self.n)
         def skip(self, dataset):
+            print("OBJECTIVE#SKIP")
             n = {"dataset.get_data()['n']" if on_data else "dataset.n"}
             if n > self.max_n:
                 return "too large"
@@ -463,6 +466,7 @@ def test_skip_before_dispatch(skip_on):
         name = "test-solver"
         parameters = {{"min_n": [1, 2]}}
         def skip(self, objective, dataset):
+            print("SOLVER#SKIP")
             n = {"objective.get_objective()['n']" if on_data else "dataset.n"}
             if n < self.min_n:
                 return "too small"
@@ -475,13 +479,17 @@ def test_skip_before_dispatch(skip_on):
             bench, solvers=bench.check_solver_patterns(["test-solver"]),
             datasets=bench.check_dataset_patterns(["test-dataset"]),
             objectives=bench.check_objective_filters(None),
-            n_repetitions=1, terminal=TerminalOutput(1, False),
+            n_repetitions=2, terminal=TerminalOutput(2, False),
         ))
 
-    # Keep n <= 2, n <= max_n and n >= min_n: 2 runs for each n.
-    assert len(all_kwargs) == 4
+    # Keep n <= 2, n <= max_n and n >= min_n: 2 runs for each n and rep.
+    assert len(all_kwargs) == 8
     out.check_output("Reason: too many", repetition=1)
-    out.check_output("GET_DATA", repetition=2 if on_data else 0)
+    # Each skip is called once per combination of its components.
+    out.check_output("DATASET#SKIP", repetition=3)
+    out.check_output("OBJECTIVE#SKIP", repetition=4)
+    out.check_output("SOLVER#SKIP", repetition=6)
+    out.check_output("GET_DATA", repetition=3 if on_data else 0)
 
 
 @pytest.mark.parametrize("component", ["dataset", "objective", "solver"])

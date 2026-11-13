@@ -382,6 +382,8 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
         It is called before launching the runs, so skipping here removes the
         runs of all objectives and solvers, e.g. for incompatible parameters.
+        Calling ``self.get_data()`` loads the data of the first repetition, on
+        the machine running ``benchopt run``.
 
         Returns
         -------
