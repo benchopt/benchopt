@@ -31,8 +31,9 @@ runs are not created.
 The skips are checked once per configuration, before launching the runs.
 Checks on the parameters are free. Calling ``dataset.get_data()`` or
 ``objective.get_objective()`` loads the data of the first repetition on the
-machine running ``benchopt run``, once per dataset. ``get_seed`` can then only
-use the components that ``skip`` receives.
+machine running ``benchopt run``, once per dataset. ``get_seed`` can use the
+component itself and the ones that ``skip`` receives. Other components are only
+set when :ref:`group_by <run_grouping>` chooses them first.
 
 For instance, with an objective parameter ``reg`` and a dataset giving ``X``:
 
