@@ -78,24 +78,6 @@ def run_one_resolution(objective, solver, meta, stop_val):
 def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
                    timeout, max_runs, force=False, terminal=None,
                    run_context=None):
-    """Run ``_run_one_to_cvg``, sharing components with the previous run.
-
-    Consecutive runs in a process reuse the dataset data, the objective data
-    and the solver state when they share these components (e.g. within a
-    ``group_by`` batch). The state of the others is released, so at most one
-    state per component kind is kept in memory.
-    """
-    use_components(dataset, objective, solver)
-    return _run_one_to_cvg(
-        benchmark, dataset, objective, solver, repetition, meta,
-        timeout, max_runs, force=force, terminal=terminal,
-        run_context=run_context,
-    )
-
-
-def _run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
-                    timeout, max_runs, force=False, terminal=None,
-                    run_context=None):
     """Run all repetitions of the solver for a value of stopping criterion.
 
     Parameters
@@ -137,6 +119,10 @@ def _run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
     status : 'done' | 'diverged' | 'timeout' | 'max_runs'
         The status on which the solver was stopped.
     """
+    # Reuse the state of the components shared with the previous run in this
+    # process (e.g. within a `group_by` batch), and release the others.
+    use_components(dataset, objective, solver)
+
     # Re-attach the run context after deserialization (dataset, objective and
     # solver are pickled independently, so it is not carried across it).
     run_context.attach(objective, dataset, solver)

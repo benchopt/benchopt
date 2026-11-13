@@ -78,9 +78,7 @@ class ParametrizedNameMixin(metaclass=ComponentMeta):
         This drops what the runs stored on it (data, fitted state), so it can
         be garbage collected. Attributes listed in `_keep_state` are kept.
         """
-        init_state = self.__dict__.get('_init_state')
-        if init_state is None:
-            return
+        init_state = self._init_state
         kept = {k: self.__dict__[k] for k in self._keep_state
                 if k in self.__dict__}
         self.__dict__.clear()
