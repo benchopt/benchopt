@@ -1,3 +1,8 @@
+import ast
+import inspect
+import textwrap
+import functools
+import warnings
 from abc import ABC, abstractmethod
 from traceback import print_exc
 
@@ -109,6 +114,12 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             or 'iteration'
         )
 
+    def _attach_objective(self, objective):
+        self._objective = objective
+
+    def _skip_reason(self):
+        return super()._skip_reason(self._objective, self._objective._dataset)
+
     @classmethod
     def _inherit_stopping_criterion(cls, objective):
         """Inherit the stopping criterion from an objective if needed."""
@@ -133,15 +144,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         objective: benchopt.BaseObjective
             The objective function for the current optimization problem.
 
-        Returns
-        -------
-        skip : bool
-            Whether this solver should be skipped or not for this objective.
-        reason : str | None
-            The reason why it should be skipped for display purposes.
-            If skip is False, the reason should be None.
         """
-        self._objective = objective
+        self._attach_objective(objective)
 
         # If not set, inherit sampling_strategy and stopping_criterion from
         # objective so defaults can be specified at the benchmark level.
@@ -154,12 +158,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             "a dictionary to be passed to `set_objective`"
         )
 
-        # Check if the objective is compatible with the solver
-        skip, reason = self.skip(**objective_dict)
-        if not skip:
-            self.set_objective(**objective_dict)
-
-        return skip, reason
+        self.set_objective(**objective_dict)
 
     @abstractmethod
     def set_objective(self, **objective_dict):
@@ -228,27 +227,28 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         """
         ...
 
-    def skip(self, **objective_dict):
+    def skip(self, objective, dataset):
         """Hook to decide if the ``Solver`` is compatible with the objective.
+
+        It is called before launching the runs. Checks on the parameters
+        (e.g. ``objective.reg``, ``dataset.n_samples``) are free. Calling
+        ``objective.get_objective()`` or ``dataset.get_data()`` loads the data
+        on the machine running ``benchopt run``.
 
         Parameters
         ----------
-        **objective_parameters : dict
-            Dictionary obtained as the output of the method ``get_objective``
-            from the benchmark ``Objective``.
+        objective : benchopt.BaseObjective
+            The objective of the run.
+        dataset : benchopt.BaseDataset
+            The dataset of the run.
 
         Returns
         -------
-        skip : bool
-            Whether this solver should be skipped or not for this objective.
         reason : str | None
-            The reason why it should be skipped for display purposes.
-            If skip is False, the reason should be None.
+            The reason to skip this solver for this objective, displayed in
+            the output, or None to run it. Any other value raises an error.
         """
-        # Check that the solver is compatible with the given dataset
-        # By default, a solver is compatible with all datasets.
-
-        return False, None
+        return None
 
     def run_once(self, stop_val=1):
         """Run the solver once, to cache warmup times (e.g. pre-compilations).
@@ -350,6 +350,49 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     prepare_cache_ignore = ()
 
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        # Cache the output of `get_data` on the instance, once per class
+        # defining it.
+        if 'get_data' not in vars(cls):
+            return
+        get_data = cls.get_data
+
+        @functools.wraps(get_data)
+        def cached_get_data(self):
+            # Reload when the seed used for the cached data has changed.
+            if getattr(self, '_data', None) is None or (
+                self._used_seed is not None
+                and self._used_seed != self._compute_used_seed()
+            ):
+                # Cleared first, so a `super().get_data()` also reloads.
+                self._data = None
+                data = get_data(self)
+                if not isinstance(data, dict):
+                    raise ValueError(
+                        "The `get_data` method of the dataset should return a "
+                        f"dictionary containing the data. Got {data}."
+                    )
+                self._data = data
+            return self._data
+        cls.get_data = cached_get_data
+
+    def skip(self):
+        """Hook to decide if the ``Dataset`` should be skipped.
+
+        It is called before launching the runs, so skipping here removes the
+        runs of all objectives and solvers, e.g. for incompatible parameters.
+        Calling ``self.get_data()`` loads the data of the first repetition, on
+        the machine running ``benchopt run``.
+
+        Returns
+        -------
+        reason : str | None
+            The reason to skip this dataset, displayed in the output, or None
+            to run it. Any other value raises an error.
+        """
+        return None
+
     def prepare(self):
         """Prepare the dataset for use (optional).
 
@@ -389,6 +432,9 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     def get_data(self):
         """Return the data to feed to the objective .
 
+        The result is cached on the instance, so calling it again (e.g. in a
+        ``skip``) does not reload the data.
+
         Returns
         -------
         data: dict
@@ -396,26 +442,6 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             instanciated by calling ``Objective.set_data(**data)``.
         """
         ...
-
-    def _get_data(self):
-        "Wrapper to make sure the returned results are correctly formated."
-        # Automatically cache the _data to avoid reloading it.
-        if not hasattr(self, '_data') or self._data is None:
-            self._data = self.get_data()
-        # We compare to the last seed (computed with the most restrictive
-        # parameters) to check if the data should be recomputed.
-        elif (
-            self._used_seed is not None
-            and self._used_seed != self._compute_used_seed()
-        ):
-            self._data = self.get_data()
-
-        if not isinstance(self._data, dict):
-            raise ValueError(
-                "The `get_data` method of the dataset should return a "
-                f"dictionary containing the data. Got {self._data}."
-            )
-        return self._data
 
     @staticmethod
     def _prepare(dataset, base_seed=0):
@@ -560,8 +586,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     """
     _base_class_name = 'Objective'
 
-    # Set by `_set_dataset`, e.g. once run through `_generate_runs.py` or
-    # (post-unpickle) `run_one_to_cvg`. `_dataset_ready` guards re-running it.
+    # Set by `_attach_dataset`. `_dataset_ready` tells if `set_data` was
+    # called for it, so the data is loaded at most once.
     _dataset = None
     _dataset_ready = False
     # Set directly by `run_one_to_cvg` for each repetition.
@@ -590,9 +616,26 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         """
         ...
 
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        # Set the data before `get_objective`, once per class defining it.
+        if 'get_objective' not in vars(cls):
+            return
+        get_objective = cls.get_objective
+
+        @functools.wraps(get_objective)
+        def get_objective_with_data(self):
+            if self._dataset is not None:
+                self._load_data()
+            return get_objective(self)
+        cls.get_objective = get_objective_with_data
+
     @abstractmethod
     def get_objective(self):
         """Return the objective parameters for the solver.
+
+        If the objective has a dataset whose data is not set yet, it is loaded
+        and passed to ``set_data`` first.
 
         Returns
         -------
@@ -707,20 +750,58 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
         return objective_list
 
-    # Save the dataset object used to get the objective data so we can avoid
-    # hashing the data directly.
+    @classmethod
+    @functools.lru_cache(maxsize=None)
+    def _is_using_cv(cls):
+        """Whether the objective may set a `cv` attribute, from its source.
+
+        The number of repetitions then depends on the data, as the number of
+        cross-validation splits. If the source cannot be read, assume so.
+        """
+        if hasattr(cls, 'cv'):
+            return True
+        skipped_modules = ('benchopt', 'abc', 'builtins')
+        for klass in cls.__mro__:
+            if klass.__module__.split('.')[0] in skipped_modules:
+                continue
+            try:
+                tree = ast.parse(textwrap.dedent(inspect.getsource(klass)))
+            except (OSError, TypeError, SyntaxError):
+                warnings.warn(
+                    f"Could not read the source of {klass!r} to check if it "
+                    "sets `cv`. Loading the data to count the repetitions."
+                )
+                return True
+            for node in ast.walk(tree):
+                # `self.cv = ...` or `setattr(self, "cv", ...)`
+                if (isinstance(node, ast.Attribute) and node.attr == 'cv'
+                        and isinstance(node.ctx, ast.Store)):
+                    return True
+                if (isinstance(node, ast.Call)
+                        and getattr(node.func, 'id', None) == 'setattr'
+                        and len(node.args) > 1
+                        and getattr(node.args[1], 'value', None) == 'cv'):
+                    return True
+        return False
+
+    def _attach_dataset(self, dataset):
+        if dataset is not self._dataset:
+            self._dataset, self._dataset_ready = dataset, False
+
+    def _skip_reason(self):
+        return super()._skip_reason(self._dataset)
+
     def _set_dataset(self, dataset):
-        if self._dataset_ready and self._dataset is dataset:
-            return False, None
+        """Set the data of `dataset`, if not already set."""
+        self._attach_dataset(dataset)
+        self._load_data()
 
-        self._dataset = dataset
+    def _load_data(self):
+        """Call `set_data` with the data of the attached dataset."""
+        if self._dataset_ready:
+            return
         assert self.is_installed(raise_on_not_installed=True)
-        data = dataset._get_data()
-
-        # Check if the dataset is compatible with the objective
-        skip, reason = self.skip(**data)
-        if skip:
-            return skip, reason
+        data = self._dataset.get_data()
 
         # Check if parameters are modified by set_data
         parameters = {}
@@ -742,27 +823,26 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
         self._dataset_ready = True
 
-        return False,  None
-
-    def skip(self, **data):
+    def skip(self, dataset):
         """Used to decide if the ``Objective`` is compatible with the data.
+
+        It is called before launching the runs, so skipping here removes the
+        runs of all solvers. Checks on the parameters (e.g.
+        ``dataset.n_samples``) are free. Calling ``dataset.get_data()`` loads
+        the data on the machine running ``benchopt run``.
 
         Parameters
         ----------
-        **data: dict
-            Extra parameters of the objective. This dictionary is retrieved
-            by calling ``data = Dataset.get_data()``.
+        dataset : benchopt.BaseDataset
+            The dataset of the run.
 
         Returns
         -------
-        skip : bool
-            Whether this objective should be skipped or not for this data
-            (accessible in the objective attributes).
         reason : str | None
-            The reason why it should be skipped for display purposes.
-            If skip is False, the reason should be None.
+            The reason to skip this objective for this dataset, displayed in
+            the output, or None to run it. Any other value raises an error.
         """
-        return False, None
+        return None
 
     def get_one_result(self):
         """Return one result for which the objective can be evaluated.

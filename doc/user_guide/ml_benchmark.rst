@@ -46,6 +46,9 @@ must be defined by the user. A typical workflow is the following:
 
 Note that by default, when ``Objective`` has a ``cv`` attribute, the number of
 repetitions is set to ``cv.get_n_splits()`` instead of ``1``.
+When ``-r`` is not set, benchopt looks for an assignment of ``self.cv`` in the
+objective code. Only then does it load the data on the machine running
+``benchopt run``, to count the splits.
 When fewer repetitions are requested, only the first splits are evaluated.
 On the contrary, requesting more repetitions than splits will loop over
 the splits, repeating them to get the right number of runs.

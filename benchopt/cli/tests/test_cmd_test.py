@@ -152,7 +152,7 @@ class TestCmdTest:
             if error_type is not None:
                 out.check_output(error_type, repetition=3)
 
-    @pytest.mark.parametrize('params, exit_code, n_data', [
+    @pytest.mark.parametrize('params, exit_code, n_checked', [
         ([0], None, 1),
         ([0, 1, 2], None, 1),
         ([2, 1, 0], None, 3),
@@ -162,7 +162,7 @@ class TestCmdTest:
         "valid", "first", "last", "invalid", "invalid_multiple"
     ])
     def test_setting_test_parameters(
-            self, params, exit_code, n_data
+            self, params, exit_code, n_checked
     ):
         dataset = """
         from benchopt.utils.temp_benchmark import TempDataset
@@ -185,9 +185,9 @@ class TestCmdTest:
         from benchopt.utils.temp_benchmark import TempSolver
         class Solver(TempSolver):
             name = "test solver"
-            def skip(self, p):
-                if p > 0: return True, "skip for p > 0"
-                return False, None
+            def skip(self, objective, dataset):
+                print(f"Skip#{dataset.p}")
+                if dataset.p > 0: return "skip for p > 0"
             def set_objective(self, p): self.p = p
         """
 
@@ -202,7 +202,9 @@ class TestCmdTest:
                 )
 
             out.check_output("test session starts", repetition=1)
-            out.check_output("Dataset#", repetition=n_data)
+            # Configs are checked until one runs, and only its data is loaded.
+            out.check_output("Skip#", repetition=n_checked)
+            out.check_output("Dataset#", repetition=int(exit_code is None))
             if exit_code is not None:
                 out.check_output("Skipped every test_solver_run variants")
                 out.check_output("skip for p > 0")
@@ -349,7 +351,8 @@ class TestCmdTest:
         solver = """from benchopt.utils.temp_benchmark import TempSolver
         class Solver(TempSolver):
             name = "always-skip-solver"
-            def skip(self, **kwargs): return True, "incompatible by design"
+            def skip(self, objective, dataset):
+                return "incompatible by design"
         """
         with temp_benchmark(solvers=solver) as bench:
             with CaptureCmdOutput(exit=1) as out:
@@ -548,7 +551,7 @@ class TestCmdTest:
         class Solver(TempSolver):
             name = "skip-solver"
             @classmethod
-            def skip(cls, **kwargs): pytest.skip("incompatible")
+            def skip(cls, objective, dataset): pytest.skip("incompatible")
         """
         with temp_benchmark(
                 solvers=solver

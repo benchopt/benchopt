@@ -137,13 +137,8 @@ def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
 
         # `_set_dataset` is a no-op if already called for this dataset
         # (e.g. for sequential runs).
-        skip, reason = objective._set_dataset(dataset)
-        if skip:
-            return [], run_key, 'skip', reason
-
-        skip, reason = solver._set_objective(objective)
-        if skip:
-            return [], run_key, 'skip', reason
+        objective._set_dataset(dataset)
+        solver._set_objective(objective)
 
         stopping_criterion = (
             solver._stopping_criterion.get_runner_instance(
