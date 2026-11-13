@@ -138,14 +138,15 @@ class TerminalOutput:
         if i_solver is not None:
             self.i_solver = i_solver
 
-    def skip(self, reason=None, dataset=False, objective=False, status='skip'):
+    def skip(self, reason=None, level='solver', status='skip'):
         key = (self.dataset, self.objective, self.solver)
+        objective = level == 'objective'
         if self.rep[key] == 0 and (not objective or self.i_solver == 0):
             self.show_status(
-                status=status, dataset=dataset, objective=objective
+                status=status, dataset=level == 'dataset', objective=objective
             )
             if reason is not None:
-                indent = ' ' * (2 if dataset or objective else 4)
+                indent = ' ' * (4 if level == 'solver' else 2)
                 print(f'{indent}Reason: {reason}')
 
     def savefile_status(self, save_file=None):

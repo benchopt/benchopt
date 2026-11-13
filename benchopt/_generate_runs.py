@@ -139,11 +139,8 @@ def _skip_before_dispatch(component, terminal, run_context):
         reason = component._skip_reason()
         status = None if reason is None else 'skip'
     if status is not None:
-        level = component._base_class_name
-        terminal.skip(
-            reason, status=status, dataset=level == 'Dataset',
-            objective=level == 'Objective',
-        )
+        level = component._base_class_name.lower()
+        terminal.skip(reason, level=level, status=status)
     return status is not None
 
 
