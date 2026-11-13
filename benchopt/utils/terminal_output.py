@@ -138,12 +138,14 @@ class TerminalOutput:
         if i_solver is not None:
             self.i_solver = i_solver
 
-    def skip(self, reason=None, objective=False, status='skip'):
+    def skip(self, reason=None, dataset=False, objective=False, status='skip'):
         key = (self.dataset, self.objective, self.solver)
         if self.rep[key] == 0 and (not objective or self.i_solver == 0):
-            self.show_status(status=status, objective=objective)
+            self.show_status(
+                status=status, dataset=dataset, objective=objective
+            )
             if reason is not None:
-                indent = ' ' * (2 if objective else 4)
+                indent = ' ' * (2 if dataset or objective else 4)
                 print(f'{indent}Reason: {reason}')
 
     def savefile_status(self, save_file=None):
@@ -216,7 +218,7 @@ class TerminalOutput:
         print_normalize(f"{tag} {status_print}")
 
         if status == 'skip' and reason is not None:
-            indent = ' ' * (2 if dataset or objective else 4)
+            indent = ' ' * (2 if objective else 4)
             print(f'{indent}Reason: {reason}')
 
     def debug(self, msg):

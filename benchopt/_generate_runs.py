@@ -58,7 +58,7 @@ def group_runs(run_kwargs_iter, group_by):
         yield list(batch)
 
 
-def _enter_axis(terminal, axis, item, is_installed, i_axis, pdb):
+def _enter_axis(terminal, axis, item, is_installed, i_axis, run_context):
     """Display `item` in the terminal; return False if it is not installed.
 
     Used by the recursion in `generate_run_kwargs` to skip the subtree of an
@@ -69,9 +69,7 @@ def _enter_axis(terminal, axis, item, is_installed, i_axis, pdb):
         if not is_installed:
             terminal.show_status('not installed', dataset=True)
             return False
-        status, reason = _skip_before_dispatch(item, terminal, pdb)
-        if status is not None:
-            terminal.show_status(status, reason=reason, dataset=True)
+        if _skip_before_dispatch(item, terminal, run_context):
             return False
         terminal.display_dataset()
     elif axis == 'objective':
@@ -130,17 +128,23 @@ def _run_meta(benchmark, dataset, objective, solver, rep):
     }
 
 
-def _skip_before_dispatch(component, terminal, pdb):
-    """Return ``(status, reason)`` from ``component.skip``.
+def _skip_before_dispatch(component, terminal, run_context):
+    """Display and return whether ``component.skip`` skips its runs.
 
-    The status is None to run, 'skip', or 'error' if `skip` fails. A failing
-    `skip` is handled as in a run (traceback, ``--pdb``), and its runs are not
-    created, as for a skip.
+    A failing `skip` is handled as in a run (traceback, ``--pdb``), displayed
+    as an error, and its runs are not created, as for a skip.
     """
-    with exception_handler(terminal, pdb=pdb):
+    status, reason = 'error', None
+    with exception_handler(terminal, pdb=run_context.pdb):
         reason = component._skip_reason()
-        return ('skip' if reason is not None else None), reason
-    return 'error', None
+        status = None if reason is None else 'skip'
+    if status is not None:
+        level = component._base_class_name
+        terminal.skip(
+            reason, status=status, dataset=level == 'Dataset',
+            objective=level == 'Objective',
+        )
+    return status is not None
 
 
 def _prepare_objective(benchmark, run_context, dataset, objective, solver,
@@ -158,10 +162,8 @@ def _prepare_objective(benchmark, run_context, dataset, objective, solver,
     objective._attach_dataset(dataset)
     try:
         # Loads the data only if `skip` needs it.
-        status, reason = _skip_before_dispatch(
-            objective, terminal, run_context.pdb
-        )
-        if (status is None and n_repetitions is None
+        skipped = _skip_before_dispatch(objective, terminal, run_context)
+        if (not skipped and n_repetitions is None
                 and objective._is_using_cv()):
             # The number of repetitions is the number of CV splits.
             objective._load_data()
@@ -176,8 +178,7 @@ def _prepare_objective(benchmark, run_context, dataset, objective, solver,
             "'repetition' from `group_by` or make the data "
             "solver-independent."
         ) from e
-    if status is not None:
-        terminal.skip(reason, objective=True, status=status)
+    if skipped:
         return None
 
     if n_repetitions is None:
@@ -216,9 +217,7 @@ def generate_run_kwargs(
         dataset, objective = chosen['dataset'], chosen['objective']
         solver, rep = chosen['solver'], chosen['repetition']
         solver._attach_objective(objective)
-        status, reason = _skip_before_dispatch(solver, terminal, base_ctx.pdb)
-        if status is not None:
-            terminal.skip(reason, status=status)
+        if _skip_before_dispatch(solver, terminal, base_ctx):
             return
         # A shallow copy carries the data if already set (reused in-process),
         # else `_set_dataset` loads it at run time.
@@ -267,7 +266,7 @@ def generate_run_kwargs(
                     repetition=None, base_seed=benchmark.seed,
                 )
             if not _enter_axis(
-                terminal, axis, item, is_installed, i_axis, base_ctx.pdb
+                terminal, axis, item, is_installed, i_axis, base_ctx
             ):
                 continue
             chosen[axis] = item
