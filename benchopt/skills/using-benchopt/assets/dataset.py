@@ -24,6 +24,11 @@ class Dataset(BaseDataset):
         y = X @ rng.standard_normal(self.n_features)
         return dict(X=X, y=y)
 
+    # Optional: skip incompatible parameters, before launching any run.
+    # def skip(self):
+    #     if self.n_features > self.n_samples:
+    #         return "more features than samples"
+
     # Optional: expensive one-time work (downloads, preprocessing).
     # benchopt run never calls prepare(); trigger via `benchopt prepare .`
     # or share an _ensure_prepared() guard called from both.

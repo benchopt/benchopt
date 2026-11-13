@@ -95,8 +95,8 @@ solver = Solver.get_instance(lr=1e-3)        # apply solver parameters
 obj_dict = objective.get_objective()         # what the runner passes to the solver
 
 # Optional: solvers can opt out of an objective/dataset combination.
-skip, reason = solver.skip(**obj_dict)
-print("skipped" if skip else "runs", reason)
+reason = solver.skip(objective, dataset)    # a reason to skip, or None
+print("runs" if reason is None else f"skipped: {reason}")
 
 solver.set_objective(**obj_dict)             # hand the objective to the solver
 solver.run(10)                               # run to a stopping value (see below)

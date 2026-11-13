@@ -44,11 +44,27 @@ FIX
 API
 ~~~
 
+- Component classes are represented as ``Solver<name>``, e.g. in error
+  messages, instead of the default class representation.
+  By `Thomas Moreau`_ (:gh:`1032`)
+
+- ``Dataset.skip(self)``, ``Objective.skip(self, dataset)`` and
+  ``Solver.skip(self, objective, dataset)`` are checked before launching the
+  runs, and return the reason to skip or ``None``. The old signature and the
+  ``(skip, reason)`` tuple are deprecated. See :ref:`skipping_config`.
+  By `Thomas Moreau`_ (:gh:`1031`)
+
 - Add a ``hidden_plots`` benchmark config option to hide some plot kinds,
   e.g. some of the default plots. By `Hippolyte Verninas`_ (:gh:`1019`)
 
 PLOT
 ~~~~
+
+- The "Suboptimal Curve" and "Relative Curve" toggles are replaced by a
+  ``Y_axis`` option of the ``objective_curve`` plot, so they no longer apply
+  to custom scatter plots. Views using the deprecated ``suboptimal_curve``
+  or ``relative_curve`` keys are converted to ``objective_curve_Y_axis``.
+  By `Hippolyte Verninas`_ (:gh:`1018`)
 
 - Improve ``'image'`` plots in the HTML report: borderless grid that keeps
   each image's aspect ratio, and click-to-enlarge.
@@ -64,6 +80,13 @@ PLOT
 - Add ``Download PDF`` button in the HTML interface to download the current
   plot as a PDF file.
   By `Jad Yehya`_ & `Hippolyte Verninas`_ (:gh:`989`)
+
+TST
+~~~
+
+- Tests needing a conda env are skipped when no conda env is active, e.g. the
+  install tests of ``benchopt test``, instead of failing.
+  By `Thomas Moreau`_ (:gh:`1033`)
 
 DOC
 ~~~

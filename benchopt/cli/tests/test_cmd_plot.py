@@ -139,11 +139,11 @@ class TestPlotCmd:
         ('kind', 'expected_n_files'),
         [
             ("custom_plot", 1),
-            ("objective_curve", 2),
+            ("objective_curve", 6),
             ("boxplot", 4),
             ("bar_chart", 2),
             ("image_plot", 1),
-            (None, 10)  # all kinds
+            (None, 14)  # all kinds
         ]
     )
     def test_valid_call_mpl(self, kind, expected_n_files):

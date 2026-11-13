@@ -7,40 +7,65 @@ Advanced usage
 This page intends to list some advanced functionality
 to make it easier to use the benchmark.
 
-.. _skipping_solver:
+.. _skipping_config:
 
-Skipping a solver for a given problem
--------------------------------------
+Skipping a configuration
+------------------------
 
-Some solvers might not be able to run with all the datasets present
-in a benchmark. This is typically the case when some datasets are
-represented using sparse data or for datasets that are too large.
+Some configurations of a benchmark cannot run. A dataset can have incompatible
+parameters, an objective might not apply to some datasets, and a solver might
+not support sparse data or scale to large datasets. Each component can skip
+them by implementing a ``skip`` method, which receives the components chosen
+before it:
 
-In these cases, a solver can be skipped at runtime, depending on the
-characteristic of the objective. In order to define for which cases
-a solver should be skip, the user needs to implement a method
-:func:`~benchopt.BaseSolver.skip` in the solver class that will take
-the input as the :func:`~benchopt.BaseSolver.set_objective` method.
-This method should return a boolean value that evaluates to ``True``
-if the solver should be skipped, and a string giving the reason of
-why the solver is skipped, for display purposes. For instance,
-for a solver where the objective is set with keys `X, y, reg`,
-we get
+- :func:`~benchopt.BaseDataset.skip` takes no argument and skips all the runs
+  of the dataset.
+- :func:`~benchopt.BaseObjective.skip` receives the dataset and skips the runs
+  of all solvers.
+- :func:`~benchopt.BaseSolver.skip` receives the objective and the dataset.
+
+``skip`` returns the reason to skip, displayed in the output, or ``None`` to
+run. Any other value or a failing ``skip`` is reported as an error, and its
+runs are not created.
+
+The skips are checked once per configuration, before launching the runs.
+Checks on the parameters are free. Calling ``dataset.get_data()`` or
+``objective.get_objective()`` loads the data of the first repetition on the
+machine running ``benchopt run``, once per dataset. ``get_seed`` can use the
+component itself and the ones that ``skip`` receives. Other components are only
+set when :ref:`group_by <run_grouping>` chooses them first.
+
+For instance, with an objective parameter ``reg`` and a dataset giving ``X``:
 
 .. code-block::
 
+    class Dataset(BaseDataset):
+        ...
+        def skip(self):
+            if self.n_features > self.n_samples:
+                return "more features than samples"
+
     class Solver(BaseSolver):
         ...
-        def skip(self, X, y, reg):
+        def skip(self, objective, dataset):
             from scipy import sparse
 
-            if sparse.issparse(X):
-                return True, "solver does not support sparse data X."
+            if objective.reg == 0:
+                return "solver does not work with reg=0"
 
-            if reg == 0:
-                return True, "solver does not work with reg=0"
+            # Loads the data on the node running `benchopt run`.
+            if sparse.issparse(dataset.get_data()["X"]):
+                return "solver does not support sparse data X."
 
-            return False, None
+.. note::
+
+    In older versions, ``skip`` received the data as keyword arguments,
+    e.g. ``Solver.skip(self, X, y, reg)`` with the output of
+    ``Objective.get_objective``, and ``Objective.skip(self, X, y)`` with the
+    output of ``Dataset.get_data``. It returned a ``(skip, reason)`` tuple.
+    Both still work, with a ``FutureWarning``, and are checked before
+    launching the runs, but the old signature always loads the data. They will
+    be removed in benchopt 1.12.
 
 .. _extra_objectives:
 

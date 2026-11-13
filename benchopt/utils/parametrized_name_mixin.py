@@ -2,12 +2,23 @@ import re
 import ast
 import warnings
 import itertools
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 
 import click
 
 
-class ParametrizedNameMixin():
+class ComponentMeta(ABCMeta):
+    """Metaclass of the components, to represent them as `Solver<name>`."""
+    def __repr__(cls):
+        name, base_name = cls.name, getattr(cls, '_base_class_name', None)
+        # Default repr for `ParametrizedNameMixin` and the 3 base classes,
+        # which have no `name`.
+        if not isinstance(name, str) or base_name is None:
+            return super().__repr__()
+        return f"{base_name}<{name}>"
+
+
+class ParametrizedNameMixin(metaclass=ComponentMeta):
     """Mixing for parametric classes representation and naming.
     """
     parameters = {}
@@ -48,14 +59,10 @@ class ParametrizedNameMixin():
             # State restored by `_release_state` once a run is done with it.
             obj._init_state = obj.__dict__.copy()
         except Exception as exception:
-            # get type (Dataset, Objective, or Solver) of class and its name
-            cls_type = cls._base_class_name
-            cls_name = cls.name
-
             # Extend exception error message
             # TODO: use `add_note` when requiring python>=3.11
             exception.args = (
-                f'Error when initializing {cls_type}: "{cls_name}". '
+                f'Error when initializing {cls!r}. '
                 f'{". ".join(exception.args)}',
             )
             raise

@@ -16,10 +16,9 @@ def test_skip_api(n_jobs):
             name = "Objective-skip"
             parameters = dict(should_skip=[True, False])
 
-            def skip(self, X, y):
+            def skip(self, dataset):
                 if self.should_skip:
-                    return True, "Objective#SKIP"
-                return False, None
+                    return "Objective#SKIP"
     """
 
     solver = """from benchopt.utils.temp_benchmark import TempSolver
@@ -30,10 +29,9 @@ def test_skip_api(n_jobs):
         parameters = dict(should_skip=[True, False])
         def run(self, n_iter): print("Solver#RUN")
 
-        def skip(self, **obj):
+        def skip(self, objective, dataset):
             if self.should_skip:
-                return True, "Solver#SKIP"
-            return False, None
+                return "Solver#SKIP"
 
     """
 
@@ -544,9 +542,9 @@ class TestSeed:
                 # Check that get_seed() works with parallel runs.
                 run((cmd_str + " -j 2").split(), standalone_mode=False)
 
-        # get_data() runs once per -j1 call, and twice for the -j2 call (once
-        # during dispatch, once more in the worker).
-        seeds = out.check_output(r"(?m)^#SEED-data=.*", repetition=4)
+        # get_data() runs once per call: the objective does not set `cv`, so
+        # the data is not loaded during dispatch.
+        seeds = out.check_output(r"(?m)^#SEED-data=.*", repetition=3)
         assert len(set(seeds)) == 1, "Seeds are not equal"
 
     def test_seed_different(self, no_debug_log):

@@ -11,9 +11,11 @@ class ObjectiveCurvePlot(BasePlot):
         "objective": ...,
         "objective_column": ...,
         "X_axis": ["Time", "Iteration"],
+        "Y_axis": ["Objective", "Suboptimality", "Relative Suboptimality"],
     }
 
-    def plot(self, df, dataset, objective, objective_column, X_axis):
+    def plot(self, df, dataset, objective, objective_column, X_axis,
+             Y_axis="Objective"):
         plots = []
         # If the column is not numeric, exit early
         from pandas.api.types import is_numeric_dtype
@@ -62,16 +64,25 @@ class ObjectiveCurvePlot(BasePlot):
 
             plots.append(curve_data)
 
+        if Y_axis != "Objective" and plots:
+            # Min over all solvers, shifted to avoid zeros in log scale.
+            y_min = min(min(c["y"]) for c in plots) - 1e-10
+            for c in plots:
+                c["y"] = [v - y_min for v in c["y"]]
+                if Y_axis == "Relative Suboptimality":
+                    c["y"] = [v / c["y"][0] for v in c["y"]]
+
         return plots
 
-    def get_metadata(self, df, dataset, objective, objective_column, X_axis):
+    def get_metadata(self, df, dataset, objective, objective_column, X_axis,
+                     Y_axis="Objective"):
         df = df[df["dataset_name"] == dataset]
         df = df[df['objective_name'] == objective]
         title = f"{objective}\nData: {dataset} "
         return {
             "title": title,
             "xlabel": X_axis,
-            "ylabel": "Objective Value",
+            "ylabel": Y_axis,
         }
 
 
