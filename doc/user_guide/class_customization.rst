@@ -227,7 +227,7 @@ All benchmark classes expose optional methods to customise the workflow.
 
 - :func:`benchopt.BaseDataset.skip`: called before launching the runs to skip
   incompatible dataset parameters. Refer to
-  :ref:`Advanced usage <skipping_solver>` for an example.
+  :ref:`Advanced usage <skipping_config>` for an example.
 
 - :func:`benchopt.BaseDataset.prepare`: expensive one-time preparation
   (downloads, extraction, preprocessing) cached by joblib. List parameter
@@ -238,7 +238,7 @@ All benchmark classes expose optional methods to customise the workflow.
 
 - :func:`benchopt.BaseObjective.skip`: called before launching the runs to
   skip dataset/objective combinations that are incompatible. Takes the
-  dataset of the run. Refer to :ref:`Advanced usage <skipping_solver>` for an
+  dataset of the run. Refer to :ref:`Advanced usage <skipping_config>` for an
   example.
 
 - :func:`benchopt.BaseObjective.get_one_result`: returns a dummy result dict
@@ -253,7 +253,7 @@ All benchmark classes expose optional methods to customise the workflow.
 
 - :func:`benchopt.BaseSolver.skip`: called before launching the runs to skip
   solver/objective combinations that are incompatible. Takes the objective and
-  the dataset of the run. Refer to :ref:`Advanced usage <skipping_solver>` for an
+  the dataset of the run. Refer to :ref:`Advanced usage <skipping_config>` for an
   example.
 
 - :func:`benchopt.BaseSolver.warm_up`: called once before timed runs. Use
