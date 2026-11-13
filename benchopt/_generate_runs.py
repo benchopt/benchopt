@@ -159,9 +159,9 @@ def _prepare_objective(benchmark, run_context, dataset, objective, solver,
     objective._attach_dataset(dataset)
     try:
         # Loads the data only if `skip` needs it.
-        skipped = _skip_before_dispatch(objective, terminal, run_context)
-        if (not skipped and n_repetitions is None
-                and objective._is_using_cv()):
+        if _skip_before_dispatch(objective, terminal, run_context):
+            return None
+        if n_repetitions is None and objective._is_using_cv():
             # The number of repetitions is the number of CV splits.
             objective._load_data()
     except SeedContextError as e:
@@ -175,8 +175,6 @@ def _prepare_objective(benchmark, run_context, dataset, objective, solver,
             "'repetition' from `group_by` or make the data "
             "solver-independent."
         ) from e
-    if skipped:
-        return None
 
     if n_repetitions is None:
         if hasattr(objective, "cv"):

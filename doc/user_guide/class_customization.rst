@@ -226,7 +226,8 @@ All benchmark classes expose optional methods to customise the workflow.
 **BaseDataset**
 
 - :func:`benchopt.BaseDataset.skip`: called before launching the runs to skip
-  incompatible dataset parameters.
+  incompatible dataset parameters. Refer to
+  :ref:`Advanced usage <skipping_solver>` for an example.
 
 - :func:`benchopt.BaseDataset.prepare`: expensive one-time preparation
   (downloads, extraction, preprocessing) cached by joblib. List parameter
@@ -237,7 +238,8 @@ All benchmark classes expose optional methods to customise the workflow.
 
 - :func:`benchopt.BaseObjective.skip`: called before launching the runs to
   skip dataset/objective combinations that are incompatible. Takes the
-  dataset of the run.
+  dataset of the run. Refer to :ref:`Advanced usage <skipping_solver>` for an
+  example.
 
 - :func:`benchopt.BaseObjective.get_one_result`: returns a dummy result dict
   used by ``benchopt test`` to validate metric computation. Optional — if not

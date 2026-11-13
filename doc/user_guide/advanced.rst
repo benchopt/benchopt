@@ -44,6 +44,7 @@ loaded on the machine running ``benchopt run``, once per dataset, as
             if objective.reg == 0:
                 return "solver does not work with reg=0"
 
+            # Loads the data on the node running `benchopt run`.
             if sparse.issparse(dataset.get_data()["X"]):
                 return "solver does not support sparse data X."
 

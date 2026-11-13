@@ -2,6 +2,7 @@ import ast
 import inspect
 import textwrap
 import functools
+import warnings
 from abc import ABC, abstractmethod
 from traceback import print_exc
 
@@ -764,6 +765,10 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             try:
                 tree = ast.parse(textwrap.dedent(inspect.getsource(klass)))
             except (OSError, TypeError, SyntaxError):
+                warnings.warn(
+                    f"Could not read the source of {klass!r} to check if it "
+                    "sets `cv`. Loading the data to count the repetitions."
+                )
                 return True
             for node in ast.walk(tree):
                 # `self.cv = ...` or `setattr(self, "cv", ...)`
@@ -784,8 +789,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     def _skip_reason(self):
         return super()._skip_reason(self._dataset)
 
-    # Save the dataset object used to get the objective data so we can avoid
-    # hashing the data directly.
     def _set_dataset(self, dataset):
         """Set the data of `dataset`, if not already set."""
         self._attach_dataset(dataset)
