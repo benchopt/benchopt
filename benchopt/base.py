@@ -42,12 +42,9 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     Optionaly, the ``Solver`` can implement the following methods to change its
     behavior:
 
-    - ``skip(self, **objective_parameters)``: decide if the solver is
-      compatible with the given objective. Its inputs are the same as
-      ``set_objective``, and it should return a tuple ``(skip, reason)`` where
-      ``skip`` is a boolean indicating whether the solver should be skipped for
-      this configuration, and ``reason`` is a string used to explain why in the
-      CLI output. If ``skip`` is False, ``reason`` should be None.
+    - ``skip(self, objective, dataset)``: decide if the solver is compatible
+      with the objective and the dataset of the run. It returns the reason to
+      skip, displayed in the CLI output, or None to run.
 
     - ``get_next(stop_val)``: Return the next iteration where the result will
       be evaluated. This is only necessary when `sampling_strategy` is set to
@@ -330,6 +327,9 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     Optionally, datasets can implement:
 
+    - ``skip()``: decide if the dataset parameters are compatible. It returns
+      the reason to skip, displayed in the CLI output, or None to run.
+
     - ``prepare()``: performs expensive one-time preparation (downloads,
       extraction, preprocessing) that is cached and separated from loading.
 
@@ -545,6 +545,10 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     Optionally, the `Objective` can implement the following methods to change
     its behavior:
+
+    - ``skip(dataset)``: decide if the objective is compatible with the
+      dataset of the run. It returns the reason to skip, displayed in the CLI
+      output, or None to run.
 
     - ``get_one_result()``: return one dummy result compatible with
       ``evaluate_result``. Used by ``benchopt test`` to validate metric
