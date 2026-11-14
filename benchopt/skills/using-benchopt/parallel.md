@@ -37,9 +37,7 @@ benchopt run . --group-by dataset,objective    # hold these constant per batch
   run uses another component (at most one state per component in memory). The
   listed axes come first: `--group-by solver` shares solver state but reloads
   each dataset per solver. Don't rely on `self` attributes surviving across
-  components; `warm_up` runs once per solver and process. A repetition
-  calls `set_data`/`set_objective` again only if a seed it uses changes, or
-  for `set_objective`, on a new CV fold.
+  components; `warm_up` runs once per solver and process.
 - `repetition` shares a cross-validation fold across solvers (e.g.
   `dataset,objective,repetition`; `dataset`/`objective` must precede it). The
   fold data must be solver-independent — if `set_data` calls

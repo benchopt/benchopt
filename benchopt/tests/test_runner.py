@@ -846,9 +846,8 @@ def test_solver_releases_run_data(no_debug_log):
 def test_components_share_state_then_release(parallel, no_debug_log):
     """Consecutive runs share the components' state, released afterwards.
 
-    Data is loaded once per dataset, set once per (dataset, objective) and
-    the solver once per (dataset, objective, solver), as the repetitions use
-    no seed. At most one state per component kind stays alive in a process.
+    Data is loaded once per dataset and set once per (dataset, objective),
+    and at most one state per component kind stays alive in a process.
     """
     dataset = """from benchopt import BaseDataset
 
@@ -913,7 +912,7 @@ def test_components_share_state_then_release(parallel, no_debug_log):
 
     out.check_output("#GET_DATA#", repetition=2)
     out.check_output("#SET_DATA#", repetition=4)
-    out.check_output("#SET_OBJECTIVE#", repetition=8)
+    out.check_output("#SET_OBJECTIVE#", repetition=16)
     # The previous state may linger, but states must not pile up.
     out.check_output("#ALIVE#[2-9]", repetition=0)
 

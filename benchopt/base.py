@@ -97,8 +97,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     _base_class_name = 'Solver'
     sampling_strategy = None
-    # The objective, seeds and CV fold `set_objective` was last called with.
-    _objective_state = None
     # Warm up once per solver, not once per run.
     _keep_state = ('_warmup_done',)
 
@@ -155,16 +153,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         # objective so defaults can be specified at the benchmark level.
         self._inherit_stopping_criterion(objective)
 
-        # `set_objective` is called again only if the objective, the seeds or
-        # the CV fold changed, e.g. not for a repetition measuring timings.
-        state = (
-            objective, objective._used_seed,
-            getattr(objective._dataset, '_used_seed', None),
-            objective._repetition if objective._is_using_cv() else None,
-        )
-        if state == self._objective_state and not self._seed_changed():
-            return
-
         objective_dict = objective.get_objective()
 
         assert objective_dict is not None, (
@@ -173,7 +161,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         )
 
         self.set_objective(**objective_dict)
-        self._objective_state = state
 
     @abstractmethod
     def set_objective(self, **objective_dict):

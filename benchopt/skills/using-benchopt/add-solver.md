@@ -91,8 +91,6 @@ For **stochastic** solvers, seed from `self.get_seed(use_repetition=True)` (call
 it in `set_objective`) so `--n-repetitions N` gives N genuinely different but
 reproducible runs; a bare `self.get_seed()` returns the same seed every
 repetition. Add `use_dataset=True` / `use_solver=True` to further differentiate seeds.
-`set_objective` is called again for a repetition only if a seed changes, so
-randomness drawn there without `get_seed` is shared by all repetitions.
 
 ### Optional methods
 
