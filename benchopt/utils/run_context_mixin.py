@@ -7,18 +7,8 @@ class RunContextMixin:
 
     # Set by the runner before any user method is called.
     _run_context = None
-
-    def __init__(self):
-        super().__init__()
-        # Tracks which components are used for the seed, uses
-        # the most restrictive seed parameters for later caching.
-        self._seed_params = {
-            "use_objective": False,
-            "use_dataset": False,
-            "use_solver": False,
-            "use_repetition": False,
-        }
-        self._used_seed = None
+    # Seed given by the last call to get_seed.
+    _used_seed = None
 
     def get_seed(
         self, use_objective=False, use_dataset=False,
@@ -49,17 +39,20 @@ class RunContextMixin:
                 f"run_context was not initialized for {self}. {hint}"
             )
 
+        params = dict(
+            use_objective=use_objective, use_dataset=use_dataset,
+            use_solver=use_solver, use_repetition=use_repetition,
+        )
         seed = self._run_context.get_seed(
-            class_name=self._base_class_name,
-            use_objective=use_objective,
-            use_dataset=use_dataset,
-            use_solver=use_solver,
-            use_repetition=use_repetition,
+            class_name=self._base_class_name, **params
         )
 
-        # Track the most restrictive seed parameters for later caching
-        for key in self._seed_params:
-            self._seed_params[key] |= locals()[key]
+        # Track the most restrictive seed parameters for later caching.
+        # Reassign instead of mutating, as `_init_state` holds a shallow copy.
+        seed_params = getattr(self, '_seed_params', {})
+        self._seed_params = {
+            k: v or seed_params.get(k, False) for k, v in params.items()
+        }
 
         self._used_seed = seed
 
