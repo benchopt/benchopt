@@ -118,6 +118,11 @@ class Solver(BaseSolver):
 
 Runs with different SLURM parameters are dispatched as **separate job arrays**.
 
+`skip` runs on the front node. To skip a GPU solver whose jobs get no GPU, call
+`gpu_available(self)` from `benchopt.helpers.requires_gpu` in `skip`: it reads
+the merged SLURM config of the solver (`gres`, `gpus_per_node`, ...).
+`benchopt.parallel_backends.get_worker_config(solver)` returns that config.
+
 ## Caching across nodes and machines
 
 - Results are cached with `joblib.Memory` keyed on code + parameters, identically
