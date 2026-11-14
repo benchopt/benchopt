@@ -123,3 +123,26 @@ class RunContext:
         for klass in [objective, dataset, solver]:
             if isinstance(klass, RunContextMixin):
                 klass._run_context = self
+
+
+# Components used by the last run in this process, from the dataset to the
+# solver. Each one keeps its state (data, fitted state) while the next runs
+# share it, and is released once a run does not.
+_IN_USE = []
+
+
+def use_components(*components):
+    """Release the state of the last run's components not shared by this run.
+
+    Called when a run starts in this process, or when the front node sends it
+    to another process. The state of a component depends on the ones before
+    it: the objective data on the dataset, the solver state on both. Called
+    without components, it releases them all.
+    """
+    global _IN_USE
+    for i, previous in enumerate(_IN_USE):
+        if previous is not None and (i >= len(components) or any(
+            a is not b for a, b in zip(_IN_USE[:i + 1], components)
+        )):
+            previous._release_state()
+    _IN_USE = list(components)

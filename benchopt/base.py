@@ -94,6 +94,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     _base_class_name = 'Solver'
     sampling_strategy = None
+    # Warm up once per solver, not once per run.
+    _keep_state = ('_warmup_done',)
 
     @classproperty
     def _stopping_criterion(cls):
@@ -361,10 +363,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         @functools.wraps(get_data)
         def cached_get_data(self):
             # Reload when the seed used for the cached data has changed.
-            if getattr(self, '_data', None) is None or (
-                self._used_seed is not None
-                and self._used_seed != self._compute_used_seed()
-            ):
+            if getattr(self, '_data', None) is None or self._seed_changed():
                 # Cleared first, so a `super().get_data()` also reloads.
                 self._data = None
                 data = get_data(self)
@@ -798,6 +797,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     def _set_dataset(self, dataset):
         """Set the data of `dataset`, if not already set."""
         self._attach_dataset(dataset)
+        # The data is set again if its seed changed, e.g. for a new repetition.
+        if self._seed_changed() or dataset._seed_changed():
+            self._dataset_ready = False
         self._load_data()
 
     def _load_data(self):

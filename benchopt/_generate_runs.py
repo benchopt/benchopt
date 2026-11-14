@@ -1,4 +1,3 @@
-import copy
 import inspect
 import itertools
 
@@ -229,19 +228,18 @@ def generate_run_kwargs(
         """Return the run kwargs."""
         dataset, objective = chosen['dataset'], chosen['objective']
         solver, rep = chosen['solver'], chosen['repetition']
-        # A shallow copy carries the data if already set (reused in-process),
-        # else `_set_dataset` loads it at run time.
-        objective_rep = copy.copy(objective)
         # Resolve inheritance now: `meta` feeds the cache key and must not
         # depend on which solver ran first in the process.
         solver._inherit_stopping_criterion(objective)
         meta = _run_meta(benchmark, dataset, objective, solver, rep)
+        # Runs share the objective instance, to set its data once: each run
+        # re-attaches its context when it starts.
         run_ctx = base_ctx.set_run_context(
-            objective=objective_rep, dataset=dataset, solver=solver,
+            objective=objective, dataset=dataset, solver=solver,
             repetition=rep, base_seed=benchmark.seed,
         )
         return dict(
-            benchmark=benchmark, dataset=dataset, objective=objective_rep,
+            benchmark=benchmark, dataset=dataset, objective=objective,
             solver=solver, repetition=rep, meta=meta, timeout=timeout,
             max_runs=max_runs, terminal=terminal, run_context=run_ctx,
             force=is_matched(str(solver), forced_solvers, default=False),

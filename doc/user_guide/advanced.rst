@@ -177,17 +177,31 @@ callback (default to 1).
 Data loading and memory
 -----------------------
 
-Benchopt loads each dataset once and keeps its data in memory to run all the
-solvers on it, which avoids reloading the data for every solver. The data is
-released when the run moves to the next dataset. With ``--group-by`` (see
-:ref:`run_grouping`), this only holds for the first listed axis, while the
-other axes keep all their instances in memory. List the heaviest,
-data-carrying axis (usually ``dataset``) first.
+Consecutive runs in a process reuse the same component instances. Benchopt
+skips the calls whose result is already there: ``Dataset.get_data`` is not
+called again for the same dataset, and ``Objective.set_data`` is not called
+again for the same dataset and objective, unless their seed changes with the
+repetition. ``Solver.set_objective`` and ``Solver.run`` are called for every
+run. The solver instance keeps its attributes between consecutive runs, so a
+solver can skip costly steps it already did, such as loading model weights.
+Benchopt does not do this for the solver. Its code must check whether the
+attribute is already set, for instance in ``set_objective``.
 
-Solvers with a costly setup, such as the warmup described above, can also
-benefit from sharing in parallel runs. ``--group-by solver`` runs each solver
-on all datasets in the same worker, at the cost of keeping all the datasets'
-data in that worker's memory.
+Once a run uses another component, the previous instance is released: it goes
+back to its state after creation, so its data can be freed. The state of an
+objective depends on its dataset, and the state of a solver on its objective
+and dataset. Each process thus keeps at most one state per component, and
+loads each dataset once per block of consecutive runs using it.
+
+The order of the runs therefore decides what is reused. By default, the runs
+are ordered by dataset, then objective, then solver, so each dataset is loaded
+once and ``set_data`` is called once per objective. With ``--group-by`` (see
+:ref:`run_grouping`), the listed axes come first. For instance,
+``--group-by solver`` runs each solver on all datasets in a row, keeping the
+same solver instance, but reloads each dataset for every solver.
+
+Attributes stored on an instance during a run do not survive a release. The
+warmup described above is kept, so it runs once per solver and process.
 
 
 .. |update_params| replace:: ``update_parameters``

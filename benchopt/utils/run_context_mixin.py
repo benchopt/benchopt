@@ -65,6 +65,13 @@ class RunContextMixin:
 
         return seed
 
+    def _seed_changed(self):
+        """Whether the seed of the current run differs from the used one."""
+        return (
+            self._used_seed is not None
+            and self._used_seed != self._compute_used_seed()
+        )
+
     def _compute_used_seed(self):
         """Recompute the stored seed with the current context and params.
 

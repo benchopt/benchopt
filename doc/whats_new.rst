@@ -29,6 +29,14 @@ FIX
   dataset in memory while submitting jobs. By `Hippolyte Verninas`_
   (:gh:`1020`)
 
+- Consecutive runs in a process share the state of their dataset, objective
+  and solver, and release it once a run uses another component. Memory no
+  longer grows with the number of solvers, and ``Objective.set_data`` is
+  called once per dataset and objective instead of once per run. The front
+  node applies the same rule to the runs it sends to other processes. See
+  :ref:`data_memory`. By `Hippolyte Verninas`_ and `Thomas Moreau`_
+  (:gh:`1030`)
+
 - The "Export LaTeX" button of the HTML report shows the table in a text box
   when the clipboard is unavailable, and no longer adds an extra column. By
   `Thomas Moreau`_ (:gh:`1023`)
