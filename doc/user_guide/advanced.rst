@@ -189,9 +189,9 @@ attribute is already set, for instance in ``set_objective``.
 
 Once a run uses another component, the previous instance is released: it goes
 back to its state after creation, so its data can be freed. The state of an
-objective depends on its dataset, and the state of a solver on both. Each
-process thus keeps at most one state per component, and loads each dataset
-once per block of consecutive runs using it.
+objective depends on its dataset, and the state of a solver on its objective
+and dataset. Each process thus keeps at most one state per component, and
+loads each dataset once per block of consecutive runs using it.
 
 The order of the runs therefore decides what is reused. By default, the runs
 are ordered by dataset, then objective, then solver, so each dataset is loaded
