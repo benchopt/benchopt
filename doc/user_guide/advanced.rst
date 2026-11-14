@@ -182,9 +182,10 @@ skips the calls whose result is already there: ``Dataset.get_data`` is not
 called again for the same dataset, and ``Objective.set_data`` is not called
 again for the same dataset and objective, unless their seed changes with the
 repetition. ``Solver.set_objective`` and ``Solver.run`` are called for every
-run. The solver instance keeps its attributes between consecutive runs, so it
-can reuse what it computed before, like model weights already loaded. But this
-reuse is not automatic, it needs to be implemented inside the class logic.
+run. The solver instance keeps its attributes between consecutive runs, so a
+solver can skip costly steps it already did, such as loading model weights.
+Benchopt does not do this for the solver. Its code must check whether the
+attribute is already set, for instance in ``set_objective``.
 
 Once a run uses another component, the previous instance is released: it goes
 back to its state after creation, so its data can be freed. The state of an
