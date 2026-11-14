@@ -191,7 +191,10 @@ are ordered by dataset, then objective, then solver, so each dataset is loaded
 once and ``set_data`` is called once per objective. With ``--group-by`` (see
 :ref:`run_grouping`), the listed axes come first. For instance,
 ``--group-by solver`` runs each solver on all datasets in a row, sharing its
-state, but reloads each dataset for every solver.
+state, but reloads each dataset for every solver. The repetitions of a run
+reuse this state too: ``set_data`` and ``set_objective`` are called again only
+if a seed obtained with ``get_seed`` changes with the repetition.
+``set_objective`` is also called again for each cross-validation fold.
 
 Attributes stored on an instance during a run do not survive a release. The
 warmup described above is kept, so it runs once per solver and process.

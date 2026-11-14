@@ -31,9 +31,11 @@ FIX
 
 - Consecutive runs in a process share the state of their dataset, objective
   and solver, and release it once a run uses another component. Memory no
-  longer grows with the number of solvers, and ``Objective.set_data`` is
-  called once per dataset and objective instead of once per run. The front
-  node applies the same rule to the runs it sends to other processes. See
+  longer grows with the number of solvers. ``Objective.set_data`` is called
+  once per dataset and objective instead of once per run, and
+  ``Solver.set_objective`` once per solver, unless a seed or the
+  cross-validation fold depends on the repetition. The front node applies
+  the same rule to the runs it sends to other processes. See
   :ref:`data_memory`. By `Hippolyte Verninas`_ and `Thomas Moreau`_
   (:gh:`1030`)
 

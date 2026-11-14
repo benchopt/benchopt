@@ -141,8 +141,8 @@ def use_components(*components):
     """
     global _IN_USE
     for i, previous in enumerate(_IN_USE):
-        if i >= len(components) or any(
+        if previous is not None and (i >= len(components) or any(
             a is not b for a, b in zip(_IN_USE[:i + 1], components)
-        ):
+        )):
             previous._release_state()
     _IN_USE = list(components)

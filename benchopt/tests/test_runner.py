@@ -1,4 +1,5 @@
 import pytest
+import re
 import inspect
 
 from benchopt.cli.main import run
@@ -794,10 +795,9 @@ def test_dataset_run_context_in_evaluate_result(no_debug_log, monkeypatch):
 def test_solver_releases_run_data(no_debug_log):
     """Solvers must not keep a run's data alive once the run is over.
 
-    Each sequential run gets its own objective copy, hence its own data from
-    `set_data`. Solver instances are shared across runs, so any reference
-    they keep (`_objective`, attributes set in `set_objective`) would pin
-    one copy of the data per solver config.
+    Solver instances outlive their runs, so any reference they keep
+    (`_objective`, attributes set in `set_objective`) would pin the data of
+    their last run, one copy per solver config, until it is released.
     """
     objective = """from benchopt.utils.temp_benchmark import TempObjective
         import gc, weakref
@@ -846,8 +846,9 @@ def test_solver_releases_run_data(no_debug_log):
 def test_components_share_state_then_release(parallel, no_debug_log):
     """Consecutive runs share the components' state, released afterwards.
 
-    Data is loaded once per dataset and set once per (dataset, objective),
-    and at most one state per component kind stays alive in a process.
+    Data is loaded once per dataset, set once per (dataset, objective) and
+    the solver once per (dataset, objective, solver), as the repetitions use
+    no seed. At most one state per component kind stays alive in a process.
     """
     dataset = """from benchopt import BaseDataset
 
@@ -912,6 +913,43 @@ def test_components_share_state_then_release(parallel, no_debug_log):
 
     out.check_output("#GET_DATA#", repetition=2)
     out.check_output("#SET_DATA#", repetition=4)
-    out.check_output("#SET_OBJECTIVE#", repetition=16)
+    out.check_output("#SET_OBJECTIVE#", repetition=8)
     # The previous state may linger, but states must not pile up.
     out.check_output("#ALIVE#[2-9]", repetition=0)
+
+
+def test_repetition_reloads_seeded_data(no_debug_log):
+    """A repetition reloads the data when the dataset seed depends on it."""
+    dataset = """from benchopt import BaseDataset
+
+    class Dataset(BaseDataset):
+        name = "test-dataset"
+        def get_data(self):
+            seed = self.get_seed(use_repetition=True)
+            return dict(X=seed, y=None)
+    """
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+        class Objective(TempObjective):
+            name = "test-objective"
+            def set_data(self, X, y):
+                self.X = X
+            def get_objective(self):
+                return dict(X=self.X, y=None, lmbd=1)
+    """
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            sampling_strategy = 'run_once'
+            def set_objective(self, X, y, lmbd):
+                print(f"#SET_OBJECTIVE#{X}")
+    """
+    with temp_benchmark(
+        datasets=[dataset], objective=objective, solvers=[solver]
+    ) as bench, CaptureCmdOutput() as out:
+        run([str(bench.benchmark_dir), "-d", "test-dataset", "-r", "3",
+             "--no-plot", "--no-cache"], standalone_mode=False)
+
+    seeds = set(re.findall(r"#SET_OBJECTIVE#(\d+)", out.output))
+    assert len(seeds) == 3, out.output
