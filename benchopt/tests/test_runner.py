@@ -669,6 +669,27 @@ class TestSeed:
         n_match = 1 if n_jobs == 1 else 3
         out.check_output("#DATA-LOAD", repetition=n_match)
 
+    def test_init_without_super(self, no_debug_log):
+        # Components whose __init__ skips super().__init__() can be seeded.
+        init = 'def __init__(self):\n                    pass\n'
+        objective, solver, dataset = [
+            getter().replace('name = "', init + '                name = "')
+            for getter in [
+                self.get_objective, self.get_solver, self.get_dataset
+            ]
+        ]
+        with temp_benchmark(
+            objective=objective, solvers=solver, datasets=dataset
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                run(
+                    f"{bench.benchmark_dir} --no-plot -r 2".split(),
+                    standalone_mode=False,
+                )
+
+        for tag in ["obj", "sol", "data"]:
+            out.check_output(f"#SEED-{tag}=", repetition=2)
+
 
 def test_get_run_output_path():
     from pathlib import Path
