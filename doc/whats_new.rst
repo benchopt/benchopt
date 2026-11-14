@@ -62,7 +62,7 @@ API
   ``Solver.skip`` if the runs of a solver will have a GPU, using the SLURM
   config of its jobs with the ``submitit`` backend.
   :func:`~benchopt.parallel_backends.get_worker_config` gives this config for
-  other checks. By `Thomas Moreau`_ (:gh:`XXXX`)
+  other checks. By `Thomas Moreau`_ (:gh:`1040`)
 
 - Add a ``hidden_plots`` benchmark config option to hide some plot kinds,
   e.g. some of the default plots. By `Hippolyte Verninas`_ (:gh:`1019`)
