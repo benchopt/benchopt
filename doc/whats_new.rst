@@ -24,6 +24,10 @@ CLI
 FIX
 ~~~
 
+- Datasets, objectives and solvers whose ``__init__`` does not call
+  ``super().__init__()`` no longer fail with an ``AttributeError`` on
+  ``_used_seed``. By `Thomas Moreau`_ (:gh:`1029`)
+
 - The front node no longer calls ``Dataset.get_data`` before dispatching runs
   when ``-r`` is set, and the ``submitit`` backend no longer keeps every
   dataset in memory while submitting jobs. By `Hippolyte Verninas`_
