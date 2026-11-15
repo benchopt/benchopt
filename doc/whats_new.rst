@@ -64,7 +64,7 @@ API
   calls, including ``skip`` and a ``slurm_params`` property, and raises if
   the component is not chosen yet.
   The run context is only attached to the components during these calls.
-  By `Thomas Moreau`_ (:gh:`1041`)
+  By `Thomas Moreau`_ (:gh:`1042`)
 
 - :func:`~benchopt.helpers.requires_gpu.gpu_available` tells in
   ``Solver.skip`` if the runs of a solver will have a GPU, using the SLURM
