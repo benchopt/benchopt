@@ -24,8 +24,8 @@ def requires_gpu():
 def gpu_available(solver):
     """Whether the runs of ``solver`` will have a GPU.
 
-    Use it in ``Solver.skip``, which runs on the machine running
-    ``benchopt run``.
+    Use it in ``Solver.skip`` to check this consistently from
+    the machine running ``benchopt run``.
 
     Parameters
     ----------
