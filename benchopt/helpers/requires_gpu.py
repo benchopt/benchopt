@@ -25,11 +25,7 @@ def gpu_available(solver):
     """Whether the runs of ``solver`` will have a GPU.
 
     Use it in ``Solver.skip``, which runs on the machine running
-    ``benchopt run``. For a local run, check this machine. With ``submitit``,
-    check that the SLURM config of the solver's jobs requests a GPU, with
-    ``gres``, ``gpus_per_node``, ``gpus_per_task`` or ``num_gpus``. With
-    ``dask``, the front node does not know the workers, so assume they have
-    one.
+    ``benchopt run``.
 
     Parameters
     ----------
