@@ -43,6 +43,7 @@ def gpu_available(solver):
     """
     config = get_worker_config(solver)
     if config is None:
+        # run on the current node, use a direct check
         available = get_cuda_version() is not None
     elif config['backend'] == 'submitit':
         options = {
@@ -53,6 +54,8 @@ def gpu_available(solver):
         available = 'gpu' in str(options.get('gres', '')) or any(
             options.get(k) for k in _SLURM_GPU_KEYS
         )
-    else:
+    elif config['backend'] == 'dask':
         available = True
+    else:
+        raise ValueError(f"Unknown parallel backend {config['backend']!r}.")
     return available

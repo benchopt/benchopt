@@ -66,3 +66,12 @@ def test_gpu_available_dask(frontal, monkeypatch):
     )
     frontal({"backend": "dask"})
     assert gpu_available(Solver.get_instance())
+
+
+def test_gpu_available_unknown_backend(monkeypatch):
+    monkeypatch.setattr(
+        "benchopt.helpers.requires_gpu.get_worker_config",
+        lambda solver: {"backend": "ray"},
+    )
+    with pytest.raises(ValueError, match="Unknown parallel backend 'ray'"):
+        gpu_available(Solver.get_instance())
