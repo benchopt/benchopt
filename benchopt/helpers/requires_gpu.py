@@ -25,7 +25,9 @@ def gpu_available(solver):
     """Whether the runs of ``solver`` will have a GPU.
 
     Use it in ``Solver.skip`` to check this consistently from
-    the machine running ``benchopt run``.
+    the machine running ``benchopt run``. With ``submitit``, a GPU is
+    requested by ``gres`` or a ``gpus*`` option. With ``dask``, workers are
+    assumed to have one.
 
     Parameters
     ----------
