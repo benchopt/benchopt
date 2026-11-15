@@ -42,7 +42,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     Optionaly, the ``Solver`` can implement the following methods to change its
     behavior:
 
-    - ``skip(self, objective, dataset)``: decide if the solver is compatible
+    - ``skip()``: decide if the solver is compatible
       with the objective and the dataset of the run. It returns the reason to
       skip, displayed in the CLI output, or None to run.
 
@@ -113,12 +113,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             or 'iteration'
         )
 
-    def _attach_objective(self, objective):
-        self._objective = objective
-
-    def _skip_reason(self):
-        return super()._skip_reason(self._objective, self._objective._dataset)
-
     @classmethod
     def _inherit_stopping_criterion(cls, objective):
         """Inherit the stopping criterion from an objective if needed."""
@@ -136,7 +130,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             cls.stopping_criterion = objective.stopping_criterion
 
     def _set_objective(self, objective):
-        """Store the objective for hashing/pickling and check its compatibility
+        """Set the objective of the solver.
 
         Parameters
         ----------
@@ -144,8 +138,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             The objective function for the current optimization problem.
 
         """
-        self._attach_objective(objective)
-
         # If not set, inherit sampling_strategy and stopping_criterion from
         # objective so defaults can be specified at the benchmark level.
         self._inherit_stopping_criterion(objective)
@@ -226,20 +218,14 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         """
         ...
 
-    def skip(self, objective, dataset):
+    def skip(self):
         """Hook to decide if the ``Solver`` is compatible with the objective.
 
-        It is called before launching the runs. Checks on the parameters
+        It is called before launching the runs. The objective and the dataset
+        are given by ``self.get_run_component``. Checks on their parameters
         (e.g. ``objective.reg``, ``dataset.n_samples``) are free. Calling
         ``objective.get_objective()`` or ``dataset.get_data()`` loads the data
         on the machine running ``benchopt run``.
-
-        Parameters
-        ----------
-        objective : benchopt.BaseObjective
-            The objective of the run.
-        dataset : benchopt.BaseDataset
-            The dataset of the run.
 
         Returns
         -------
@@ -451,16 +437,17 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         repetition seed raises an error.
         """
         from .utils.run_context import RunContext
-        RunContext(
-            base_seed=str(base_seed),
-            dataset_name=str(dataset),
-        ).attach(objective=None, dataset=dataset, solver=None)
-        if type(dataset).prepare is not BaseDataset.prepare:
-            dataset.prepare()
-        else:
-            # Backward-compat: fall back to get_data() when prepare() is not
-            # overridden, preserving the old --download behaviour.
-            dataset.get_data()
+        ctx = RunContext().set_run_context(
+            objective=None, dataset=dataset, solver=None, repetition=None,
+            base_seed=base_seed,
+        )
+        with ctx:
+            if type(dataset).prepare is not BaseDataset.prepare:
+                dataset.prepare()
+            else:
+                # Backward-compat: fall back to get_data() when prepare() is
+                # not overridden, preserving the old --download behaviour.
+                dataset.get_data()
 
 
 def _cached_prepare(benchmark, dataset, force=False):
@@ -545,7 +532,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     Optionally, the `Objective` can implement the following methods to change
     its behavior:
 
-    - ``skip(dataset)``: decide if the objective is compatible with the
+    - ``skip()``: decide if the objective is compatible with the
       dataset of the run. It returns the reason to skip, displayed in the CLI
       output, or None to run.
 
@@ -791,9 +778,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         if dataset is not self._dataset:
             self._dataset, self._dataset_ready = dataset, False
 
-    def _skip_reason(self):
-        return super()._skip_reason(self._dataset)
-
     def _set_dataset(self, dataset):
         """Set the data of `dataset`, if not already set."""
         self._attach_dataset(dataset)
@@ -829,18 +813,14 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
         self._dataset_ready = True
 
-    def skip(self, dataset):
+    def skip(self):
         """Used to decide if the ``Objective`` is compatible with the data.
 
         It is called before launching the runs, so skipping here removes the
-        runs of all solvers. Checks on the parameters (e.g.
+        runs of all solvers. The dataset is given by
+        ``self.get_run_component("dataset")``. Checks on its parameters (e.g.
         ``dataset.n_samples``) are free. Calling ``dataset.get_data()`` loads
         the data on the machine running ``benchopt run``.
-
-        Parameters
-        ----------
-        dataset : benchopt.BaseDataset
-            The dataset of the run.
 
         Returns
         -------

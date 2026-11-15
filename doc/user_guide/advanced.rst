@@ -15,14 +15,13 @@ Skipping a configuration
 Some configurations of a benchmark cannot run. A dataset can have incompatible
 parameters, an objective might not apply to some datasets, and a solver might
 not support sparse data or scale to large datasets. Each component can skip
-them by implementing a ``skip`` method, which receives the components chosen
-before it:
+them by implementing a ``skip(self)`` method, which can use the components
+chosen before it with ``self.get_run_component(name)``:
 
-- :func:`~benchopt.BaseDataset.skip` takes no argument and skips all the runs
-  of the dataset.
-- :func:`~benchopt.BaseObjective.skip` receives the dataset and skips the runs
+- :func:`~benchopt.BaseDataset.skip` skips all the runs of the dataset.
+- :func:`~benchopt.BaseObjective.skip` can use the dataset, and skips the runs
   of all solvers.
-- :func:`~benchopt.BaseSolver.skip` receives the objective and the dataset.
+- :func:`~benchopt.BaseSolver.skip` can use the objective and the dataset.
 
 ``skip`` returns the reason to skip, displayed in the output, or ``None`` to
 run. Any other value or a failing ``skip`` is reported as an error, and its
@@ -31,9 +30,10 @@ runs are not created.
 The skips are checked once per configuration, before launching the runs.
 Checks on the parameters are free. Calling ``dataset.get_data()`` or
 ``objective.get_objective()`` loads the data of the first repetition on the
-machine running ``benchopt run``, once per dataset. ``get_seed`` can use the
-component itself and the ones that ``skip`` receives. Other components are only
-set when :ref:`group_by <run_grouping>` chooses them first.
+machine running ``benchopt run``, once per dataset. ``get_seed`` and
+``get_run_component`` can use the component itself and the ones chosen before
+it. Other components are only set when :ref:`group_by <run_grouping>` chooses
+them first, and asking for a component that is not set raises an error.
 
 For instance, with an objective parameter ``reg`` and a dataset giving ``X``:
 
@@ -47,9 +47,11 @@ For instance, with an objective parameter ``reg`` and a dataset giving ``X``:
 
     class Solver(BaseSolver):
         ...
-        def skip(self, objective, dataset):
+        def skip(self):
             from scipy import sparse
 
+            objective = self.get_run_component("objective")
+            dataset = self.get_run_component("dataset")
             if objective.reg == 0:
                 return "solver does not work with reg=0"
 
@@ -62,8 +64,8 @@ hardware should look at the machine that will run the solver. For a GPU,
 :func:`~benchopt.helpers.requires_gpu.gpu_available` checks the local
 machine, or with the :ref:`submitit backend <slurm_backend>`, that the
 solver's jobs request a GPU. For other checks,
-:func:`~benchopt.parallel_backends.get_worker_config` returns the config of
-the workers that run the solver.
+``self.get_run_component("worker_config")`` returns the config of the workers
+that run the solver.
 
 .. code-block::
 
@@ -71,7 +73,7 @@ the workers that run the solver.
 
     class Solver(BaseSolver):
         ...
-        def skip(self, objective, dataset):
+        def skip(self):
             if not gpu_available(self):
                 return "solver needs a GPU"
 

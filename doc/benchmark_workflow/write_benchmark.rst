@@ -88,6 +88,8 @@ All three component classes share the following features:
   (models, plots, logs, …) scoped to the current
   (dataset x objective x solver x repetition) combination.
   See :ref:`controlling_randomness`.
+- ``get_run_component(name)``: get the dataset, objective or solver of the
+  current run, e.g. in ``skip``. See :ref:`skipping_config`.
 
 
 .. _datasets:

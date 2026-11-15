@@ -1,14 +1,14 @@
 import re
 import hashlib
 from pathlib import Path
-from dataclasses import dataclass, replace as dc_replace
+from dataclasses import dataclass, field, replace as dc_replace
 from .run_context_mixin import RunContextMixin
 
 
-class SeedContextError(ValueError):
-    """Raised by :meth:`RunContext.get_seed` when a component requested for the
-    seed is absent from the current context (e.g. ``use_solver=True`` while no
-    solver is set). Carries ``component`` so callers can tailor the message.
+class RunContextError(ValueError):
+    """Raised when a component requested from the run context is absent from
+    it (e.g. the solver while no solver is chosen yet). Carries ``component``
+    so callers can tailor the message.
     """
 
     def __init__(self, component, message):
@@ -30,22 +30,25 @@ def _sanitize_path_component(name):
 class RunContext:
     """Context for one benchmark run (dataset × objective × solver × rep).
 
-    Holds everything needed to compute reproducible seeds, locate the
-    per-run artifact directory, and carry runtime flags.  Set on each
-    component (dataset, objective, solver) by the runner before any user
-    method is called.  Excluded from the joblib cache key via
-    ``__getstate__``; the cache is keyed on ``meta`` instead.
+    Holds the components of the run and everything needed to compute
+    reproducible seeds, locate the per-run artifact directory, and carry
+    runtime flags. It is attached to its components only while benchopt calls
+    their methods, with ``with run_context:``. Excluded from the joblib cache
+    key; the cache is keyed on ``meta`` instead.
 
     Config fields (set once in ``_run_benchmark``):
-        run_output_base, pdb
+        run_output_base, pdb, parallel_config
 
     Per-run fields (filled via ``dataclasses.replace`` in ``set_run_context``
     for each dataset × objective × solver × rep):
-        base_seed, objective_name, dataset_name, solver_name, repetition
+        base_seed, objective_name, dataset_name, solver_name, repetition,
+        dataset, objective, solver, worker_config
     """
     # Config fields — set once per benchmark invocation
     run_output_base: Path | None = None
     pdb: bool = False
+    # Parallel config of the run, read on the front node.
+    parallel_config: dict | None = field(default=None, repr=False)
     # Per-run fields — cloned/updated for each (dataset, obj, solver, rep).
     # A field left as None means the corresponding component is not available
     # in this context (e.g. objective/solver/repetition during prepare) and
@@ -55,6 +58,14 @@ class RunContext:
     dataset_name: str | None = None
     solver_name: str | None = None
     repetition: int | None = None
+    dataset: RunContextMixin | None = field(default=None, repr=False)
+    objective: RunContextMixin | None = field(default=None, repr=False)
+    solver: RunContextMixin | None = field(default=None, repr=False)
+    # Worker config of the run, stored when the run is created to dispatch
+    # it, as `slurm_params` may need the context.
+    worker_config: dict | None = None
+    # Contexts of the components before entering this one, to restore them.
+    _previous: list = field(default_factory=list, repr=False, compare=False)
 
     def get_seed(self, class_name, use_objective=False, use_dataset=False,
                  use_solver=False, use_repetition=False):
@@ -70,7 +81,7 @@ class RunContext:
         }
         for component, (use, value) in use_flags.items():
             if use and value is None:
-                raise SeedContextError(
+                raise RunContextError(
                     component,
                     f"get_seed(use_{component}=True) was called but no "
                     f"{component} is defined in the current run context. This "
@@ -101,28 +112,93 @@ class RunContext:
 
     def set_run_context(self, objective, dataset, solver, repetition,
                         base_seed):
-        """Clone base_ctx with per-run fields and assign to each component."""
+        """Clone base_ctx with the per-run fields.
+
+        Enter the returned context (``with ctx:``) to attach it to the
+        components while calling their methods.
+        """
         # Keep a missing component as None (not the string "None") so the
-        # get_seed "component not in context" guard fires for it -- e.g. the
-        # solver during fold preparation (`group_by` with 'repetition').
+        # "component not in context" guards fire for it -- e.g. the solver
+        # during fold preparation (`group_by` with 'repetition').
         def _name(component):
             return None if component is None else str(component)
-        ctx = dc_replace(
+
+        def _component(component):
+            is_component = isinstance(component, RunContextMixin)
+            return component if is_component else None
+
+        return dc_replace(
             self,
             base_seed=str(base_seed),
             objective_name=_name(objective),
             dataset_name=_name(dataset),
             solver_name=_name(solver),
             repetition=repetition,
+            objective=_component(objective),
+            dataset=_component(dataset),
+            solver=_component(solver),
+            worker_config=None,
+            _previous=[],
         )
-        ctx.attach(objective, dataset, solver)
-        return ctx
 
-    def attach(self, objective, dataset, solver):
-        """Assign ctx to each run component."""
-        for klass in [objective, dataset, solver]:
-            if isinstance(klass, RunContextMixin):
-                klass._run_context = self
+    def get_component(self, name):
+        """Return the component, repetition or worker config ``name``.
+
+        Raise if a component or the repetition is absent from the context.
+        """
+        if name == 'worker_config':
+            value = self._get_worker_config()
+        else:
+            value = getattr(self, name)
+            if value is None:
+                raise RunContextError(
+                    name,
+                    f"No {name} is defined in the current run context. The "
+                    f"{name} is not chosen yet, e.g. in the `skip` or "
+                    "`get_data` of a component before it, or during "
+                    "`benchopt prepare`."
+                )
+        return value
+
+    def _get_worker_config(self):
+        """Return the parallel config of the workers that run this run.
+
+        With ``submitit``, merge the SLURM config of the jobs with the
+        ``slurm_params`` of the solver, if it is chosen. Return None for a
+        local run.
+        """
+        config = self.parallel_config or {}
+        if config.get('backend', 'loky') == 'loky':
+            config = None
+        elif config['backend'] == 'submitit':
+            from ..parallel_backends.slurm_executor import (
+                get_solver_slurm_config
+            )
+            # Keys of the parallel config that do not configure the backend.
+            run_keys = ('backend', 'group_by', 'batch_n_jobs')
+            slurm_config = {
+                k: v for k, v in config.items() if k not in run_keys
+            }
+            if self.solver is not None:
+                slurm_config = get_solver_slurm_config(
+                    self.solver, slurm_config
+                )
+            config = dict(backend='submitit', **slurm_config)
+        return config
+
+    def __enter__(self):
+        components = [self.dataset, self.objective, self.solver]
+        self._previous.append([
+            (c, c._run_context) for c in components if c is not None
+        ])
+        for c in components:
+            if c is not None:
+                c._run_context = self
+        return self
+
+    def __exit__(self, *exc):
+        for c, previous in self._previous.pop():
+            c._run_context = previous
 
 
 # Components used by the last run in this process, from the dataset to the

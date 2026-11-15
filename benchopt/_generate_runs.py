@@ -3,7 +3,7 @@ import itertools
 
 from .utils.pdb_helpers import exception_handler
 from .utils.parametrized_name_mixin import is_matched
-from .utils.run_context import RunContext, SeedContextError
+from .utils.run_context import RunContext, RunContextError
 
 # Canonical loop nesting order when no grouping is requested (rep innermost).
 CANONICAL_AXES = ('dataset', 'objective', 'solver')
@@ -132,24 +132,25 @@ def _prepare_objective(benchmark, run_context, dataset, objective, solver,
     ``solver`` is None when ``repetition`` is a group_by level, as the fold is
     then shared across solvers.
     """
-    run_context.set_run_context(
+    ctx = run_context.set_run_context(
         objective=objective, dataset=dataset, solver=solver, repetition=0,
         base_seed=benchmark.seed,
     )
 
     objective._attach_dataset(dataset)
     try:
-        if n_repetitions is None and objective._is_using_cv():
-            # The number of repetitions is the number of CV splits.
-            objective._load_data()
-    except SeedContextError as e:
+        with ctx:
+            if n_repetitions is None and objective._is_using_cv():
+                # The number of repetitions is the number of CV splits.
+                objective._load_data()
+    except RunContextError as e:
         if e.component != 'solver':
             raise
         raise ValueError(
             "`group_by` with 'repetition' shares each fold across "
             "solvers, so the data must not depend on the solver -- but "
             "`get_data`/"
-            "`set_data` called `get_seed(use_solver=True)`. Remove "
+            "`set_data` used the solver of the run. Remove "
             "'repetition' from `group_by` or make the data "
             "solver-independent."
         ) from e
@@ -207,16 +208,14 @@ def generate_run_kwargs(
             a: chosen[a] if a in order[:depth + 1] else None
             for a in CANONICAL_AXES
         }
-        base_ctx.set_run_context(
+        ctx = base_ctx.set_run_context(
             **components, repetition=0, base_seed=benchmark.seed
         )
         if 'objective' in levels:
             components['objective']._attach_dataset(components['dataset'])
-        if 'solver' in levels:
-            components['solver']._attach_objective(components['objective'])
         for level in levels:
             status, reason = 'error', None
-            with exception_handler(terminal, pdb=base_ctx.pdb):
+            with ctx, exception_handler(terminal, pdb=base_ctx.pdb):
                 reason = components[level]._skip_reason()
                 status = None if reason is None else 'skip'
             if status is not None:
@@ -232,12 +231,17 @@ def generate_run_kwargs(
         # depend on which solver ran first in the process.
         solver._inherit_stopping_criterion(objective)
         meta = _run_meta(benchmark, dataset, objective, solver, rep)
-        # Runs share the objective instance, to set its data once: each run
-        # re-attaches its context when it starts.
+        # Runs share the component instances: each run enters its context
+        # when it starts.
         run_ctx = base_ctx.set_run_context(
             objective=objective, dataset=dataset, solver=solver,
             repetition=rep, base_seed=benchmark.seed,
         )
+        if not collect:  # Collected runs are not dispatched.
+            with run_ctx:
+                run_ctx.worker_config = solver.get_run_component(
+                    'worker_config'
+                )
         return dict(
             benchmark=benchmark, dataset=dataset, objective=objective,
             solver=solver, repetition=rep, meta=meta, timeout=timeout,

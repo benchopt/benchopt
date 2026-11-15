@@ -94,13 +94,18 @@ solver = Solver.get_instance(lr=1e-3)        # apply solver parameters
 
 obj_dict = objective.get_objective()         # what the runner passes to the solver
 
-# Optional: solvers can opt out of an objective/dataset combination.
-reason = solver.skip(objective, dataset)    # a reason to skip, or None
-print("runs" if reason is None else f"skipped: {reason}")
+# The run context gives `get_seed` and `get_run_component` their run.
+from benchopt.utils.run_context import RunContext
+ctx = RunContext().set_run_context(objective, dataset, solver,
+                                   repetition=0, base_seed=0)
+with ctx:
+    # Optional: solvers can opt out of an objective/dataset combination.
+    reason = solver.skip()                   # a reason to skip, or None
+    print("runs" if reason is None else f"skipped: {reason}")
 
-solver.set_objective(**obj_dict)             # hand the objective to the solver
-solver.run(10)                               # run to a stopping value (see below)
-result = solver.get_result()                 # dict of quantities to evaluate
+    solver.set_objective(**obj_dict)         # hand the objective to the solver
+    solver.run(10)                           # run to a stopping value
+    result = solver.get_result()             # dict of quantities to evaluate
 ```
 
 The meaning of `run`'s argument depends on `sampling_strategy`

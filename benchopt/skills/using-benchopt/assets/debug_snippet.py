@@ -4,6 +4,7 @@ Benchopt debugging snippet — run from the benchmark directory:
 or paste into a notebook.
 """
 from benchopt.benchmark import Benchmark
+from benchopt.utils.run_context import RunContext
 
 bench = Benchmark(".")
 
@@ -27,16 +28,21 @@ solvers = bench.get_solvers()
 Solver = next(s for s in solvers if s.name == "my-solver")
 solver = Solver.get_instance()
 
-reason = solver.skip(objective, dataset)
-if reason is not None:
-    print(f"Solver skipped: {reason}")
-else:
-    solver.set_objective(**obj_dict)
-    solver.run(10)              # adjust arg to match sampling_strategy
-    result = solver.get_result()
+# The run context gives `get_seed` and `get_run_component` their run.
+ctx = RunContext().set_run_context(
+    objective, dataset, solver, repetition=0, base_seed=0
+)
+with ctx:
+    reason = solver.skip()
+    if reason is not None:
+        print(f"Solver skipped: {reason}")
+    else:
+        solver.set_objective(**obj_dict)
+        solver.run(10)              # adjust arg to match sampling_strategy
+        result = solver.get_result()
 
-    metrics = objective.evaluate_result(**result)
-    print("metrics:", metrics)
+        metrics = objective.evaluate_result(**result)
+        print("metrics:", metrics)
 
 # --- Validate evaluate_result on an arbitrary checkpoint ---
 # import numpy as np

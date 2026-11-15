@@ -94,7 +94,7 @@ repetition. Add `use_dataset=True` / `use_solver=True` to further differentiate 
 
 ### Optional methods
 
-- `skip(self, objective, dataset) -> str | None`: declare incompatibility with
+- `skip(self) -> str | None`: declare incompatibility with
   a given problem (e.g. needs a feature the objective doesn't expose). Return
   the reason to skip, or `None`/no return to run; any other value raises. It
   is checked before launching the run. Prefer parameters (`objective.reg`):

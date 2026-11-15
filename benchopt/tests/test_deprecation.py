@@ -109,18 +109,18 @@ def test_legacy_skip_signature(n_jobs):
 def test_legacy_skip_warns(component, legacy):
     # Both deprecated forms warn: receiving the data, or returning a tuple.
     on_data = legacy == 'signature'
-    obj_signature = "X, y" if on_data else "dataset"
-    solver_signature = "**obj" if on_data else "objective, dataset"
+    obj_signature = "self, X, y" if on_data else "self"
+    solver_signature = "self, **obj" if on_data else "self"
     objective = f"""from benchopt.utils.temp_benchmark import TempObjective
 
         class Objective(TempObjective):
-            def skip(self, {obj_signature}): return True, "LEGACY#SKIP"
+            def skip({obj_signature}): return True, "LEGACY#SKIP"
     """
     solver = f"""from benchopt.utils.temp_benchmark import TempSolver
 
         class Solver(TempSolver):
             name = "test-solver"
-            def skip(self, {solver_signature}): return True, "LEGACY#SKIP"
+            def skip({solver_signature}): return True, "LEGACY#SKIP"
     """
     components = (
         dict(objective=objective) if component == 'objective'

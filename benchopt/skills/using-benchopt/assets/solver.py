@@ -35,9 +35,10 @@ class Solver(BaseSolver):
         # Return a dict whose keys match Objective.evaluate_result()'s args.
         return {}
 
-    def skip(self, objective, dataset):
+    def skip(self):
         # Return a reason string to opt out of an incompatible objective, or
         # None to run. Checked before launching: prefer objective parameters.
+        # objective = self.get_run_component("objective")
         return None
 
     # Optional: absorb JIT / compilation cost before timed runs.

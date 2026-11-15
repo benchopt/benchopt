@@ -2,7 +2,7 @@ import pytest
 
 from benchopt import BaseSolver
 from benchopt.helpers.requires_gpu import gpu_available
-from benchopt.parallel_backends import check_parallel_config
+from benchopt.utils.run_context import RunContext
 
 
 class Solver(BaseSolver):
@@ -19,21 +19,23 @@ class Solver(BaseSolver):
         return {}
 
 
-@pytest.fixture
-def frontal():
-    """Set the front node config of a run, and reset it after the test."""
-    yield lambda config: check_parallel_config(config, None)
-    check_parallel_config(None, None)
+def check_gpu(component, parallel_config):
+    """Call `gpu_available` in a run of ``component`` with this config."""
+    with RunContext(parallel_config=parallel_config).set_run_context(
+        objective=None, dataset=None, solver=component, repetition=0,
+        base_seed=0,
+    ):
+        return gpu_available(component)
 
 
 @pytest.mark.parametrize("has_cuda", [True, False])
-def test_gpu_available_local(frontal, monkeypatch, has_cuda):
+def test_gpu_available_local(monkeypatch, has_cuda):
     monkeypatch.setattr(
         "benchopt.helpers.requires_gpu.get_cuda_version",
         lambda: "cuda_12.4" if has_cuda else None,
     )
-    frontal({"backend": "loky", "n_jobs": 2})
-    assert gpu_available(Solver.get_instance()) is has_cuda
+    config = {"backend": "loky", "n_jobs": 2}
+    assert check_gpu(Solver.get_instance(), config) is has_cuda
 
 
 @pytest.mark.parametrize("config, slurm_params, parameters, expected", [
@@ -48,7 +50,7 @@ def test_gpu_available_local(frontal, monkeypatch, has_cuda):
     ({"slurm_gres": "gpu:1"}, {"slurm_gres": ""}, {}, False),
 ])
 def test_gpu_available_submitit(
-    frontal, monkeypatch, config, slurm_params, parameters, expected
+    monkeypatch, config, slurm_params, parameters, expected
 ):
     pytest.importorskip("submitit")
     # The front node has no GPU, only the requested workers.
@@ -56,22 +58,23 @@ def test_gpu_available_submitit(
         "benchopt.helpers.requires_gpu.get_cuda_version", lambda: None
     )
     monkeypatch.setattr(Solver, "slurm_params", slurm_params, raising=False)
-    frontal({"backend": "submitit", "group_by": ["dataset"], **config})
-    assert gpu_available(Solver.get_instance(**parameters)) is expected
+    config = {"backend": "submitit", "group_by": ["dataset"], **config}
+    assert check_gpu(Solver.get_instance(**parameters), config) is expected
 
 
-def test_gpu_available_dask(frontal, monkeypatch):
+def test_gpu_available_dask(monkeypatch):
     monkeypatch.setattr(
         "benchopt.helpers.requires_gpu.get_cuda_version", lambda: None
     )
-    frontal({"backend": "dask"})
-    assert gpu_available(Solver.get_instance())
+    assert check_gpu(Solver.get_instance(), {"backend": "dask"})
 
 
-def test_gpu_available_unknown_backend(monkeypatch):
-    monkeypatch.setattr(
-        "benchopt.helpers.requires_gpu.get_worker_config",
-        lambda solver: {"backend": "ray"},
-    )
+def test_gpu_available_unknown_backend():
     with pytest.raises(ValueError, match="Unknown parallel backend 'ray'"):
+        check_gpu(Solver.get_instance(), {"backend": "ray"})
+
+
+def test_gpu_available_outside_run():
+    # The worker config depends on the run, so it needs its context.
+    with pytest.raises(RuntimeError, match="get_run_component"):
         gpu_available(Solver.get_instance())

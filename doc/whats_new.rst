@@ -58,11 +58,18 @@ API
   ``(skip, reason)`` tuple are deprecated. See :ref:`skipping_config`.
   By `Thomas Moreau`_ (:gh:`1031`)
 
+- ``skip`` takes no argument for all components. The new
+  ``get_run_component`` method gives the dataset, objective, solver,
+  repetition or worker config of the current run in any method benchopt
+  calls, including ``skip`` and a ``slurm_params`` property, and raises if
+  the component is not chosen yet.
+  The run context is only attached to the components during these calls.
+  By `Thomas Moreau`_ (:gh:`1041`)
+
 - :func:`~benchopt.helpers.requires_gpu.gpu_available` tells in
   ``Solver.skip`` if the runs of a solver will have a GPU, using the SLURM
   config of its jobs with the ``submitit`` backend.
-  :func:`~benchopt.parallel_backends.get_worker_config` gives this config for
-  other checks. By `Thomas Moreau`_ (:gh:`1040`)
+  By `Thomas Moreau`_ (:gh:`1040`)
 
 - Add a ``hidden_plots`` benchmark config option to hide some plot kinds,
   e.g. some of the default plots. By `Hippolyte Verninas`_ (:gh:`1019`)

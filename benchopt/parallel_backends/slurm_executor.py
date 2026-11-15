@@ -89,12 +89,19 @@ def _split_by_slurm_config(batch, slurm_config):
     A batch shares its `group_by` key, but can still span several solvers
     with different `slurm_params` (e.g. ``group_by=['dataset']``), so it is
     never itself the SLURM job unit -- each same-config run of items is.
+    The config of each run is computed when the run is created, see
+    `RunContext.worker_config`.
     """
     groups = {}
     for kwargs in batch:
-        solver = kwargs.get("solver")
-        if solver is not None:
-            job_slurm_config = get_solver_slurm_config(solver, slurm_config)
+        # `benchopt prepare` dispatches datasets, with no run context.
+        worker_config = getattr(
+            kwargs.get('run_context'), 'worker_config', None
+        )
+        if worker_config is not None:
+            job_slurm_config = {
+                k: v for k, v in worker_config.items() if k != 'backend'
+            }
         else:
             job_slurm_config = slurm_config
 

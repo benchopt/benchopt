@@ -105,10 +105,11 @@ def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
         for the solver anyway. Else, use the cache if available.
     terminal : TerminalOutput or None
         Object to format string to display the progress of the solver.
-    run_context : RunContext | None
-        Per-run context (seeds, artifact path). Ignored by the cache;
-        set on objective and solver so user methods can call
-        ``get_seed()`` and ``get_run_output_path()``.
+    run_context : RunContext
+        Per-run context (components, seeds, artifact path). Ignored by the
+        cache; attached to the components during the run so user methods can
+        call ``get_seed()``, ``get_run_component()`` and
+        ``get_run_output_path()``.
 
     Returns
     -------
@@ -123,12 +124,9 @@ def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
     # process (e.g. within a `group_by` batch), and release the others.
     use_components(dataset, objective, solver)
 
-    # Re-attach the run context after deserialization (dataset, objective and
-    # solver are pickled independently, so it is not carried across it).
-    run_context.attach(objective, dataset, solver)
     objective._repetition = repetition
 
-    pdb = run_context.pdb if run_context is not None else False
+    pdb = run_context.pdb
 
     curve = []
 
@@ -138,7 +136,8 @@ def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
         meta['solver_name']
     )
 
-    with exception_handler(terminal, pdb=pdb) as ctx:
+    # The run context is attached to the components only during the run.
+    with run_context, exception_handler(terminal, pdb=pdb) as ctx:
 
         # `_set_dataset` is a no-op if already called for this dataset
         # (e.g. for sequential runs).
@@ -303,6 +302,8 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     base_run_context = RunContext(
         pdb=pdb,
         run_output_base=output_path.parent / output_path.stem,
+        # Copied, as `parallel_run` pops the run keys from `parallel_config`.
+        parallel_config=dict(parallel_config or {}),
     )
 
     run_one_to_cvg_cached = benchmark.cache(

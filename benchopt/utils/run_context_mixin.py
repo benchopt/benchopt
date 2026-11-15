@@ -79,39 +79,31 @@ class RunContextMixin:
             **self._seed_params,
         )
 
-    def _skip_reason(self, *args):
-        """Return the reason to skip from ``self.skip(*args)``, or None to run.
-
-        Its expected signature is the one of `skip` in the benchopt base class.
-        The base classes override it to pass their attached components.
-        """
-        from benchopt import BaseObjective
-
+    def _skip_reason(self):
+        """Return the reason to skip from ``self.skip()``, or None to run."""
         name = f"{type(self)!r}.skip"
-        base = next(
-            klass for klass in type(self).__mro__
-            if '_base_class_name' in vars(klass)
+        # The component whose data a legacy `skip` receives.
+        upstream_name = {'Solver': 'objective', 'Objective': 'dataset'}.get(
+            self._base_class_name
         )
-        signature = inspect.signature(base.skip)
-        legacy = args and tuple(inspect.signature(self.skip).parameters) != (
-            tuple(signature.parameters)[1:]
+        legacy = (
+            upstream_name is not None
+            and len(inspect.signature(self.skip).parameters) > 0
         )
         if not legacy:
-            output = self.skip(*args)
+            output = self.skip()
         else:
             # XXX: remove in benchopt 1.12, with the skip receiving the data.
             warnings.warn(
                 f"`{name}` receives the data as keyword arguments, which is "
                 "deprecated and will be removed in benchopt 1.12. Define "
-                f"`skip{signature}` instead, so the skip can be checked "
-                "without loading the data.",
+                "`skip(self)` instead, and use `self.get_run_component` to "
+                "access the other components without loading the data.",
                 FutureWarning,
             )
-            # It receives the output of the first argument: the objective of a
-            # solver, or the dataset of an objective.
-            upstream = args[0]
+            upstream = self.get_run_component(upstream_name)
             data = (
-                upstream.get_objective() if isinstance(upstream, BaseObjective)
+                upstream.get_objective() if upstream_name == 'objective'
                 else upstream.get_data()
             )
             output = self.skip(**data)
@@ -135,6 +127,52 @@ class RunContextMixin:
             f"`{name}` should return None to run, or a non-empty string "
             f"giving the reason to skip. Got {output!r}."
         )
+
+    def get_run_component(self, name):
+        """Return a component or an information of the current run.
+
+        It is available in the methods that benchopt calls on the component,
+        e.g. ``skip``, ``set_objective`` or a ``slurm_params`` property.
+
+        Parameters
+        ----------
+        name : 'dataset' | 'objective' | 'solver' | 'repetition' | \
+                'worker_config'
+            What to return:
+
+            - ``'dataset'``, ``'objective'``, ``'solver'``: the component of
+              the current run.
+            - ``'repetition'``: the index of the repetition. ``skip`` is
+              checked in the context of the first repetition.
+            - ``'worker_config'``: the parallel config of the workers that
+              run it, or None when the runs are on the local machine. With
+              ``submitit``, it is the SLURM config of the jobs, merged with
+              the ``slurm_params`` of the solver if it is chosen. It cannot be
+              used in ``slurm_params``, which it depends on.
+
+        Returns
+        -------
+        value : benchopt.BaseDataset | benchopt.BaseObjective | \
+                benchopt.BaseSolver | int | dict | None
+            The requested component or information.
+
+        Raises
+        ------
+        ValueError
+            If the component is not chosen yet, e.g. the solver in
+            ``Dataset.skip``.
+        """
+        names = (
+            'dataset', 'objective', 'solver', 'repetition', 'worker_config'
+        )
+        if name not in names:
+            raise ValueError(f"name should be one of {names}. Got {name!r}.")
+        if self._run_context is None:
+            raise RuntimeError(
+                "get_run_component() can only be called in the methods that "
+                f"benchopt calls on {self}."
+            )
+        return self._run_context.get_component(name)
 
     def get_run_output_path(self):
         """Return a directory for saving artifacts from the current run.
