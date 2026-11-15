@@ -46,6 +46,7 @@ def gpu_available(solver):
         # run on the current node, use a direct check
         available = get_cuda_version() is not None
     elif config['backend'] == 'submitit':
+        # scheduled jobs, check that their SLURM config requests a GPU
         options = {
             **config.get('slurm_additional_parameters', {}),
             **{k.removeprefix('slurm_'): v for k, v in config.items()},
@@ -55,7 +56,9 @@ def gpu_available(solver):
             options.get(k) for k in _SLURM_GPU_KEYS
         )
     elif config['backend'] == 'dask':
+        # workers unknown from the front node, assume they have a GPU
         available = True
     else:
+        # no rule for this backend, fail instead of guessing
         raise ValueError(f"Unknown parallel backend {config['backend']!r}.")
     return available
