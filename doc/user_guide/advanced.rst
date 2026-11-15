@@ -57,6 +57,24 @@ For instance, with an objective parameter ``reg`` and a dataset giving ``X``:
             if sparse.issparse(dataset.get_data()["X"]):
                 return "solver does not support sparse data X."
 
+As ``skip`` runs on the machine running ``benchopt run``, a check on the
+hardware should look at the machine that will run the solver. For a GPU,
+:func:`~benchopt.helpers.requires_gpu.gpu_available` checks the local
+machine, or with the :ref:`submitit backend <slurm_backend>`, that the
+solver's jobs request a GPU. For other checks,
+:func:`~benchopt.parallel_backends.get_worker_config` returns the config of
+the workers that run the solver.
+
+.. code-block::
+
+    from benchopt.helpers.requires_gpu import gpu_available
+
+    class Solver(BaseSolver):
+        ...
+        def skip(self, objective, dataset):
+            if not gpu_available(self):
+                return "solver needs a GPU"
+
 .. note::
 
     In older versions, ``skip`` received the data as keyword arguments,

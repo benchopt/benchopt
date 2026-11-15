@@ -100,7 +100,9 @@ repetition. Add `use_dataset=True` / `use_solver=True` to further differentiate 
   is checked before launching the run. Prefer parameters (`objective.reg`):
   `objective.get_objective()` works but loads the data on the machine running
   `benchopt run`. The old `skip(**objective_dict)` and the `(skip, reason)`
-  tuple are deprecated.
+  tuple are deprecated. For a GPU check, use
+  `benchopt.helpers.requires_gpu.gpu_available(self)`, not the local CUDA: the
+  front node may lack the GPU of the SLURM jobs.
 - `warm_up()`: called once before timed runs; call `self.run_once()` here to
   absorb JIT/compilation costs out of the timings.
 - `pre_run_hook(stop_val)`: untimed per-run setup (e.g. JAX precompilation for

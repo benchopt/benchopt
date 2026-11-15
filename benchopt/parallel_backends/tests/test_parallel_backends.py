@@ -232,6 +232,44 @@ def test_submitit_backend(monkeypatch):
     out.check_output("Distributed run with backend: submitit", repetition=1)
 
 
+def test_submitit_gpu_skip(monkeypatch, no_debug_log):
+    pytest.importorskip("submitit")
+    monkeypatch.setattr(
+        "submitit.helpers.as_completed.__defaults__", (None, 0.1)
+    )
+
+    # `skip` runs on the front node, without GPU: it checks the job config.
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+    from benchopt.helpers.requires_gpu import gpu_available
+
+    class Solver(TempSolver):
+        name = "{name}"
+        slurm_params = {slurm_params}
+        def skip(self, objective, dataset):
+            if not gpu_available(self):
+                return "needs a GPU"
+    """
+    solvers = [
+        solver.format(name="gpu-solver", slurm_params={"slurm_gres": "gpu:1"}),
+        solver.format(name="cpu-solver", slurm_params={}),
+    ]
+    with temp_benchmark(
+            solvers=solvers,
+            config={"parallel_config.yml": "backend: submitit"}
+    ) as benchmark:
+        parallel_config_file = benchmark.benchmark_dir / "parallel_config.yml"
+        with CaptureCmdOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *"-d test-dataset -n 0 -r 1 --no-plot "
+                f"--parallel-config {parallel_config_file}".split()
+            ], standalone_mode=False)
+
+    out.check_output(r"gpu-solver: done", repetition=1)
+    out.check_output(r"cpu-solver: skip", repetition=1)
+    out.check_output("Reason: needs a GPU", repetition=1)
+
+
 @pytest.mark.parametrize("config, match", [
     ({"backend": "submitit", "group_by": "invalid"}, "Unknown"),
     # 'repetition' present but not nested inside dataset/objective (ordering).
