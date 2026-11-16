@@ -89,21 +89,34 @@ def runs_table(runs, selected=None, rows=None):
     return table
 
 
-def select_run(runs, console):
+def select_run(find_runs, console):
     """Pick a run with the arrow keys, or delete the old ones. None if the
-    user quits."""
+    user quits.
+
+    `find_runs` lists the runs: it is called every second, so that the list
+    shows the new runs and their current states.
+    """
     from rich.console import Group
     from rich.live import Live
     from rich.markup import escape
 
     keys = "[dim]↑/↓ select · enter monitor · d delete · q quit[/]"
-    # Start on the most recent run, at the bottom.
-    i, top, hint = len(runs) - 1, 0, keys
+    runs, i, top, hint = [], 0, 0, keys
     with _read_key() as read, Live(
             console=console, screen=True, auto_refresh=False) as live:
-        while runs:
-            # Re-read every second, so that the states stay current.
-            runs = [_load(run['path']) or run for run in runs]
+        while True:
+            selected = runs[i]['path'] if runs else None
+            runs = find_runs()
+            if not runs:
+                return None
+            # Keep the selection on the same run, or on the next one if it
+            # is gone. Start on the most recent run, at the bottom.
+            paths = [run['path'] for run in runs]
+            i = (
+                len(runs) - 1 if selected is None
+                else paths.index(selected) if selected in paths
+                else min(i, len(runs) - 1)
+            )
             # Scroll to keep the selected run on screen, below the header.
             # ponytail: one line per run, a name folded on a narrow terminal
             # can push the selection off screen.
@@ -116,10 +129,9 @@ def select_run(runs, console):
                 continue
             if hint.startswith("[red]Delete"):
                 if key == 'y':
-                    path = Path(runs.pop(i)['path'])
+                    path = Path(runs[i]['path'])
                     for suffix in [".json", ".jsonl", ".kill"]:
                         path.with_suffix(suffix).unlink(missing_ok=True)
-                    i = max(0, min(i, len(runs) - 1))
                 hint = keys
             elif key in ('\r', '\n'):
                 return runs[i]
@@ -317,9 +329,8 @@ def monitor(name=None):
     if not sys.stdin.isatty() or not console.is_terminal:
         console.print(runs_table(runs))
         return
-    # Escape goes back to the list, read again to show the new runs.
-    while runs:
-        run = select_run(runs, console)
+    # Escape goes back to the list.
+    while True:
+        run = select_run(find_runs, console)
         if run is None or not follow_run(run, console):
             return
-        runs = find_runs()

@@ -400,13 +400,18 @@ def test_monitor_select_run(tmp_path, monkeypatch):
     from contextlib import contextmanager
     from benchopt.utils import monitor
 
-    runs = []
-    for i in range(30):
+    monkeypatch.setenv("BENCHOPT_RUNS_DIR", str(tmp_path))
+    runs = monitor.load_runs
+
+    def add_run(i):
         run = dict(path=str(tmp_path / f"run{i}.json"), run_name=f"run{i}",
-                   benchmark="b", started=0, updated=0, finished='done',
+                   benchmark="b", started=i, updated=0, finished='done',
                    n_finished=1, total=1)
         Path(run['path']).write_text(json.dumps(run))
-        runs.append(run)
+        return run
+
+    for i in range(30):
+        add_run(i)
     console = Console(file=io.StringIO(), width=120, height=10,
                       force_terminal=True)
 
@@ -414,7 +419,10 @@ def test_monitor_select_run(tmp_path, monkeypatch):
         @contextmanager
         def read_key():
             it = iter(keys)
-            yield lambda timeout: next(it)
+            # A callable is run instead of a key press.
+            yield lambda timeout: (
+                key() and None if callable(key := next(it)) else key
+            )
         monkeypatch.setattr(monitor, "_read_key", read_key)
 
     # The selection starts on the most recent run, at the bottom.
@@ -437,11 +445,18 @@ def test_monitor_select_run(tmp_path, monkeypatch):
     assert (tmp_path / "run28.json").exists()
 
     # A running run must be killed first.
-    runs[-1]['finished'], runs[-1]['updated'] = None, time.time()
-    Path(runs[-1]['path']).write_text(json.dumps(runs[-1]))
+    run = add_run(29)
+    run['finished'], run['updated'] = None, time.time()
+    Path(run['path']).write_text(json.dumps(run))
     press("d", "y", "\r")
     assert monitor.select_run(runs, console)['run_name'] == "run29"
     assert (tmp_path / "run29.json").exists()
+
+    # A run started meanwhile shows up, the selection stays on its run.
+    press(lambda: add_run(30), "\r")
+    assert monitor.select_run(runs, console)['run_name'] == "run29"
+    press(lambda: add_run(31), "\x1b[B", "\r")
+    assert monitor.select_run(runs, console)['run_name'] == "run31"
 
 
 def test_monitor_follow_run(tmp_path, monkeypatch):
