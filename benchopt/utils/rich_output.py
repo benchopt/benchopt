@@ -109,6 +109,29 @@ def get_runs_dir():
     return Path(os.path.expandvars(get_setting('runs_dir'))).expanduser()
 
 
+def read_jsonl(path, offset=0):
+    """Lines of the JSON lines file `path` written past `offset`, and the
+    offset to read from next time, so that following it only reads the new
+    lines. Unreadable lines are skipped."""
+    try:
+        with open(path, "rb") as f:
+            f.seek(offset)
+            data = f.read()
+    except OSError:
+        return [], offset
+    # The last line can be partly written: leave it for the next read.
+    data = data[:data.rfind(b"\n") + 1]
+    lines = []
+    for line in data.splitlines():
+        try:
+            lines.append(json.loads(line))
+        except ValueError:
+            # ponytail: appends from several nodes on NFS can clobber each
+            # other, losing the line. Use one file per job if that bites.
+            pass
+    return lines, offset + len(data)
+
+
 @contextmanager
 def _redirect_fds(log_file, mode="w"):
     """Send fd 1 and 2 to `log_file`, yielding a file on the original stdout.
@@ -195,6 +218,13 @@ class RichOutput(TerminalOutput):
         # Finished results, appended as they come: they never change, so
         # they are kept out of the snapshot that is rewritten every second.
         self._results_file = None
+        # The workers append a `done` line to the results file when a run
+        # finishes, read here before the backend returns its result: e.g. a
+        # SLURM job only returns once all of its runs are over.
+        self._results_path, self._results_offset = None, 0
+        # Records counted minus results counted, per run key: a run is
+        # reported by both, and only the first one is shown.
+        self._balance = Counter()
         self._dump_time = 0
         self._dump_lock = threading.Lock()
 
@@ -238,6 +268,7 @@ class RichOutput(TerminalOutput):
                         # Unlike `interrupt_main`, the signal stops the main
                         # thread waiting in a system call.
                         os.kill(os.getpid(), signal.SIGINT)
+                self._read_done()
                 if time() - self._dump_time > HEARTBEAT:
                     self._dump()
 
@@ -573,12 +604,72 @@ class RichOutput(TerminalOutput):
         if not self._worker:
             self._probe, self._probe_time = probe, 0
 
+    def set(self, **kwargs):
+        if self._worker:
+            return super().set(**kwargs)
+        with self._lock:
+            super().set(**kwargs)
+
+    def run_finished(self, key, status, reason=None):
+        if not self._worker or self._results_path is None:
+            return
+        try:
+            # ponytail: one `open` per run, cheap next to the run itself.
+            with open(self._results_path, "a") as f:
+                f.write(json.dumps(dict(done=[*key, status, reason])) + "\n")
+        except Exception:
+            pass  # The display is never worth taking the run down for.
+
+    def _read_done(self):
+        "Show the runs that the workers reported as done."
+        if self._results_path is None:
+            return
+        lines, self._results_offset = read_jsonl(
+            self._results_path, self._results_offset
+        )
+        for line in lines:
+            if isinstance(line, dict) and 'done' in line:
+                *key, status, reason = line['done']
+                self.show_result(tuple(key), status, reason, record=True)
+
+    def show_result(self, key, status, reason=None, cached=False,
+                    record=False):
+        if self._worker:
+            return super().show_result(key, status, reason, cached)
+
+        with self._lock:
+            if not cached:
+                # A run done by a worker is reported by its `done` record and
+                # by its result: only show the first one.
+                first = self._balance[key] >= 0 if record else (
+                    self._balance[key] <= 0
+                )
+                self._balance[key] += 1 if record else -1
+                if not first:
+                    return
+            # The records are read in another thread: restore the current
+            # names, e.g. set by the run generator before showing a skip.
+            saved = dict(dataset=self.dataset, objective=self.objective,
+                         solver=self.solver)
+            super().set(dataset=key[0], objective=key[1], solver=key[2])
+            try:
+                self._update_status(status, reason, cached=cached)
+            finally:
+                super().set(**saved)
+        self._refresh()
+
     def show_status(self, status, reason=None, dataset=False, objective=False,
                     cached=False):
         if self._worker:
             return super().show_status(status, reason, dataset, objective,
                                        cached)
 
+        self._update_status(status, reason, dataset, objective, cached)
+        # Outside of the lock, as the refresh renders the display.
+        self._refresh()
+
+    def _update_status(self, status, reason=None, dataset=False,
+                       objective=False, cached=False):
         with self._lock:
             if not (dataset or objective):
                 key = (
@@ -595,8 +686,6 @@ class RichOutput(TerminalOutput):
                         del self.in_flight[key]
 
             super().show_status(status, reason, dataset, objective, cached)
-        # Outside of the lock, as the refresh renders the display.
-        self._refresh()
 
     def _emit_status(self, status, reason, dataset, objective, cached):
         if not self.display:
@@ -707,12 +796,14 @@ class RichOutput(TerminalOutput):
                 for suffix in [".json", ".jsonl", ".kill"]:
                     f.with_suffix(suffix).unlink(missing_ok=True)
             self._snapshot_file = runs_dir / f"{run_name}-{os.getpid()}.json"
-            # Line buffered, so that each result is readable once written.
-            self._results_file = open(
-                self._snapshot_file.with_suffix(".jsonl"), "w", buffering=1
-            )
+            # Line buffered, so that each result is readable once written,
+            # and in append mode, not to overwrite the lines of the workers.
+            self._results_path = self._snapshot_file.with_suffix(".jsonl")
+            self._results_file = open(self._results_path, "a", buffering=1)
+            self._results_file.truncate(0)
         except OSError:
             self._snapshot_file = self._results_file = None
+            self._results_path = None
         self._dump()
 
     def _snapshot(self):

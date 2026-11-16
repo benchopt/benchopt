@@ -323,7 +323,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
 
     def run_one_to_cvg_final(**kwargs):
         try:
-            return run_one_to_cvg_cached(**kwargs)
+            result = run_one_to_cvg_cached(**kwargs)
         except FailedRun as e:
             # If the run fails, return an empty result with the failure status
             # This is done to avoid caching failed runs.
@@ -332,7 +332,11 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
                 kwargs['meta']['objective_name'],
                 kwargs['meta']['solver_name']
             )
-            return ([], key, e.status, "")
+            result = ([], key, e.status, "")
+        # Report the run as soon as it is over: the backend may only return
+        # its result with the ones of other runs, e.g. a whole SLURM job.
+        kwargs['terminal'].run_finished(*result[1:])
+        return result
 
     # Forward the cache lookup so the parallel dispatch can skip cached runs.
     run_one_to_cvg_final.check_call_in_cache = (
@@ -365,10 +369,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         with terminal.live(log_file=log_file, benchmark=benchmark.name):
             for result, key, status, reason, cached in results_generator:
                 run_statistics.extend(result)
-                terminal.set(dataset=key[0], objective=key[1], solver=key[2])
-                terminal.show_status(
-                    status=status, reason=reason, cached=cached
-                )
+                terminal.show_result(key, status, reason, cached)
                 if status == 'interrupted':
                     raise SystemExit(1)
     except KeyboardInterrupt:

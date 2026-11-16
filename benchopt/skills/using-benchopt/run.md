@@ -77,8 +77,10 @@ repetition)` cell, so a long run does **not** need manual chunking:
   - `.jsonl`: one line per result,
     `[level, dataset, objective, solver, status, reason, cached]` (`level`
     0/1/2 = dataset/objective/solver). Successes are `done`, `timeout` and
-    `max_runs`; tracebacks are in the log. The last line is
-    `{"finished": "done" | "interrupted" | "error"}`.
+    `max_runs`; tracebacks are in the log. Workers also append
+    `{"done": [dataset, objective, solver, status, reason]}` as each run
+    (one repetition) finishes, before e.g. its SLURM job returns. The last
+    line is `{"finished": "done" | "interrupted" | "error"}`.
   - `.json`: progress (`n_finished`, `total`, `counts`, `running`), `updated`
     and `finished`. A hard kill (OOM, time limit) leaves no closing line:
     `finished` null and `updated` over 60 s old means the run died.

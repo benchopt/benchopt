@@ -225,6 +225,14 @@ class TerminalOutput:
             indent = ' ' * (2 if objective else 4)
             print(f'{indent}Reason: {reason}')
 
+    def show_result(self, key, status, reason=None, cached=False):
+        "Show the status of the run `key`, a (dataset, objective, solver)."
+        self.set(dataset=key[0], objective=key[1], solver=key[2])
+        self.show_status(status=status, reason=reason, cached=cached)
+
+    def run_finished(self, key, status, reason=None):
+        "Called in the worker when a run finishes. Only used by `RichOutput`."
+
     def show_interrupted(self):
         """Report the runs stopped by a keyboard interruption."""
         self.show_status('interrupted')

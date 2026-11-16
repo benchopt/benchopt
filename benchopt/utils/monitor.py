@@ -7,7 +7,7 @@ from pathlib import Path
 from datetime import datetime
 from contextlib import contextmanager
 
-from .rich_output import STALE_AFTER, RichOutput, get_runs_dir
+from .rich_output import STALE_AFTER, RichOutput, get_runs_dir, read_jsonl
 
 
 # Keys returned by `click.getchar` for up and down, on POSIX and Windows.
@@ -32,18 +32,10 @@ def _load(path):
 def read_results(run, offset=0):
     """Results of `run` written past `offset`, and the offset to read from
     next time, so that following a run only reads the new results."""
-    try:
-        with open(Path(run['path']).with_suffix(".jsonl"), "rb") as f:
-            f.seek(offset)
-            data = f.read()
-    except OSError:
-        return [], offset
-    # The last line can be partly written: leave it for the next read.
-    data = data[:data.rfind(b"\n") + 1]
-    lines = map(json.loads, data.splitlines())
-    # Skip the closing `{"finished": ...}` line: the snapshot has it too.
-    results = [line for line in lines if isinstance(line, list)]
-    return results, offset + len(data)
+    lines, offset = read_jsonl(Path(run['path']).with_suffix(".jsonl"), offset)
+    # Skip the `{"finished": ...}` line, the snapshot has it too, and the
+    # `{"done": ...}` lines of the workers, counted by the run itself.
+    return [line for line in lines if isinstance(line, list)], offset
 
 
 def load_runs():

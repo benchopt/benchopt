@@ -44,6 +44,29 @@ def cancel_jobs(jobs):
         subprocess.call(["scancel", *sorted(arrays)])
 
 
+def _running_keys(task_keys, tasks, in_flight):
+    """Keys of the runs in progress in the RUNNING jobs.
+
+    A job runs its group `n_workers` runs at a time, in order, and its
+    workers report each run as it finishes: its next runs still `in_flight`
+    are the running ones.
+    """
+    # ponytail: a key in several jobs is credited to the first ones.
+    left = in_flight.copy()
+    running = []
+    for (n_workers, keys), job in zip(task_keys, tasks):
+        if job.state != "RUNNING":
+            continue
+        # The runs of a job finish in order: the last ones are left.
+        pending = []
+        for key in reversed(keys):
+            if left[key] > 0:
+                left[key] -= 1
+                pending.append(key)
+        running.extend(pending[::-1][:n_workers])
+    return running
+
+
 def harmonize_slurm_config(slurm_cfg):
     """Harmonize SLURM config for handling equivalent key names problem"""
     slurm_cfg = {k.removeprefix("slurm_"): v for k, v in slurm_cfg.items()}
@@ -165,19 +188,16 @@ def run_on_slurm(
                     run_batch, run_group,
                 ))
                 terminal = run_group[0].get("terminal", terminal)
-                task_keys.append([
+                task_keys.append((n_workers, [
                     (m["dataset_name"], m["objective_name"], m["solver_name"])
                     for m in (kw.get("meta") for kw in run_group)
                     if m is not None
-                ])
+                ]))
 
     if terminal is not None:
-        # ponytail: all runs of a RUNNING job count as running, even if
-        # `batch_n_jobs` runs them in waves.
-        terminal.set_running_probe(lambda: [
-            key for keys, job in zip(task_keys, tasks)
-            if job.state == "RUNNING" for key in keys
-        ])
+        terminal.set_running_probe(
+            lambda: _running_keys(task_keys, tasks, terminal.in_flight)
+        )
 
     # Yield results as jobs finish (unordered)
     try:

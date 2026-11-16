@@ -501,3 +501,31 @@ def test_monitor_kill_run(tmp_path, monkeypatch):
     assert terminal._meta['finished'] == 'error'
 
     assert "Could not kill" in kill_run(dict(path=str(tmp_path / "x/y")))
+
+
+@pytest.mark.parametrize("record_first", [True, False])
+def test_rich_output_worker_done_records(tmp_path, monkeypatch, record_first):
+    monkeypatch.setenv("BENCHOPT_RUNS_DIR", str(tmp_path))
+    from benchopt.utils.monitor import read_results
+
+    terminal = make_terminal_output(1, False)
+    with terminal.live(log_file=tmp_path / "run.log", benchmark="b"):
+        terminal.start_run(META)
+        # The worker reports the run as soon as it is over, e.g. before its
+        # SLURM job returns the results of its other runs.
+        worker_terminal = pickle.loads(pickle.dumps(terminal))
+        worker_terminal.run_finished(KEY, 'done', "")
+        # The record and the result are counted once, whichever comes first.
+        if record_first:
+            terminal._read_done()
+            assert terminal.n_finished == 1
+            assert not terminal.in_flight
+        terminal.show_result(KEY, 'done', "")
+        terminal._read_done()
+        assert terminal.n_finished == 1
+        assert terminal.counts == {'done': 1}
+
+    snapshot = dict(path=str(next(tmp_path.glob("run-*.json"))))
+    # The record does not show in the results, but its result does once.
+    results, _ = read_results(snapshot)
+    assert results == [[2, *KEY, 'done', "", False]]
