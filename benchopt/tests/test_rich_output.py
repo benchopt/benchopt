@@ -270,6 +270,8 @@ def test_rich_output_running_probe():
     display = _render_to_str(terminal)
     assert "other[lr=1]" in display
     assert "solver[lr=1e-3]" not in display
+    # The other run is waiting, e.g. in the SLURM queue.
+    assert "running 1 · pending 1 · done 0" in display
 
     # A probe that fails is dropped, rather than taking the run down.
     def _raise():

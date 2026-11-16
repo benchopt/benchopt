@@ -641,7 +641,12 @@ class RichOutput(TerminalOutput):
         errors = sum(
             self.counts[s] for s in ['error', 'diverged', 'not installed']
         )
+        # The runs not started, e.g. queued on SLURM, so that the counts
+        # add up to the total of the progress bar.
+        running = len(self._running_keys())
+        pending = max(0, self._total() - self.n_finished - running)
         return (
+            f"[bold]running {running}[/] · [dim]pending {pending}[/] · "
             f"[green]done {done}[/] · [cyan]cached "
             f"{self.counts['cached']}[/] · [yellow]skip "
             f"{self.counts['skip']}[/] · [red]error {errors}[/]"
