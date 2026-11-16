@@ -1,5 +1,6 @@
 import math
 import subprocess
+from time import time
 from contextlib import ExitStack
 
 try:
@@ -44,8 +45,13 @@ def cancel_jobs(jobs):
         subprocess.call(["scancel", *sorted(arrays)])
 
 
-def _running_keys(task_keys, tasks, in_flight):
-    """Keys of the runs in progress in the RUNNING jobs.
+# Asking SLURM the state of the jobs spawns `sacct`, so keep it way slower
+# than the refresh rate of the display.
+STATE_PERIOD = 30
+
+
+def _running_keys(task_keys, running, in_flight):
+    """Keys of the runs in progress in the `running` jobs.
 
     A job runs its group `n_workers` runs at a time, in order, and its
     workers report each run as it finishes: its next runs still `in_flight`
@@ -53,9 +59,9 @@ def _running_keys(task_keys, tasks, in_flight):
     """
     # ponytail: a key in several jobs is credited to the first ones.
     left = in_flight.copy()
-    running = []
-    for (n_workers, keys), job in zip(task_keys, tasks):
-        if job.state != "RUNNING":
+    keys_running = []
+    for (n_workers, keys), is_running in zip(task_keys, running):
+        if not is_running:
             continue
         # The runs of a job finish in order: the last ones are left.
         pending = []
@@ -63,8 +69,8 @@ def _running_keys(task_keys, tasks, in_flight):
             if left[key] > 0:
                 left[key] -= 1
                 pending.append(key)
-        running.extend(pending[::-1][:n_workers])
-    return running
+        keys_running.extend(pending[::-1][:n_workers])
+    return keys_running
 
 
 def harmonize_slurm_config(slurm_cfg):
@@ -195,9 +201,19 @@ def run_on_slurm(
                 ]))
 
     if terminal is not None:
-        terminal.set_running_probe(
-            lambda: _running_keys(task_keys, tasks, terminal.in_flight)
-        )
+        running, checked = [], [0]
+
+        def probe():
+            # The jobs RUNNING are cached, but not their runs in progress,
+            # which change as the workers report them done.
+            if tasks and time() - checked[0] > STATE_PERIOD:
+                checked[0] = time()
+                # submitit checks the states less and less often, up to every
+                # 10 minutes: force it, not to miss the jobs that start.
+                tasks[0].watcher.update()
+                running[:] = [job.state == "RUNNING" for job in tasks]
+            return _running_keys(task_keys, running, terminal.in_flight)
+        terminal.set_running_probe(probe)
 
     # Yield results as jobs finish (unordered)
     try:

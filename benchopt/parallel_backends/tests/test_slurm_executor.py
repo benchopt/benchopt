@@ -372,3 +372,5 @@ def test_run_on_slurm_running_probe(monkeypatch, batch_n_jobs):
     assert probe() == [
         *keys["D"][1:1 + batch_n_jobs], *keys["E"][:batch_n_jobs]
     ]
+    # The job states are cached, with a single `sacct` call for all jobs.
+    executor.submit.return_value.watcher.update.assert_called_once()

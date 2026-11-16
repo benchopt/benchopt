@@ -19,10 +19,6 @@ from .terminal_output import STATUS, TerminalOutput
 GUIDE = "[dim]\u2502   [/]"
 BRANCH = "[dim]\u251c\u2500\u2500 [/]"
 
-# Asking a scheduler which runs are running spawns a process, so keep it
-# way slower than the refresh rate of the display.
-PROBE_PERIOD = 30
-
 # The state of the run is dumped in a snapshot for `benchopt monitor`, at most
 # every second on progress and every `HEARTBEAT` seconds otherwise. A run whose
 # snapshot is not updated for `STALE_AFTER` seconds is considered dead.
@@ -189,7 +185,6 @@ class RichOutput(TerminalOutput):
         self.n_configs = None
         # Set by a backend that knows which runs are actually running.
         self._probe = None
-        self._probe_keys, self._probe_time = [], 0
         # The display is rendered and dumped from other threads: the state
         # they read is only changed while holding this lock.
         self._lock = threading.RLock()
@@ -491,16 +486,13 @@ class RichOutput(TerminalOutput):
     def _running_keys(self):
         """The runs holding a worker, as told by the backend or guessed."""
         with self._lock:
-            if self._probe is not None and time() - self._probe_time > (
-                    PROBE_PERIOD):
-                self._probe_time = time()
+            # Called on each refresh: the probe caches what is costly.
+            if self._probe is not None:
                 try:
-                    self._probe_keys = list(self._probe())
+                    return list(self._probe())
                 except Exception:
                     # The display is never worth taking the run down for.
                     self._probe = None
-            if self._probe is not None:
-                return self._probe_keys
 
             # Without a probe, the runs are dispatched in order, so the
             # oldest unfinished ones are the ones actually holding a worker.
@@ -602,7 +594,7 @@ class RichOutput(TerminalOutput):
         the running ones.
         """
         if not self._worker:
-            self._probe, self._probe_time = probe, 0
+            self._probe = probe
 
     def set(self, **kwargs):
         if self._worker:
