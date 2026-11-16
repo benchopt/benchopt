@@ -85,11 +85,15 @@ def mocked_submitit(monkeypatch):
     submissions = []
 
     def submit(self, func, *args, **kwargs):
-        # The front node must release the data of already submitted jobs.
-        assert all(
-            run["dataset"]._data is None
+        # The front node keeps the data of at most one submitted dataset: the
+        # one shared with the next runs.
+        datasets = {
+            id(run["dataset"]): run["dataset"]
             for sub in submissions for run in sub["args"][0]
-        )
+        }
+        assert sum(
+            getattr(d, "_data", None) is not None for d in datasets.values()
+        ) <= 1
         config = self._executor.parameters
         submissions.append(
             dict(func=func, args=args, kwargs=kwargs, config=config)

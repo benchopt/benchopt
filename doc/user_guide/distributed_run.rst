@@ -198,6 +198,12 @@ priority given to the run-specific parameters. Note that in this case, the jobs
 with different SLURM parameters will be launched as one job array per
 configuration.
 
+The solvers' ``skip`` runs on the node running ``benchopt run``, which might
+not have the hardware of the jobs. To skip a solver when its jobs get no GPU,
+use :func:`~benchopt.helpers.requires_gpu.gpu_available` in ``skip``. It
+checks that the merged SLURM configuration of the solver requests a GPU. See
+:ref:`skipping_config`.
+
 
 .. _dask_backend:
 

@@ -10,7 +10,8 @@ bench = Benchmark(".")
 # --- Inspect a dataset ---
 datasets = bench.get_datasets()
 Dataset = next(d for d in datasets if d.name == "simulated")
-data = Dataset.get_instance(n_samples=100).get_data()
+dataset = Dataset.get_instance(n_samples=100)
+data = dataset.get_data()
 print("data keys:", list(data.keys()))
 
 # --- Inspect the objective ---
@@ -26,8 +27,8 @@ solvers = bench.get_solvers()
 Solver = next(s for s in solvers if s.name == "my-solver")
 solver = Solver.get_instance()
 
-skip, reason = solver.skip(**obj_dict)
-if skip:
+reason = solver.skip(objective, dataset)
+if reason is not None:
     print(f"Solver skipped: {reason}")
 else:
     solver.set_objective(**obj_dict)

@@ -38,11 +38,12 @@ class Objective(BaseObjective):
         # evaluate_result() without running a real solver.
         return dict(beta=np.zeros(self.X.shape[1]))
 
-    # Optional: skip incompatible dataset/objective combinations.
-    # def skip(self, X, y):
-    #     if X.shape[0] < X.shape[1]:
-    #         return True, "underdetermined system not supported"
-    #     return False, None
+    # Optional: skip incompatible dataset/objective combinations, before
+    # launching any run. Better decide on the parameters, which is free:
+    # dataset.get_data() works (cached) but loads the data.
+    # def skip(self, dataset):
+    #     if dataset.n_samples < dataset.n_features:
+    #         return "underdetermined system not supported"
 
     # Optional: save artefacts (models, arrays) alongside the parquet.
     # def save_final_results(self, beta):

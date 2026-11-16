@@ -149,6 +149,7 @@ the benchmark's config file (the same `--config config.yml` used by
 plot_configs:
   Subopt. (log):              # view name shown in the dashboard
     plot_kind: objective_curve
+    objective_curve_Y_axis: Suboptimality
     scale: loglog
   Train score (box):
     plot_kind: boxplot
@@ -158,7 +159,7 @@ plot_configs:
 ```
 
 - Common options for any kind: `plot_kind`, `scale`, `with_quantiles`,
-  `suboptimal_curve`, `relative_curve`, `hidden_curves`. Kind-specific options are
+  `hidden_curves`. Kind-specific options are
   prefixed with the kind name (e.g. `boxplot_objective_column`); unspecified
   values keep the interface default.
 - Fastest way to author one: build the plot interactively in the HTML page, hit

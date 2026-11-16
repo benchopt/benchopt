@@ -414,7 +414,7 @@ class TestParametrizedNameMixin:
         assert reprs == ["test-dataset[n=1000,seed=1]"] * 2
 
     def test_pickling_does_not_carry_data(self):
-        # Calling _get_data() caches data on the instance as `_data`, but this
+        # Calling get_data() caches data on the instance as `_data`, but this
         # should not appear in the pickle: the reconstructed instance must be
         # clean so that workers load fresh data rather than inheriting a
         # potentially large cached payload from the parent process.
@@ -423,7 +423,7 @@ class TestParametrizedNameMixin:
             cls = bench.get_datasets()[0]
             instance = cls.get_instance(n=1000, seed=1)
             # Populate the in-process cache
-            instance._get_data()
+            instance.get_data()
             assert hasattr(instance, '_data')
 
             has_data = Parallel(n_jobs=2)(

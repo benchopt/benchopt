@@ -364,12 +364,16 @@ def test_group_by_repetition_solver_seed_error(no_debug_log):
     # reuses it across solvers, so the data must be solver-independent. A
     # `get_seed(use_solver=True)` in `set_data` must fail fast on the front
     # node with a clear `group_by` message, not a confusing internal error.
-    # No `-r`: the front node only loads the data when n_repetitions is None.
+    # No `-r` and a `cv`: the front node loads the data to count the folds.
     objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+    class Splitter:
+        def get_n_splits(self): return 2
 
     class Objective(TempObjective):
         def set_data(self, X, y):
             self.get_seed(use_solver=True)
+            self.cv = Splitter()
     """
     with temp_benchmark(objective=objective) as bench:
         with pytest.raises(ValueError, match="must not depend on the solver"):
@@ -379,9 +383,11 @@ def test_group_by_repetition_solver_seed_error(no_debug_log):
                 standalone_mode=False)
 
 
+@pytest.mark.parametrize("cv", [False, True])
 @pytest.mark.parametrize("n_reps", [None, 2])
-def test_dispatch_loads_data_only_if_needed(n_reps):
-    # The front node only loads the data when needed to count repetitions.
+def test_dispatch_loads_data_only_if_needed(n_reps, cv):
+    # The front node only loads the data when needed to count repetitions,
+    # i.e. without `-r` and when the objective sets a `cv` attribute.
     from benchopt._generate_runs import generate_run_kwargs
     from benchopt.utils.terminal_output import TerminalOutput
 
@@ -394,8 +400,20 @@ def test_dispatch_loads_data_only_if_needed(n_reps):
             print("GET_DATA")
             return dict(X=None, y=None)
     """
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
 
-    with temp_benchmark(datasets=dataset) as bench, CaptureCmdOutput() as out:
+    class Splitter:
+        def get_n_splits(self): return 3
+
+    class Objective(TempObjective):
+        def set_data(self, X, y):
+            self.cv = Splitter()
+    """
+
+    components = dict(datasets=dataset)
+    if cv:
+        components["objective"] = objective
+    with temp_benchmark(**components) as bench, CaptureCmdOutput() as out:
         all_kwargs = list(generate_run_kwargs(
             bench, solvers=bench.check_solver_patterns([]),
             datasets=bench.check_dataset_patterns(["test-dataset"]),
@@ -403,8 +421,131 @@ def test_dispatch_loads_data_only_if_needed(n_reps):
             n_repetitions=n_reps, terminal=TerminalOutput(n_reps, False),
         ))
 
-    assert len(all_kwargs) == 2 * (n_reps or 1)
-    out.check_output("GET_DATA", repetition=2 if n_reps is None else 0)
+    load = n_reps is None and cv
+    assert len(all_kwargs) == 2 * (n_reps or (3 if cv else 1))
+    out.check_output("GET_DATA", repetition=2 if load else 0)
+
+
+@pytest.mark.parametrize("skip_on", ["parameters", "data"])
+def test_skip_before_dispatch(skip_on):
+    # Skips are checked before dispatching the runs, and only load the data
+    # when they use it, once per dataset.
+    from benchopt._generate_runs import generate_run_kwargs
+    from benchopt.utils.terminal_output import TerminalOutput
+
+    on_data = skip_on == "data"
+    dataset = f"""from benchopt import BaseDataset
+
+    class Dataset(BaseDataset):
+        name = "test-dataset"
+        parameters = {{"n": [1, 2, 3]}}
+        def get_data(self):
+            print("GET_DATA")
+            self.get_seed(use_repetition=True)
+            return dict(X=None, y=None, n=self.n)
+        def skip(self):
+            print("DATASET#SKIP")
+            if {"self.get_data()['n']" if on_data else "self.n"} > 2:
+                return "too many"
+    """
+    objective = f"""from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
+        parameters = {{"max_n": [1, 2]}}
+        def set_data(self, X, y, n): self.n = n
+        def get_objective(self): return dict(X=None, y=None, n=self.n)
+        def skip(self, dataset):
+            print("OBJECTIVE#SKIP")
+            n = {"dataset.get_data()['n']" if on_data else "dataset.n"}
+            if n > self.max_n:
+                return "too large"
+    """
+    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        name = "test-solver"
+        parameters = {{"min_n": [1, 2]}}
+        def skip(self, objective, dataset):
+            print("SOLVER#SKIP")
+            n = {"objective.get_objective()['n']" if on_data else "dataset.n"}
+            if n < self.min_n:
+                return "too small"
+    """
+
+    with temp_benchmark(
+        datasets=dataset, objective=objective, solvers=solver
+    ) as bench, CaptureCmdOutput() as out:
+        all_kwargs = list(generate_run_kwargs(
+            bench, solvers=bench.check_solver_patterns(["test-solver"]),
+            datasets=bench.check_dataset_patterns(["test-dataset"]),
+            objectives=bench.check_objective_filters(None),
+            n_repetitions=2, terminal=TerminalOutput(2, False),
+        ))
+
+    # Keep n <= 2, n <= max_n and n >= min_n: 2 runs for each n and rep.
+    assert len(all_kwargs) == 8
+    out.check_output("Reason: too many", repetition=1)
+    # Each skip is called once per combination of its components.
+    out.check_output("DATASET#SKIP", repetition=3)
+    out.check_output("OBJECTIVE#SKIP", repetition=4)
+    out.check_output("SOLVER#SKIP", repetition=6)
+    out.check_output("GET_DATA", repetition=3 if on_data else 0)
+
+
+@pytest.mark.parametrize("component", ["dataset", "objective", "solver"])
+@pytest.mark.parametrize("output", [True, "", 1, "1 / 0"])
+def test_invalid_skip_output(component, output, no_debug_log):
+    # A `skip` returning neither None nor a reason, or failing, is reported as
+    # an error and acts as a skip: its runs are not created, the others run.
+    from benchopt.cli.main import run
+
+    output = output if output == "1 / 0" else repr(output)
+    objective = f"""from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
+        parameters = {{"bad": [True, False]}}
+        def skip(self, dataset):
+            if self.bad: return {output}
+    """
+    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        name = "test-solver"
+        sampling_strategy = "run_once"
+        parameters = {{"bad": [True, False]}}
+        def run(self, _): print("Solver#RUN")
+        def skip(self, objective, dataset):
+            if self.bad: return {output}
+    """
+    dataset = f"""from benchopt.utils.temp_benchmark import TempDataset
+
+    class Dataset(TempDataset):
+        parameters = {{"bad": [True, False]}}
+        def skip(self):
+            if self.bad: return {output}
+    """
+    components = dict(
+        dataset=dict(datasets=[dataset]), objective=dict(objective=objective),
+        solver=dict(solvers=[solver]),
+    )[component]
+    with temp_benchmark(**components) as bench, CaptureCmdOutput() as out:
+        run([
+            str(bench.benchmark_dir), "-s", "test-solver",
+            "-d", "test-dataset", "--no-plot"
+        ], standalone_mode=False)
+
+    error = (
+        "ZeroDivisionError" if output == "1 / 0" else
+        rf"{component.capitalize()}<[^>]*>\.skip` should return None"
+    )
+    out.check_output(error, repetition=1)
+    status = dict(
+        dataset=r"test-dataset\[bad=True\] error",
+        objective=r"test-objective\[bad=True\] error",
+        solver=r"test-solver\[bad=True\]: error",
+    )[component]
+    out.check_output(status, repetition=1)
+    out.check_output(r"test-solver(\[bad=False\])?: done", repetition=1)
 
 
 def test_objective_save_final_results(no_debug_log):

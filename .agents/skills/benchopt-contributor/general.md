@@ -57,7 +57,8 @@ Weigh changes against these:
     `pip install -e .[test]`. `flake8` is separate (`pip install flake8`).
   - When running benchopt's own suite, `--skip-env` skips tests that build a
     conda env and makes local runs much faster
-    (`pytest benchopt/... --skip-env`).
+    (`pytest benchopt/... --skip-env`). Without an active conda env, these
+    tests are skipped automatically (see [tests](./tests.md)).
 
 ## Deciding where a function belongs
 

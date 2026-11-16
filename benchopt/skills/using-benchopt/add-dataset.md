@@ -74,6 +74,10 @@ don't share the same draw.
 
 ### Optional methods
 
+`skip(self) -> str | None`: return a reason string to skip incompatible
+parameter combinations, or `None`/no return to run; any other value raises.
+It is checked before launching any run.
+
 `prepare()` — expensive one-time setup (downloads, extraction, heavy
 preprocessing), cached by joblib and triggered only by `benchopt prepare .`
 (`benchopt run` does **not** call it); `get_data()` then just loads the prepared

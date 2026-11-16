@@ -194,6 +194,18 @@ RepositoryNotFoundError("msg", response=MagicMock(status_code=404))
 GithubException(404, {"message": "Not Found"})
 ```
 
+## Tests Needing a Conda Env
+
+Tests that need an active conda env are skipped when there is none, e.g. in a
+uv venv. This applies to tests using the `use_env` fixture (and so
+`test_env_name` or `empty_env_name`), and to tests marked
+`@pytest.mark.requires_conda`, for those installing in the current env.
+
+`benchopt install` refuses to run without an active conda env, even when it
+installs nothing (errors before installing, requirements already met). For such
+tests, use the `fake_conda_env` fixture, which reports an active env, so they
+run everywhere.
+
 ## Simulating a Missing Package
 
 Block the underlying package via `monkeypatch` so the module's `try/except ImportError`

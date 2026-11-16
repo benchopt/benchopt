@@ -736,6 +736,7 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 
 .image-grid {
   display: grid;
+  justify-content: center;
   gap: 2rem 1.5rem;
   align-items: start;
 }
@@ -828,5 +829,50 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 
 #image-modal button:hover, #image-modal button:focus-visible {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Table plot: Grid.js truncates column titles with an ellipsis and squeezes
+   columns to fit. Wrap the titles instead, and let the table grow wider than
+   its container (the Grid.js wrapper scrolls horizontally). */
+#table_container table.gridjs-table {
+  table-layout: auto;
+  width: auto;
+  min-width: 100%;
+  max-width: none;
+}
+#table_container th.gridjs-th {
+  white-space: normal;
+  min-width: 7em;
+}
+/* Inline title + sort button, so the button never overlaps the title. */
+#table_container th.gridjs-th .gridjs-th-content {
+  float: none;
+  display: inline;
+  width: auto;
+}
+#table_container th.gridjs-th button.gridjs-sort {
+  float: none;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+/* Sort arrows: stacked up/down chevrons, the active one in blue. */
+#table_container button.gridjs-sort {
+  width: 12px;
+  height: 16px;
+  opacity: 1;
+  background-size: 12px 16px;
+  background-position: center;
+}
+#table_container button.gridjs-sort-neutral {
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14' fill='none' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M1.5 5L5 1.5L8.5 5' stroke='%23c4c9d1'/><path d='M1.5 9L5 12.5L8.5 9' stroke='%23c4c9d1'/></svg>");
+}
+#table_container th.gridjs-th-sort:hover button.gridjs-sort-neutral {
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14' fill='none' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M1.5 5L5 1.5L8.5 5' stroke='%236b7280'/><path d='M1.5 9L5 12.5L8.5 9' stroke='%236b7280'/></svg>");
+}
+#table_container button.gridjs-sort-asc {
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14' fill='none' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M1.5 5L5 1.5L8.5 5' stroke='%232563eb'/><path d='M1.5 9L5 12.5L8.5 9' stroke='%23c4c9d1'/></svg>");
+}
+#table_container button.gridjs-sort-desc {
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14' fill='none' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M1.5 5L5 1.5L8.5 5' stroke='%23c4c9d1'/><path d='M1.5 9L5 12.5L8.5 9' stroke='%232563eb'/></svg>");
 }
 

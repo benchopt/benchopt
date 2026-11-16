@@ -7,40 +7,83 @@ Advanced usage
 This page intends to list some advanced functionality
 to make it easier to use the benchmark.
 
-.. _skipping_solver:
+.. _skipping_config:
 
-Skipping a solver for a given problem
--------------------------------------
+Skipping a configuration
+------------------------
 
-Some solvers might not be able to run with all the datasets present
-in a benchmark. This is typically the case when some datasets are
-represented using sparse data or for datasets that are too large.
+Some configurations of a benchmark cannot run. A dataset can have incompatible
+parameters, an objective might not apply to some datasets, and a solver might
+not support sparse data or scale to large datasets. Each component can skip
+them by implementing a ``skip`` method, which receives the components chosen
+before it:
 
-In these cases, a solver can be skipped at runtime, depending on the
-characteristic of the objective. In order to define for which cases
-a solver should be skip, the user needs to implement a method
-:func:`~benchopt.BaseSolver.skip` in the solver class that will take
-the input as the :func:`~benchopt.BaseSolver.set_objective` method.
-This method should return a boolean value that evaluates to ``True``
-if the solver should be skipped, and a string giving the reason of
-why the solver is skipped, for display purposes. For instance,
-for a solver where the objective is set with keys `X, y, reg`,
-we get
+- :func:`~benchopt.BaseDataset.skip` takes no argument and skips all the runs
+  of the dataset.
+- :func:`~benchopt.BaseObjective.skip` receives the dataset and skips the runs
+  of all solvers.
+- :func:`~benchopt.BaseSolver.skip` receives the objective and the dataset.
+
+``skip`` returns the reason to skip, displayed in the output, or ``None`` to
+run. Any other value or a failing ``skip`` is reported as an error, and its
+runs are not created.
+
+The skips are checked once per configuration, before launching the runs.
+Checks on the parameters are free. Calling ``dataset.get_data()`` or
+``objective.get_objective()`` loads the data of the first repetition on the
+machine running ``benchopt run``, once per dataset. ``get_seed`` can use the
+component itself and the ones that ``skip`` receives. Other components are only
+set when :ref:`group_by <run_grouping>` chooses them first.
+
+For instance, with an objective parameter ``reg`` and a dataset giving ``X``:
 
 .. code-block::
 
+    class Dataset(BaseDataset):
+        ...
+        def skip(self):
+            if self.n_features > self.n_samples:
+                return "more features than samples"
+
     class Solver(BaseSolver):
         ...
-        def skip(self, X, y, reg):
+        def skip(self, objective, dataset):
             from scipy import sparse
 
-            if sparse.issparse(X):
-                return True, "solver does not support sparse data X."
+            if objective.reg == 0:
+                return "solver does not work with reg=0"
 
-            if reg == 0:
-                return True, "solver does not work with reg=0"
+            # Loads the data on the node running `benchopt run`.
+            if sparse.issparse(dataset.get_data()["X"]):
+                return "solver does not support sparse data X."
 
-            return False, None
+As ``skip`` runs on the machine running ``benchopt run``, a check on the
+hardware should look at the machine that will run the solver. For a GPU,
+:func:`~benchopt.helpers.requires_gpu.gpu_available` checks the local
+machine, or with the :ref:`submitit backend <slurm_backend>`, that the
+solver's jobs request a GPU. For other checks,
+:func:`~benchopt.parallel_backends.get_worker_config` returns the config of
+the workers that run the solver.
+
+.. code-block::
+
+    from benchopt.helpers.requires_gpu import gpu_available
+
+    class Solver(BaseSolver):
+        ...
+        def skip(self, objective, dataset):
+            if not gpu_available(self):
+                return "solver needs a GPU"
+
+.. note::
+
+    In older versions, ``skip`` received the data as keyword arguments,
+    e.g. ``Solver.skip(self, X, y, reg)`` with the output of
+    ``Objective.get_objective``, and ``Objective.skip(self, X, y)`` with the
+    output of ``Dataset.get_data``. It returned a ``(skip, reason)`` tuple.
+    Both still work, with a ``FutureWarning``, and are checked before
+    launching the runs, but the old signature always loads the data. They will
+    be removed in benchopt 1.12.
 
 .. _extra_objectives:
 
@@ -152,17 +195,31 @@ callback (default to 1).
 Data loading and memory
 -----------------------
 
-Benchopt loads each dataset once and keeps its data in memory to run all the
-solvers on it, which avoids reloading the data for every solver. The data is
-released when the run moves to the next dataset. With ``--group-by`` (see
-:ref:`run_grouping`), this only holds for the first listed axis, while the
-other axes keep all their instances in memory. List the heaviest,
-data-carrying axis (usually ``dataset``) first.
+Consecutive runs in a process reuse the same component instances. Benchopt
+skips the calls whose result is already there: ``Dataset.get_data`` is not
+called again for the same dataset, and ``Objective.set_data`` is not called
+again for the same dataset and objective, unless their seed changes with the
+repetition. ``Solver.set_objective`` and ``Solver.run`` are called for every
+run. The solver instance keeps its attributes between consecutive runs, so a
+solver can skip costly steps it already did, such as loading model weights.
+Benchopt does not do this for the solver. Its code must check whether the
+attribute is already set, for instance in ``set_objective``.
 
-Solvers with a costly setup, such as the warmup described above, can also
-benefit from sharing in parallel runs. ``--group-by solver`` runs each solver
-on all datasets in the same worker, at the cost of keeping all the datasets'
-data in that worker's memory.
+Once a run uses another component, the previous instance is released: it goes
+back to its state after creation, so its data can be freed. The state of an
+objective depends on its dataset, and the state of a solver on its objective
+and dataset. Each process thus keeps at most one state per component, and
+loads each dataset once per block of consecutive runs using it.
+
+The order of the runs therefore decides what is reused. By default, the runs
+are ordered by dataset, then objective, then solver, so each dataset is loaded
+once and ``set_data`` is called once per objective. With ``--group-by`` (see
+:ref:`run_grouping`), the listed axes come first. For instance,
+``--group-by solver`` runs each solver on all datasets in a row, keeping the
+same solver instance, but reloads each dataset for every solver.
+
+Attributes stored on an instance during a run do not survive a release. The
+warmup described above is kept, so it runs once per solver and process.
 
 
 .. |update_params| replace:: ``update_parameters``

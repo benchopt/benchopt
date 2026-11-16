@@ -14,7 +14,7 @@ class TestPrepareCmd:
             class Dataset(BaseDataset):
                 name = "dataset"
                 def prepare(self): print("#PREPARED")
-                def get_data(self): print("#GET_DATA")
+                def get_data(self): print("#GET_DATA"); return {}
         """
 
     @pytest.mark.parametrize('invalid_benchmark, match', [

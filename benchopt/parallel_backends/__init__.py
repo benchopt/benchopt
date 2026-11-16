@@ -4,19 +4,45 @@ from joblib import parallel_config
 from joblib import Parallel, delayed
 
 from .._generate_runs import group_runs, _normalize_group_by
+from ..utils.run_context import use_components
 
-_DISTRIBUTED_FRONTAL = False
+# Parallel config of a distributed run, set on its front node.
+_DISTRIBUTED_CONFIG = None
 
 DISTRIBUTED_BACKENDS = ('loky', 'dask', 'submitit')
 
+# Keys of the parallel config that do not configure the backend.
+_RUN_KEYS = ('backend', 'group_by', 'batch_n_jobs')
 
-def set_distributed_frontal():
-    global _DISTRIBUTED_FRONTAL
-    _DISTRIBUTED_FRONTAL = True
+
+def set_distributed_frontal(config):
+    global _DISTRIBUTED_CONFIG
+    _DISTRIBUTED_CONFIG = config
 
 
 def is_distributed_frontal():
-    return _DISTRIBUTED_FRONTAL
+    return _DISTRIBUTED_CONFIG is not None
+
+
+def get_worker_config(solver):
+    """Return the parallel config of the workers that run ``solver``.
+
+    On the front node of a ``dask`` or ``submitit`` run, return the parallel
+    config with its ``backend``. With ``submitit``, it is the SLURM config of
+    the solver's jobs, merged with its ``slurm_params`` and ``slurm_*``
+    parameters. Return None when the runs are on the local machine.
+    """
+    config = _DISTRIBUTED_CONFIG
+    if config is not None and config['backend'] == 'submitit':
+        from .slurm_executor import get_solver_slurm_config
+        slurm_config = {
+            k: v for k, v in config.items() if k not in _RUN_KEYS
+        }
+        config = dict(
+            backend='submitit',
+            **get_solver_slurm_config(solver, slurm_config),
+        )
+    return config
 
 
 def run_batch(run, n_jobs=1):
@@ -35,6 +61,20 @@ def run_batch(run, n_jobs=1):
     return _run_batch
 
 
+def _release_sent_components(batches):
+    """Release the front node state of the components sent to the workers.
+
+    The workers reload the components, as only their parameters are pickled.
+    """
+    for batch in batches:
+        for run_kwargs in batch:
+            use_components(
+                run_kwargs.get('dataset'), run_kwargs.get('objective'),
+                run_kwargs.get('solver'),
+            )
+        yield batch
+
+
 def _dispatch(backend, benchmark, run, run_kwargs_iter, config,
               group_by=None, batch_n_jobs=1):
     """Run ``run(**kwargs)`` for each kwargs on the chosen backend, yielding
@@ -45,6 +85,9 @@ def _dispatch(backend, benchmark, run, run_kwargs_iter, config,
     state loaded on their front-end instance.
     """
     batches = group_runs(run_kwargs_iter, group_by)
+    in_process = backend == 'loky' and config.get('n_jobs') in (None, 1)
+    if not in_process:
+        batches = _release_sent_components(batches)
     run_one_batch = run_batch(run, batch_n_jobs)
     if backend == 'submitit':
         from .slurm_executor import run_on_slurm
@@ -198,8 +241,10 @@ def check_parallel_config(parallel_config_file, n_jobs, group_by=None):
             and not isinstance(batch_n_jobs, bool) and batch_n_jobs != 0
         ), f"`batch_n_jobs` must be a non-zero integer. Got {batch_n_jobs}."
 
-    if backend in ('dask', 'submitit'):
+    distributed = backend in ('dask', 'submitit')
+    if distributed:
         print(f"Distributed run with backend: {backend}")
-        set_distributed_frontal()
+    # Copied, as `parallel_run` pops the run keys from `parallel_config`.
+    set_distributed_frontal(dict(parallel_config) if distributed else None)
 
     return parallel_config

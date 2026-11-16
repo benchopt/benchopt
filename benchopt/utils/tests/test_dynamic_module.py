@@ -168,7 +168,7 @@ def test_ast_replacement(params):
     "name = 'my-solver'\n        requirements = ['', f'{undefined}']",
 ], ids=["no name", "undefined name", "undefined install_cmd",
         "undefined requirements", "failing requirements",])
-def test_ast_failures_dont_block_run(params, no_raise_install):
+def test_ast_failures_dont_block_run(params, no_raise_install, fake_conda_env):
     solver = f"""
     from benchopt.utils.temp_benchmark import TempSolver
     failure

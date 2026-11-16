@@ -94,8 +94,6 @@ const config_mapping = {
   'plot_kind': 'plot_kind',
   'scale': 'change_scale',
   'with_quantiles': 'change_shades',
-  'suboptimal_curve': 'change_suboptimal',
-  'relative_curve': 'change_relative',
   'hidden_curves': '',
 };
 
@@ -343,13 +341,6 @@ const getScatterData = () => {
   // create a list of object to plot in plotly
   const curves = [];
 
-  // get the minimum y value over all curves
-  let min_y = Infinity;
-  getPlotData().data.forEach(curveData => {
-    min_y = Math.min(min_y, ...curveData.y);
-  });
-  min_y -=  1e-10; // to avoid zeros in log scale
-
   getPlotData().data.forEach(curveData => {
     label = curveData.label;
     y = curveData.y;
@@ -360,12 +351,6 @@ const getScatterData = () => {
     else if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
       x_low = curveData.x_low;
       x_high = curveData.x_high;
-    }
-    if (state().suboptimal_curve) {
-      y = y.map(value => value - min_y);
-    }
-    if (state().relative_curve) {
-      y = y.map(value => value / (y[0] - min_y));
     }
     curves.push({
       type: 'scatter',
@@ -467,8 +452,6 @@ const DEFAULT_CONFIG_OPTIONS = [
   "hidden_curves",
   "scale",
   "with_quantiles",
-  "suboptimal_curve",
-  "relative_curve",
 ];
 
 const setConfig = (config_item) => {
@@ -1025,7 +1008,6 @@ const exportPDF = (kind) => {
 const renderSidebar = () => {
   renderScaleSelector();
   renderWithQuantilesToggle();
-  renderSuboptimalRelativeToggle();
   mapSelectorsToState();
   renderPlotDropdowns();
   renderExportButtons();
@@ -1148,14 +1130,6 @@ const hasQuantiles = () => getPlotData().data.some(
   c => ("y_low" in c && "y_high" in c) || ("x_low" in c && "x_high" in c)
 );
 
-const renderSuboptimalRelativeToggle = () => {
-  if (isChart('scatter')) {
-    show(document.querySelectorAll("#change-relative-suboptimal-form-group"), 'flex');
-  } else {
-    hide(document.querySelectorAll("#change-relative-suboptimal-form-group"));
-  }
-};
-
 const renderPlotDropdowns = () => {
   hide(document.querySelectorAll(`[id$='-custom-params-container']`));
   show(document.querySelectorAll(`#${state().plot_kind}-custom-params-container`), 'block');
@@ -1177,8 +1151,6 @@ const mapSelectorsToState = () => {
   document.getElementById('plot_kind').value = currentState.plot_kind;
   document.getElementById('change_scale').value = currentState.scale;
   document.getElementById('change_shades').checked = currentState.with_quantiles;
-  document.getElementById('change_suboptimal').checked = currentState.suboptimal_curve;
-  document.getElementById('change_relative').checked = currentState.relative_curve;
 };
 
 /*
@@ -1597,7 +1569,8 @@ const renderImages = () => {
   const ncols = plotData.ncols || Math.min(plotData.data.length, 3);
   const grid = document.createElement('div');
   grid.className = 'image-grid';
-  grid.style.gridTemplateColumns = `repeat(${ncols}, minmax(0, 1fr))`;
+  // Columns shrink to fit the page but never exceed 512px.
+  grid.style.gridTemplateColumns = `repeat(${ncols}, minmax(0, 512px))`;
 
   plotData.data.forEach(imgData => {
     const cell = document.createElement('figure');
@@ -1900,10 +1873,19 @@ function renderTable() {
       : formatCell(value);
   };
 
-  const buildColumns = () => plotData.columns.map(name => ({
+  // Grid.js has no initial sort option: the rows are already sorted, so set
+  // its sort state directly for the sort arrow to show this order. The
+  // `direction` on the column is needed too, as Grid.js resets the direction
+  // to it when first rendering a sorted column.
+  const sortIndex = plotData.columns.indexOf(tableAppliedOrder.column);
+  const sortDirection = tableAppliedOrder.ascending ? 1 : -1;
+
+  const buildColumns = () => plotData.columns.map((name, i) => ({
     name,
     hidden: tableHiddenColumns.has(name),
-    sort: { compare: compareCells },
+    sort: i === sortIndex
+      ? { compare: compareCells, direction: sortDirection }
+      : { compare: compareCells },
     formatter: tableCell,
   }));
 
@@ -1914,9 +1896,19 @@ function renderTable() {
     // Search the value only, not the description HTML.
     search: { selector: (cell) => String(cellValue(cell)) },
   });
+  const store = tableGrid.config.store;
+  store.dispatch(s => ({...s, sort: {columns: [
+    {index: sortIndex, direction: sortDirection, compare: compareCells},
+  ]}}));
   if (prevGridHeight) {
     card.style.minHeight = `${prevGridHeight}px`;
-    tableGrid.on('ready', () => card.style.minHeight = '');
+    // Grid.js' UMD build never emits 'ready': watch the store status instead.
+    const unsubscribe = store.subscribe(s => {
+      if (s.status === 3) {  // Grid.js Status.Rendered
+        card.style.minHeight = '';
+        unsubscribe();
+      }
+    });
   }
   tableGrid.render(card);
   tableGridKey = gridKey;

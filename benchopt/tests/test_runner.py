@@ -1,4 +1,5 @@
 import pytest
+import re
 import inspect
 
 from benchopt.cli.main import run
@@ -16,10 +17,9 @@ def test_skip_api(n_jobs):
             name = "Objective-skip"
             parameters = dict(should_skip=[True, False])
 
-            def skip(self, X, y):
+            def skip(self, dataset):
                 if self.should_skip:
-                    return True, "Objective#SKIP"
-                return False, None
+                    return "Objective#SKIP"
     """
 
     solver = """from benchopt.utils.temp_benchmark import TempSolver
@@ -30,10 +30,9 @@ def test_skip_api(n_jobs):
         parameters = dict(should_skip=[True, False])
         def run(self, n_iter): print("Solver#RUN")
 
-        def skip(self, **obj):
+        def skip(self, objective, dataset):
             if self.should_skip:
-                return True, "Solver#SKIP"
-            return False, None
+                return "Solver#SKIP"
 
     """
 
@@ -544,9 +543,9 @@ class TestSeed:
                 # Check that get_seed() works with parallel runs.
                 run((cmd_str + " -j 2").split(), standalone_mode=False)
 
-        # get_data() runs once per -j1 call, and twice for the -j2 call (once
-        # during dispatch, once more in the worker).
-        seeds = out.check_output(r"(?m)^#SEED-data=.*", repetition=4)
+        # get_data() runs once per call: the objective does not set `cv`, so
+        # the data is not loaded during dispatch.
+        seeds = out.check_output(r"(?m)^#SEED-data=.*", repetition=3)
         assert len(set(seeds)) == 1, "Seeds are not equal"
 
     def test_seed_different(self, no_debug_log):
@@ -670,6 +669,27 @@ class TestSeed:
         n_match = 1 if n_jobs == 1 else 3
         out.check_output("#DATA-LOAD", repetition=n_match)
 
+    def test_init_without_super(self, no_debug_log):
+        # Components whose __init__ skips super().__init__() can be seeded.
+        init = 'def __init__(self):\n                    pass\n'
+        objective, solver, dataset = [
+            getter().replace('name = "', init + '                name = "')
+            for getter in [
+                self.get_objective, self.get_solver, self.get_dataset
+            ]
+        ]
+        with temp_benchmark(
+            objective=objective, solvers=solver, datasets=dataset
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                run(
+                    f"{bench.benchmark_dir} --no-plot -r 2".split(),
+                    standalone_mode=False,
+                )
+
+        for tag in ["obj", "sol", "data"]:
+            out.check_output(f"#SEED-{tag}=", repetition=2)
+
 
 def test_get_run_output_path():
     from pathlib import Path
@@ -791,3 +811,165 @@ def test_dataset_run_context_in_evaluate_result(no_debug_log, monkeypatch):
                  "--no-plot", "--no-cache"], standalone_mode=False)
 
     out.check_output("#DATASET-SEED-IN-EVAL#", repetition=1)
+
+
+def test_solver_releases_run_data(no_debug_log):
+    """Solvers must not keep a run's data alive once the run is over.
+
+    Solver instances outlive their runs, so any reference they keep
+    (`_objective`, attributes set in `set_objective`) would pin the data of
+    their last run, one copy per solver config, until it is released.
+    """
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+        import gc, weakref
+        import numpy as np
+
+        REFS = []
+
+        class Data(np.ndarray):
+            pass
+
+        class Objective(TempObjective):
+            name = "test-objective"
+            sampling_strategy = "run_once"
+            def set_data(self, X, y):
+                # A fresh array per call, like a dtype conversion would do.
+                self.X = np.zeros(10).view(Data)
+                gc.collect()
+                alive = sum(r() is not None for r in REFS)
+                print(f"#ALIVE#{alive}")
+                REFS.append(weakref.ref(self.X))
+            def get_objective(self):
+                return dict(X=self.X, y=None, lmbd=1)
+    """
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        name = "test-solver"
+        sampling_strategy = 'run_once'
+        parameters = dict(p=[1, 2, 3])
+        def set_objective(self, X, y, lmbd):
+            self.X = X
+            super().set_objective(X, y, lmbd)
+    """
+    with temp_benchmark(objective=objective, solvers=[solver]) as bench:
+        with CaptureCmdOutput() as out:
+            run([str(bench.benchmark_dir), "-d", "test-dataset", "-n", "1",
+                 "--no-plot", "--no-cache"], standalone_mode=False)
+
+    # The previous run's objective can linger in single-slot references
+    # (terminal state, joblib pre-dispatch), but copies must not pile up.
+    out.check_output("#ALIVE#")
+    out.check_output("#ALIVE#[2-9]", repetition=0)
+
+
+@pytest.mark.parametrize("parallel", ["sequential", "group_by"])
+def test_components_share_state_then_release(parallel, no_debug_log):
+    """Consecutive runs share the components' state, released afterwards.
+
+    Data is loaded once per dataset and set once per (dataset, objective),
+    and at most one state per component kind stays alive in a process.
+    """
+    dataset = """from benchopt import BaseDataset
+
+    class Dataset(BaseDataset):
+        name = "test-dataset"
+        parameters = {"n": [1, 2]}
+        def get_data(self):
+            print("#GET_DATA#")
+            return dict(X=None, y=None)
+    """
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+        import gc, weakref
+        import numpy as np
+
+        REFS = []
+
+        class Data(np.ndarray):
+            pass
+
+        def n_alive():
+            gc.collect()
+            return sum(r() is not None for r in REFS)
+
+        class Objective(TempObjective):
+            name = "test-objective"
+            parameters = {"p": [1, 2]}
+            def set_data(self, X, y):
+                print(f"#SET_DATA#ALIVE#{n_alive()}")
+                self.X = np.zeros(10).view(Data)
+                REFS.append(weakref.ref(self.X))
+            def get_objective(self):
+                return dict(X=self.X.copy().view(Data), y=None, lmbd=1)
+    """
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+        import gc, weakref
+
+        REFS = []
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            sampling_strategy = 'run_once'
+            parameters = dict(q=[1, 2])
+            def set_objective(self, X, y, lmbd):
+                gc.collect()
+                alive = sum(r() is not None for r in REFS)
+                print(f"#SET_OBJECTIVE#ALIVE#{alive}")
+                self.X = X
+                REFS.append(weakref.ref(X))
+    """
+    extra = (
+        [] if parallel == "sequential"
+        else ["-j", "2", "--group-by", "dataset"]
+    )
+    with temp_benchmark(
+        datasets=[dataset], objective=objective, solvers=[solver]
+    ) as bench, CaptureCmdOutput() as out:
+        run([str(bench.benchmark_dir), "-d", "test-dataset", "-r", "2",
+             "--no-plot", "--no-cache", *extra], standalone_mode=False)
+
+        from joblib.externals.loky import get_reusable_executor
+        get_reusable_executor().shutdown(wait=True)
+
+    out.check_output("#GET_DATA#", repetition=2)
+    out.check_output("#SET_DATA#", repetition=4)
+    out.check_output("#SET_OBJECTIVE#", repetition=16)
+    # The previous state may linger, but states must not pile up.
+    out.check_output("#ALIVE#[2-9]", repetition=0)
+
+
+def test_repetition_reloads_seeded_data(no_debug_log):
+    """A repetition reloads the data when the dataset seed depends on it."""
+    dataset = """from benchopt import BaseDataset
+
+    class Dataset(BaseDataset):
+        name = "test-dataset"
+        def get_data(self):
+            seed = self.get_seed(use_repetition=True)
+            return dict(X=seed, y=None)
+    """
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+        class Objective(TempObjective):
+            name = "test-objective"
+            def set_data(self, X, y):
+                self.X = X
+            def get_objective(self):
+                return dict(X=self.X, y=None, lmbd=1)
+    """
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            sampling_strategy = 'run_once'
+            def set_objective(self, X, y, lmbd):
+                print(f"#SET_OBJECTIVE#{X}")
+    """
+    with temp_benchmark(
+        datasets=[dataset], objective=objective, solvers=[solver]
+    ) as bench, CaptureCmdOutput() as out:
+        run([str(bench.benchmark_dir), "-d", "test-dataset", "-r", "3",
+             "--no-plot", "--no-cache"], standalone_mode=False)
+
+    seeds = set(re.findall(r"#SET_OBJECTIVE#(\d+)", out.output))
+    assert len(seeds) == 3, out.output

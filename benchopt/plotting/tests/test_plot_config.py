@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch
 
 from benchopt.cli.main import run
+from benchopt.plotting import _update_legacy_view
 from benchopt.utils.temp_benchmark import temp_benchmark
 
 from benchopt.tests.utils import CaptureCmdOutput
@@ -87,3 +88,19 @@ def test_hidden_plots():
         plots = html.call_args.args[2]["plots"]
         assert "boxplot" not in plots and "table" not in plots
         assert "objective_curve" in plots
+
+
+# XXX: remove in benchopt 2.0
+@pytest.mark.parametrize("legacy, expected", [
+    ({"suboptimal_curve": True}, "Suboptimality"),
+    ({"suboptimal_curve": True, "relative_curve": True},
+     "Relative Suboptimality"),
+    ({"suboptimal_curve": False, "relative_curve": False}, "Objective"),
+])
+def test_update_legacy_view(legacy, expected):
+    view = {"plot_kind": "objective_curve", **legacy}
+    with pytest.warns(FutureWarning, match="deprecated"):
+        _update_legacy_view("my-view", view)
+    assert view == {
+        "plot_kind": "objective_curve", "objective_curve_Y_axis": expected
+    }

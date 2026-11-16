@@ -170,11 +170,6 @@ def run_on_slurm(
                     for m in (kw.get("meta") for kw in run_group)
                     if m is not None
                 ])
-                # Jobs reload the data: don't keep it on the front node while
-                # the batch holds the kwargs.
-                for kwargs in run_group:
-                    if "dataset" in kwargs:
-                        kwargs["dataset"]._data = None
 
     if terminal is not None:
         # ponytail: all runs of a RUNNING job count as running, even if
