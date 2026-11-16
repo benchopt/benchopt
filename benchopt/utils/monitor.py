@@ -214,7 +214,7 @@ def _view(run, results, console, hint=None, progress=None):
     )
     view._footer = (
         f"[bold {STATE_STYLE[state]}]{state}[/] · "
-        f"{escape(run['run_name'])} · {duration(run)}"
+        f"{escape(run['run_name'])}"
     )
     if hint is not None:
         view._footer += f" · {hint}"
