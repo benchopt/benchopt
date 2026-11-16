@@ -23,8 +23,8 @@ def test_dataset_name_default():
 
 def test_get_n_configs():
     # get_n_configs counts the parametrized (dataset, objective, solver)
-    # combinations that `_get_all_runs` yields.
-    from benchopt._generate_runs import _get_all_runs
+    # combinations that `generate_run_kwargs` yields, with one repetition.
+    from benchopt._generate_runs import generate_run_kwargs
     from benchopt.utils.terminal_output import TerminalOutput
 
     solver = """from benchopt import BaseSolver
@@ -46,7 +46,7 @@ def test_get_n_configs():
         solvers = bench.check_solver_patterns(None)
         datasets = bench.check_dataset_patterns(None)
         objectives = bench.check_objective_filters(None)
-        n_runs = len(list(_get_all_runs(
+        n_runs = len(list(generate_run_kwargs(
             bench, solvers, None, datasets, objectives,
             terminal=TerminalOutput(1, False)
         )))
