@@ -223,6 +223,7 @@ def follow_run(run, console):
     results, offset = [], 0
     hint = view = None
     updated = 0
+    interactive = console.is_terminal and sys.stdin.isatty()
 
     def update(hint=None):
         nonlocal run, offset, view, updated
@@ -230,8 +231,13 @@ def follow_run(run, console):
         run = _load(run['path']) or run
         new, offset = read_results(run, offset)
         results.extend(new)
+        old = view
         view = _view(run, results, console, hint,
                      progress=view and view._progress)
+        # The view is rebuilt from the files: keep where it is scrolled.
+        view._scrollable = interactive
+        if old is not None:
+            view._top, view._window = old._top, old._window
         updated = time()
         return view
 
@@ -243,7 +249,7 @@ def follow_run(run, console):
                            f"{kill}[/]")
         return view._render()
 
-    if console.is_terminal and sys.stdin.isatty():
+    if interactive:
         try:
             with _read_key() as read, Live(
                     get_renderable=render, console=console, screen=True,
@@ -258,6 +264,8 @@ def follow_run(run, console):
                         return True
                     if key == 'p':
                         break
+                    if view is not None and view.scroll(key):
+                        continue
                     if hint is not None:
                         # Confirming a kill, or showing its outcome.
                         if key == 'y' and hint.startswith("[red]Kill"):

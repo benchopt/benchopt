@@ -260,7 +260,10 @@ The selected run is displayed live, finished or not: press ``esc`` to go
 back to the list, ``q`` to quit, ``p`` to quit and print its results, or ``k`` to interrupt a run in progress
 as Ctrl-C would: its results are saved and its SLURM jobs are cancelled. This
 works from any machine sharing the ``runs_dir`` folder, e.g. another login
-node of the cluster. Without a terminal, ``benchopt monitor`` only prints the
+node of the cluster. In ``benchopt run`` and ``benchopt monitor``, the
+results that do not fit on the screen are scrolled with the arrow keys, or the
+mouse wheel in most terminals, ``PgUp``/``PgDn`` and ``Home``/``End``: ``End``
+follows the new results again. Without a terminal, ``benchopt monitor`` only prints the
 list of runs, or the results of the selected one. Set the ``no_rich`` config option to fall back on the
 plain line by line output of ``benchopt run``.
 

@@ -529,3 +529,36 @@ def test_rich_output_worker_done_records(tmp_path, monkeypatch, record_first):
     # The record does not show in the results, but its result does once.
     results, _ = read_results(snapshot)
     assert results == [[2, *KEY, 'done', "", False]]
+
+
+def test_rich_output_scroll_results():
+    terminal = RichOutput(n_repetitions=1, show_progress=False)
+    terminal.console = Console(file=io.StringIO(), width=80, height=20,
+                               highlight=False)
+
+    def add_results(start, stop):
+        for i in range(start, stop):
+            terminal.set(dataset="data", objective="obj", solver=f"s{i}")
+            terminal.show_status(status='done')
+
+    add_results(0, 30)
+    assert "s29 done" in _render_to_str(terminal)
+
+    # Up a page shows the earlier results, with how many are left out.
+    assert terminal.scroll('\x1b[5~')
+    display = _render_to_str(terminal)
+    assert "s29 done" not in display
+    assert "more below" in display
+    # The view stays put as new results come in.
+    add_results(30, 35)
+
+    def shown(display):
+        return display.split("more below")[0].splitlines()[:-1]
+    assert shown(_render_to_str(terminal)) == shown(display)
+
+    # Home goes to the first results, End back to following the new ones.
+    terminal.scroll('\x1b[H')
+    assert "data" in _render_to_str(terminal).splitlines()[1]
+    terminal.scroll('\x1b[F')
+    assert "s34 done" in _render_to_str(terminal)
+    assert not terminal.scroll('q')

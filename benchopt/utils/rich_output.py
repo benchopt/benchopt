@@ -75,14 +75,39 @@ def _line(markup):
     return text
 
 
-def _crop(lines, n, tail=False):
-    """Keep `n` lines, reporting how many are left out on an extra one."""
+def _crop(lines, n, top=None, hint=""):
+    """Keep `n` lines from line `top`, or the last ones if None, reporting
+    how many are left out above and below on extra lines.
+
+    Return the lines and the index of the first one kept, None if they reach
+    the last line, so that the new lines are followed.
+    """
     if len(lines) <= n:
-        return lines
-    left_out = f"[dim]+{len(lines) - n + 1} more[/]"
-    if tail:
-        return [left_out] + lines[len(lines) - max(0, n - 1):]
-    return lines[:max(0, n - 1)] + [left_out]
+        return lines, None
+    last = len(lines) - max(0, n - 1)
+    top = last if top is None else min(top, last)
+    size = n - (top > 0)
+    if top + size < len(lines):
+        size -= 1
+    size = max(0, size)
+    kept = lines[top:top + size]
+    if top > 0:
+        kept.insert(0, f"[dim]+{top} more{hint}[/]")
+    if top + size < len(lines):
+        kept.append(f"[dim]+{len(lines) - top - size} more below[/]")
+    return kept, None if top >= last else top
+
+
+# Keys scrolling the results, on POSIX and Windows: (direction, unit).
+SCROLL_KEYS = {
+    '\x1b[A': (-1, 'line'), '\xe0H': (-1, 'line'), '\x00H': (-1, 'line'),
+    '\x1b[B': (1, 'line'), '\xe0P': (1, 'line'), '\x00P': (1, 'line'),
+    '\x1b[5~': (-1, 'page'), '\xe0I': (-1, 'page'), '\x00I': (-1, 'page'),
+    '\x1b[6~': (1, 'page'), '\xe0Q': (1, 'page'), '\x00Q': (1, 'page'),
+    '\x1b[H': (-1, 'end'), '\x1b[1~': (-1, 'end'), '\xe0G': (-1, 'end'),
+    '\x1b[F': (1, 'end'), '\x1b[4~': (1, 'end'), '\xe0O': (1, 'end'),
+}
+SCROLL_HINT = " · ↑/↓ PgUp/PgDn to scroll"
 
 
 def _rule(title):
@@ -202,6 +227,11 @@ class RichOutput(TerminalOutput):
         self._live = None
         self._progress = None
         self._task = None
+        # First result line shown, None to follow the last ones, and the
+        # number of result lines and of the ones shown, at the last render.
+        self._top, self._window = None, (0, 0)
+        # Whether the keys scroll the results, to tell it on the display.
+        self._scrollable = False
         # Line added below the counters, used by `benchopt monitor`.
         self._footer = None
         # Outputs of a run that is over, shown by `benchopt monitor` in place
@@ -336,7 +366,7 @@ class RichOutput(TerminalOutput):
                     with Live(get_renderable=self._render,
                               console=self.console, screen=True,
                               refresh_per_second=8, redirect_stdout=False,
-                              redirect_stderr=False) as live:
+                              redirect_stderr=False) as live, self._keys():
                         self._live = live
                         yield
                 finally:
@@ -349,6 +379,43 @@ class RichOutput(TerminalOutput):
             # stdout so that trailing output, e.g. an interrupted status,
             # stays in the same style.
             self.console = Console(highlight=False)
+
+    @contextmanager
+    def _keys(self):
+        """Scroll the results with the keys pressed, read in a thread."""
+        # A run in the background, e.g. with `&`, would be stopped when
+        # setting up the terminal.
+        try:
+            foreground = sys.stdin.isatty() and (
+                sys.platform == 'win32'
+                or os.tcgetpgrp(sys.stdin.fileno()) == os.getpgrp()
+            )
+        except OSError:
+            foreground = False  # Not the controlling terminal.
+        if not foreground:
+            yield
+            return
+        from .monitor import _read_key
+
+        stop = threading.Event()
+
+        def read_keys(read):
+            while not stop.is_set():
+                key = read(0.2)
+                if key is not None:
+                    self.scroll(key)
+
+        with _read_key() as read:
+            thread = threading.Thread(target=read_keys, args=(read,),
+                                      daemon=True)
+            thread.start()
+            self._scrollable = True
+            try:
+                yield
+            finally:
+                self._scrollable = False
+                stop.set()
+                thread.join()
 
     @contextmanager
     def step(self, label):
@@ -436,9 +503,30 @@ class RichOutput(TerminalOutput):
             # The run is over: nothing runs, show where its outputs are.
             outputs = list(map(_line, _output_lines(self._outputs)))
             middle = [_rule("Outputs"), *outputs] if outputs else []
-        results = _crop(results, free + 1 - len(middle), tail=True)
+        n = free + 1 - len(middle)
+        hint = SCROLL_HINT if self._scrollable else ""
+        shown, self._top = _crop(results, n, self._top, hint)
+        self._window = (len(results), n)
+        results = shown
 
         return Group(_rule("Results"), *map(_line, results), *middle, *totals)
+
+    def scroll(self, key):
+        """Scroll the results for `key`. Return False if it does not."""
+        if key not in SCROLL_KEYS:
+            return False
+        direction, unit = SCROLL_KEYS[key]
+        with self._lock:
+            total, n = self._window
+            last = max(0, total - max(0, n - 1))
+            top = last if self._top is None else self._top
+            step = dict(line=1, page=max(1, n - 2), end=total)[unit]
+            self._top = max(0, top + direction * step)
+            if self._top >= last:
+                self._top = None
+        if self._live is not None:
+            self._live.refresh()
+        return True
 
     def _running_lines(self, max_lines=None):
         """One line per dataset, objective and solver of the runs in flight."""
