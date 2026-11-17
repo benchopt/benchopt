@@ -16,7 +16,7 @@ Some configurations of a benchmark cannot run. A dataset can have incompatible
 parameters, an objective might not apply to some datasets, and a solver might
 not support sparse data or scale to large datasets. Each component can skip
 them by implementing a ``skip(self)`` method, which can use the components
-chosen before it with ``self.get_current(name)``:
+chosen before it with ``self.get_current(name)`` (see :ref:`current_run`):
 
 - :func:`~benchopt.BaseDataset.skip` skips all the runs of the dataset.
 - :func:`~benchopt.BaseObjective.skip` can use the dataset, and skips the runs
@@ -64,7 +64,7 @@ hardware should look at the machine that will run the solver. For a GPU,
 :func:`~benchopt.helpers.requires_gpu.gpu_available` checks the local
 machine, or with the :ref:`submitit backend <slurm_backend>`, that the
 solver's jobs request a GPU. For other checks,
-``self.get_current("worker_config")`` returns the config of the workers
+``self.get_current("run_parallel_config")`` returns the config of the workers
 that run the solver.
 
 .. code-block::
@@ -86,6 +86,41 @@ that run the solver.
     Both still work, with a ``FutureWarning``, and are checked before
     launching the runs, but the old signature always loads the data. They will
     be removed in benchopt 1.12.
+
+.. _current_run:
+
+Accessing the components of the current run
+-------------------------------------------
+
+Each run combines a dataset, an objective, a solver and a repetition. In the
+methods that benchopt calls on a component, e.g. ``skip``, ``get_data``,
+``set_objective`` or a ``slurm_params`` property, ``self.get_current(name)``
+returns:
+
+- ``"dataset"``, ``"objective"``, ``"solver"``: the component of the run.
+- ``"repetition"``: the index of the repetition. ``skip`` is checked for the
+  first repetition.
+- ``"run_parallel_config"``: the parallel config of the workers that run it,
+  or ``None`` when the runs are on the local machine. With the
+  :ref:`submitit backend <slurm_backend>`, it is the SLURM config of the jobs,
+  merged with the ``slurm_params`` of the solver. It cannot be used in
+  ``slurm_params``, which it depends on.
+
+A component is only available once it is chosen. The dataset is chosen
+first, then the objective and the solver, unless
+:ref:`group_by <run_grouping>` changes this order. Asking for a component that
+is not chosen yet, e.g. the solver in ``Dataset.skip`` or during
+``benchopt prepare``, raises an error. Outside of the methods that benchopt
+calls, ``get_current`` raises an error too.
+
+.. code-block::
+
+    class Solver(BaseSolver):
+        ...
+        def set_objective(self, X, y):
+            dataset = self.get_current("dataset")
+            # Adapt the solver to the dataset of the run.
+            self.batch_size = min(256, dataset.n_samples)
 
 .. _extra_objectives:
 

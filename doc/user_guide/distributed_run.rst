@@ -198,9 +198,9 @@ priority given to the run-specific parameters. Note that in this case, the jobs
 with different SLURM parameters will be launched as one job array per
 configuration.
 
-The SLURM configuration of each run is computed once, when the run is
-created. ``slurm_params`` can thus be a property that uses the run's other
-components, with ``self.get_current("dataset")``.
+The SLURM configuration is computed for each run, in the context of the run.
+``slurm_params`` can thus be a property that uses the run's other components,
+with ``self.get_current("dataset")``.
 
 The solvers' ``skip`` runs on the node running ``benchopt run``, which might
 not have the hardware of the jobs. To skip a solver when its jobs get no GPU,

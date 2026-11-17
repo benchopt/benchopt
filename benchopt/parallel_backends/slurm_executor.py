@@ -82,28 +82,21 @@ def hashable_pytree(pytree):
         return pytree
 
 
-def _split_by_slurm_config(batch, slurm_config):
+def _split_by_slurm_config(batch):
     """Sub-partition a `group_runs` batch into ``(job_slurm_config, runs)``
     pairs, one per distinct SLURM config found in the batch.
 
     A batch shares its `group_by` key, but can still span several solvers
     with different `slurm_params` (e.g. ``group_by=['dataset']``), so it is
     never itself the SLURM job unit -- each same-config run of items is.
-    The config of each run is computed when the run is created, see
-    `RunContext.worker_config`.
+    The config of each run is given by `RunContext.run_parallel_config`.
     """
     groups = {}
     for kwargs in batch:
-        # `benchopt prepare` dispatches datasets, with no run context.
-        worker_config = getattr(
-            kwargs.get('run_context'), 'worker_config', None
-        )
-        if worker_config is not None:
-            job_slurm_config = {
-                k: v for k, v in worker_config.items() if k != 'backend'
-            }
-        else:
-            job_slurm_config = slurm_config
+        job_slurm_config = {
+            k: v for k, v in kwargs['run_context'].run_parallel_config.items()
+            if k != 'backend'
+        }
 
         cfg = hashable_pytree(job_slurm_config)
         if cfg not in groups:
@@ -112,9 +105,7 @@ def _split_by_slurm_config(batch, slurm_config):
     return groups.values()
 
 
-def run_on_slurm(
-    benchmark, slurm_config, run_batch, batches, batch_n_jobs=1
-):
+def run_on_slurm(benchmark, run_batch, batches, batch_n_jobs=1):
     """Submit each pre-grouped batch (see `group_runs`) as SLURM job(s).
 
     ``batch_n_jobs`` sizes the job wall-time here, with each
@@ -126,9 +117,7 @@ def run_on_slurm(
     tasks = []
     with ExitStack() as stack:
         for batch in batches:
-            for job_slurm_config, run_group in _split_by_slurm_config(
-                batch, slurm_config
-            ):
+            for job_slurm_config, run_group in _split_by_slurm_config(batch):
                 # A job runs its group in `waves` rounds, so it needs `waves`
                 # times the per-run timeout; different lengths get their own
                 # array.

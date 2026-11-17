@@ -242,24 +242,18 @@ def test_split_by_slurm_config():
     # A `group_runs` batch shares its `group_by` key but can still span
     # several solvers with different `slurm_params`; `_split_by_slurm_config`
     # further partitions it so each distinct SLURM config gets its own job.
-    # The SLURM config of each run is computed when the run is created.
-    config = SimpleNamespace(worker_config={"backend": "submitit"})
+    # The SLURM config of each run is given by its run context.
+    config = SimpleNamespace(run_parallel_config={"backend": "submitit"})
     other = SimpleNamespace(
-        worker_config={"backend": "submitit", "slurm_nodes": 4}
+        run_parallel_config={"backend": "submitit", "slurm_nodes": 4}
     )
     batch = [
         {"meta": {"dataset_name": "d1"}, "run_context": config},
         {"meta": {"dataset_name": "d1"}, "run_context": config},
         {"meta": {"dataset_name": "d1"}, "run_context": other},
     ]
-    groups = _split_by_slurm_config(batch, {})
+    groups = _split_by_slurm_config(batch)
     assert sorted(len(kw) for _cfg, kw in groups) == [1, 2]
-
-    # `benchopt prepare` passes the dataset directly, and has no solver --
-    # such runs all share the top-level SLURM config.
-    prepare = [{"dataset": "d1"}, {"dataset": "d2"}]
-    (_cfg, runs), = _split_by_slurm_config(prepare, {})
-    assert len(runs) == 2
 
 
 @pytest.mark.parametrize("batch_n_jobs, waves", [(1, 2), (2, 1), (-1, 2)])
@@ -300,7 +294,7 @@ def test_run_on_slurm_grouped(mocked_submitit, batch_n_jobs, waves):
 
 def test_slurm_params_property(mocked_submitit):
     # A `slurm_params` property can use the run's dataset: each run gets the
-    # config of its own components, computed when the run is created.
+    # config of its own components, computed in the run context.
     solver = """
         from benchopt.utils.temp_benchmark import TempSolver
 
@@ -313,7 +307,7 @@ def test_slurm_params_property(mocked_submitit):
                 return {"slurm_nodes": dataset.n}
 
             def skip(self):
-                config = self.get_current("worker_config")
+                config = self.get_current("run_parallel_config")
                 print(f"#NODES#{config['slurm_nodes']}#")
     """
     dataset = """

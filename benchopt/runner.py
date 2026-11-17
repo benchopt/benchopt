@@ -124,8 +124,6 @@ def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
     # process (e.g. within a `group_by` batch), and release the others.
     use_components(dataset, objective, solver)
 
-    objective._repetition = repetition
-
     pdb = run_context.pdb
 
     curve = []

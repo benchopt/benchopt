@@ -21,7 +21,7 @@ class Solver(BaseSolver):
 
 def check_gpu(component, parallel_config):
     """Call `gpu_available` in a run of ``component`` with this config."""
-    with RunContext(parallel_config=parallel_config).set_run_context(
+    with RunContext(parallel_config=parallel_config).for_run(
         objective=None, dataset=None, solver=component, repetition=0,
         base_seed=0,
     ):
@@ -75,6 +75,6 @@ def test_gpu_available_unknown_backend():
 
 
 def test_gpu_available_outside_run():
-    # The worker config depends on the run, so it needs its context.
+    # The parallel config depends on the run, so it needs its context.
     with pytest.raises(RuntimeError, match="get_current"):
         gpu_available(Solver.get_instance())

@@ -67,8 +67,7 @@ def _dispatch(backend, benchmark, run, run_kwargs_iter, config,
     if backend == 'submitit':
         from .slurm_executor import run_on_slurm
         yield from run_on_slurm(
-            benchmark, config, run_one_batch, batches,
-            batch_n_jobs=batch_n_jobs,
+            benchmark, run_one_batch, batches, batch_n_jobs=batch_n_jobs,
         )
     else:
         if backend == 'dask':

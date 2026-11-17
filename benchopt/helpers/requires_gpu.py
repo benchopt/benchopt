@@ -39,7 +39,7 @@ def gpu_available(component):
     available : bool
         True if the runs of ``component`` will have a GPU.
     """
-    config = component.get_current('worker_config')
+    config = component.get_current('run_parallel_config')
     if config is None:
         # run on the current node, use a direct check
         available = get_cuda_version() is not None

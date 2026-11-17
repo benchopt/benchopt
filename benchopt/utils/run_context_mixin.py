@@ -82,14 +82,7 @@ class RunContextMixin:
     def _skip_reason(self):
         """Return the reason to skip from ``self.skip()``, or None to run."""
         name = f"{type(self)!r}.skip"
-        # The component whose data a legacy `skip` receives.
-        upstream_name = {'Solver': 'objective', 'Objective': 'dataset'}.get(
-            self._base_class_name
-        )
-        legacy = (
-            upstream_name is not None
-            and len(inspect.signature(self.skip).parameters) > 0
-        )
+        legacy = len(inspect.signature(self.skip).parameters) > 0
         if not legacy:
             output = self.skip()
         else:
@@ -101,10 +94,12 @@ class RunContextMixin:
                 "access the other components without loading the data.",
                 FutureWarning,
             )
-            upstream = self.get_current(upstream_name)
+            is_solver = self._base_class_name == 'Solver'
+            upstream = self.get_current(
+                'objective' if is_solver else 'dataset'
+            )
             data = (
-                upstream.get_objective() if upstream_name == 'objective'
-                else upstream.get_data()
+                upstream.get_objective() if is_solver else upstream.get_data()
             )
             output = self.skip(**data)
 
@@ -137,18 +132,18 @@ class RunContextMixin:
         Parameters
         ----------
         name : 'dataset' | 'objective' | 'solver' | 'repetition' | \
-                'worker_config'
+                'run_parallel_config'
             What to return:
 
             - ``'dataset'``, ``'objective'``, ``'solver'``: the component of
               the current run.
             - ``'repetition'``: the index of the repetition. ``skip`` is
               checked in the context of the first repetition.
-            - ``'worker_config'``: the parallel config of the workers that
-              run it, or None when the runs are on the local machine. With
-              ``submitit``, it is the SLURM config of the jobs, merged with
-              the ``slurm_params`` of the solver if it is chosen. It cannot be
-              used in ``slurm_params``, which it depends on.
+            - ``'run_parallel_config'``: the parallel config of the workers
+              that run it, or None when the runs are on the local machine.
+              With ``submitit``, it is the SLURM config of the jobs, merged
+              with the ``slurm_params`` of the solver if it is chosen. It
+              cannot be used in ``slurm_params``, which it depends on.
 
         Returns
         -------
@@ -163,7 +158,8 @@ class RunContextMixin:
             ``Dataset.skip``.
         """
         names = (
-            'dataset', 'objective', 'solver', 'repetition', 'worker_config'
+            'dataset', 'objective', 'solver', 'repetition',
+            'run_parallel_config',
         )
         if name not in names:
             raise ValueError(f"name should be one of {names}. Got {name!r}.")

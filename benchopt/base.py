@@ -429,19 +429,14 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         ...
 
     @staticmethod
-    def _prepare(dataset, base_seed=0):
+    def _prepare(dataset, base_seed, run_context):
         """Preparation function, to map to prepare or get_data.
 
-        ``base_seed`` is part of the joblib cache key. Note that only
-        use_dataset is known at this point; requesting the objective/solver/
-        repetition seed raises an error.
+        ``base_seed`` is part of the joblib cache key, ``run_context`` is not.
+        Note that only use_dataset is known at this point; requesting the
+        objective/solver/repetition seed raises an error.
         """
-        from .utils.run_context import RunContext
-        ctx = RunContext().set_run_context(
-            objective=None, dataset=dataset, solver=None, repetition=None,
-            base_seed=base_seed,
-        )
-        with ctx:
+        with run_context:
             if type(dataset).prepare is not BaseDataset.prepare:
                 dataset.prepare()
             else:
@@ -457,26 +452,25 @@ def _cached_prepare(benchmark, dataset, force=False):
     from the cache key by listing 'base_seed' in prepare_cache_ignore.
     """
     cache_ignore = getattr(dataset, 'prepare_cache_ignore', ())
-    ignore = (
-        ['base_seed'] if cache_ignore == "all" or 'base_seed' in cache_ignore
-        else None
-    )
+    ignore = ['run_context']
+    if cache_ignore == "all" or 'base_seed' in cache_ignore:
+        ignore.append('base_seed')
     return benchmark.cache(
         BaseDataset._prepare, ignore=ignore, force=force,
     )
 
 
-def _check_prepare_in_cache(benchmark, dataset, force=False):
+def _check_prepare_in_cache(benchmark, dataset, run_context, force=False):
     """Frontal-node cache lookup for a dataset preparation.
 
     `force` is ignored as `parallel_run` already handles it.
     """
     return _cached_prepare(benchmark, dataset).check_call_in_cache(
-        dataset=dataset, base_seed=benchmark.seed
+        dataset=dataset, base_seed=benchmark.seed, run_context=run_context
     )
 
 
-def _prepare_one(benchmark, dataset, force=False):
+def _prepare_one(benchmark, dataset, run_context, force=False):
     """Prepare one dataset instance; used as the unit of work in parallel_run.
 
     Analogous to ``run_one_solver`` in ``runner.py``.
@@ -487,11 +481,13 @@ def _prepare_one(benchmark, dataset, force=False):
     exc = None
     cached_prepare = _cached_prepare(benchmark, dataset, force=force)
     cached = not force and cached_prepare.check_call_in_cache(
-        dataset=dataset, base_seed=benchmark.seed
+        dataset=dataset, base_seed=benchmark.seed, run_context=run_context
     )
     print(f"Preparing {dataset} ...", end=' ', flush=True)
     try:
-        cached_prepare(dataset=dataset, base_seed=benchmark.seed)
+        cached_prepare(
+            dataset=dataset, base_seed=benchmark.seed, run_context=run_context
+        )
         print("done" + (colorify(" (cached)", CYAN) if cached else ""))
     except Exception as e:
         print("FAILED")
@@ -580,8 +576,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     # called for it, so the data is loaded at most once.
     _dataset = None
     _dataset_ready = False
-    # Set directly by `run_one_to_cvg` for each repetition.
-    _repetition = 0
 
     # All class attributes that need to be parsed when we cannot import
     # the objective must be listed here. name is a special case as it is
@@ -899,7 +893,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         cv_fold_generator = repeat()
         # Perform the split with default split function if it is not defined by
         # the user.
-        rep = self._repetition
+        rep = self.get_current('repetition')
         for _ in range(rep + 1):
             cv_fold = next(cv_fold_generator)
 

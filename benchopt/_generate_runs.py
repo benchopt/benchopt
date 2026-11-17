@@ -132,7 +132,7 @@ def _prepare_objective(benchmark, run_context, dataset, objective, solver,
     ``solver`` is None when ``repetition`` is a group_by level, as the fold is
     then shared across solvers.
     """
-    ctx = run_context.set_run_context(
+    ctx = run_context.for_run(
         objective=objective, dataset=dataset, solver=solver, repetition=0,
         base_seed=benchmark.seed,
     )
@@ -208,7 +208,7 @@ def generate_run_kwargs(
             a: chosen[a] if a in order[:depth + 1] else None
             for a in CANONICAL_AXES
         }
-        ctx = base_ctx.set_run_context(
+        ctx = base_ctx.for_run(
             **components, repetition=0, base_seed=benchmark.seed
         )
         if 'objective' in levels:
@@ -233,15 +233,10 @@ def generate_run_kwargs(
         meta = _run_meta(benchmark, dataset, objective, solver, rep)
         # Runs share the component instances: each run enters its context
         # when it starts.
-        run_ctx = base_ctx.set_run_context(
+        run_ctx = base_ctx.for_run(
             objective=objective, dataset=dataset, solver=solver,
             repetition=rep, base_seed=benchmark.seed,
         )
-        if not collect:  # Collected runs are not dispatched.
-            with run_ctx:
-                run_ctx.worker_config = solver.get_current(
-                    'worker_config'
-                )
         return dict(
             benchmark=benchmark, dataset=dataset, objective=objective,
             solver=solver, repetition=rep, meta=meta, timeout=timeout,

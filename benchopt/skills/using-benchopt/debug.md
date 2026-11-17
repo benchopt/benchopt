@@ -67,6 +67,9 @@ objective = Objective.get_instance()         # add params if the objective takes
 objective.set_data(**data)                   # same data dict as above
 ```
 
+If `get_data` or `set_data` calls `get_seed`, `get_current` or `get_split`, call
+it inside a run context, as in the solver section below.
+
 `evaluate_result(**solver_result)` takes the keys that the benchmark's
 `Solver.get_result()` returns — so the argument names are benchmark-specific
 (commonly `beta=`, or `model=`/`dist=` for model-training benchmarks). Pass a
@@ -96,9 +99,8 @@ obj_dict = objective.get_objective()         # what the runner passes to the sol
 
 # The run context gives `get_seed` and `get_current` their run.
 from benchopt.utils.run_context import RunContext
-ctx = RunContext().set_run_context(objective, dataset, solver,
-                                   repetition=0, base_seed=0)
-with ctx:
+with RunContext(dataset=dataset, objective=objective, solver=solver,
+                repetition=0):
     # Optional: solvers can opt out of an objective/dataset combination.
     reason = solver.skip()                   # a reason to skip, or None
     print("runs" if reason is None else f"skipped: {reason}")

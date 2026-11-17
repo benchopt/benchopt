@@ -856,13 +856,13 @@ def test_run_context_scope():
     from benchopt.utils.temp_benchmark import TempSolver
 
     solver = TempSolver.get_instance()
-    ctx1 = RunContext().set_run_context(None, None, solver, 0, 0)
-    ctx2 = RunContext().set_run_context(None, None, solver, 1, 0)
+    ctx1 = RunContext().for_run(None, None, solver, 0, 0)
+    ctx2 = RunContext().for_run(None, None, solver, 1, 0)
     with ctx1:
         assert solver.get_current("solver") is solver
         assert solver.get_current("repetition") == 0
-        # A local run has no worker config.
-        assert solver.get_current("worker_config") is None
+        # A local run has no parallel config.
+        assert solver.get_current("run_parallel_config") is None
         with ctx2:
             assert solver._run_context is ctx2
             assert solver.get_current("repetition") == 1

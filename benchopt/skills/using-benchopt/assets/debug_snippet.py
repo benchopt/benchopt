@@ -8,31 +8,28 @@ from benchopt.utils.run_context import RunContext
 
 bench = Benchmark(".")
 
-# --- Inspect a dataset ---
+# --- Pick the components ---
 datasets = bench.get_datasets()
 Dataset = next(d for d in datasets if d.name == "simulated")
 dataset = Dataset.get_instance(n_samples=100)
-data = dataset.get_data()
-print("data keys:", list(data.keys()))
-
-# --- Inspect the objective ---
 Objective = bench.get_benchmark_objective()
 objective = Objective.get_instance()
-objective.set_data(**data)
-
-obj_dict = objective.get_objective()
-print("objective dict keys:", list(obj_dict.keys()))
-
-# --- Drive a solver by hand ---
 solvers = bench.get_solvers()
 Solver = next(s for s in solvers if s.name == "my-solver")
 solver = Solver.get_instance()
 
-# The run context gives `get_seed` and `get_current` their run.
-ctx = RunContext().set_run_context(
-    objective, dataset, solver, repetition=0, base_seed=0
-)
+# The run context gives `get_seed`, `get_current` and `get_split` their run.
+ctx = RunContext(dataset=dataset, objective=objective, solver=solver,
+                 repetition=0)
 with ctx:
+    # --- Inspect the data and the objective ---
+    data = dataset.get_data()
+    print("data keys:", list(data.keys()))
+    objective.set_data(**data)
+    obj_dict = objective.get_objective()
+    print("objective dict keys:", list(obj_dict.keys()))
+
+    # --- Drive the solver by hand ---
     reason = solver.skip()
     if reason is not None:
         print(f"Solver skipped: {reason}")

@@ -60,9 +60,9 @@ API
 
 - ``skip`` takes no argument for all components. The new
   ``get_current`` method gives the dataset, objective, solver,
-  repetition or worker config of the current run in any method benchopt
+  repetition or parallel config of the current run in any method benchopt
   calls, including ``skip`` and a ``slurm_params`` property, and raises if
-  the component is not chosen yet.
+  the component is not chosen yet. See :ref:`current_run`.
   The run context is only attached to the components during these calls.
   By `Thomas Moreau`_ (:gh:`1042`)
 
