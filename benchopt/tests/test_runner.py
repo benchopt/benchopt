@@ -773,7 +773,7 @@ def test_get_run_output_path_raises_outside_run():
 
 
 @pytest.mark.parametrize('n_jobs', [1, 2])
-def test_get_run_component(n_jobs, no_debug_log):
+def test_get_current(n_jobs, no_debug_log):
     # Each method benchopt calls sees the components of its own run, also
     # on the workers, and the dataset context in `evaluate_result`.
     objective = """from benchopt.utils.temp_benchmark import TempObjective
@@ -782,11 +782,11 @@ def test_get_run_component(n_jobs, no_debug_log):
             name = "test-objective"
             sampling_strategy = "run_once"
             def skip(self):
-                dataset = self.get_run_component("dataset")
+                dataset = self.get_current("dataset")
                 print(f"#OBJ-SKIP#{dataset}")
             def evaluate_result(self, beta):
-                dataset = self.get_run_component("dataset")
-                solver = self.get_run_component("solver")
+                dataset = self.get_current("dataset")
+                solver = self.get_current("solver")
                 seed = dataset.get_seed()
                 print(f"#EVAL#{dataset}#{solver}#{seed}")
                 return dict(value=1)
@@ -797,11 +797,11 @@ def test_get_run_component(n_jobs, no_debug_log):
             name = "test-solver"
             parameters = {"p": [0, 1]}
             def skip(self):
-                objective = self.get_run_component("objective")
-                dataset = self.get_run_component("dataset")
+                objective = self.get_current("objective")
+                dataset = self.get_current("dataset")
                 print(f"#SOLVER-SKIP#{objective}#{dataset}#{self}")
             def set_objective(self, X, y, lmbd):
-                dataset = self.get_run_component("dataset")
+                dataset = self.get_current("dataset")
                 print(f"#SET-OBJ#{dataset}#{self}")
     """
     dataset = """from benchopt.utils.temp_benchmark import TempDataset
@@ -832,14 +832,14 @@ def test_get_run_component(n_jobs, no_debug_log):
             out.check_output(rf"#EVAL#{ds}#{s}#\d+\n", repetition=1)
 
 
-def test_get_run_component_not_chosen(no_debug_log):
+def test_get_current_not_chosen(no_debug_log):
     # A component not chosen yet is an error, reported as for a failing skip.
     dataset = """from benchopt.utils.temp_benchmark import TempDataset
 
         class Dataset(TempDataset):
             name = "test-dataset"
             def skip(self):
-                self.get_run_component("solver")
+                self.get_current("solver")
     """
     with temp_benchmark(datasets=[dataset]) as bench:
         with CaptureCmdOutput(exit=1) as out:
@@ -859,21 +859,21 @@ def test_run_context_scope():
     ctx1 = RunContext().set_run_context(None, None, solver, 0, 0)
     ctx2 = RunContext().set_run_context(None, None, solver, 1, 0)
     with ctx1:
-        assert solver.get_run_component("solver") is solver
-        assert solver.get_run_component("repetition") == 0
+        assert solver.get_current("solver") is solver
+        assert solver.get_current("repetition") == 0
         # A local run has no worker config.
-        assert solver.get_run_component("worker_config") is None
+        assert solver.get_current("worker_config") is None
         with ctx2:
             assert solver._run_context is ctx2
-            assert solver.get_run_component("repetition") == 1
+            assert solver.get_current("repetition") == 1
         assert solver._run_context is ctx1
     assert solver._run_context is None
-    with pytest.raises(RuntimeError, match="get_run_component"):
-        solver.get_run_component("solver")
+    with pytest.raises(RuntimeError, match="get_current"):
+        solver.get_current("solver")
     with ctx1, pytest.raises(ValueError, match="No dataset"):
-        solver.get_run_component("dataset")
+        solver.get_current("dataset")
     with ctx1, pytest.raises(ValueError, match="name should be one of"):
-        solver.get_run_component("data")
+        solver.get_current("data")
 
 
 def test_solver_releases_run_data(no_debug_log):

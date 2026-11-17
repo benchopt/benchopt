@@ -309,11 +309,11 @@ def test_slurm_params_property(mocked_submitit):
 
             @property
             def slurm_params(self):
-                dataset = self.get_run_component("dataset")
+                dataset = self.get_current("dataset")
                 return {"slurm_nodes": dataset.n}
 
             def skip(self):
-                config = self.get_run_component("worker_config")
+                config = self.get_current("worker_config")
                 print(f"#NODES#{config['slurm_nodes']}#")
     """
     dataset = """

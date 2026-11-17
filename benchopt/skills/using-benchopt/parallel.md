@@ -121,9 +121,9 @@ Runs with different SLURM parameters are dispatched as **separate job arrays**.
 `skip` runs on the front node. To skip a GPU solver whose jobs get no GPU, call
 `gpu_available(self)` from `benchopt.helpers.requires_gpu` in `skip`: it reads
 the merged SLURM config of the run's solver (`gres`, `gpus_per_node`, ...).
-`self.get_run_component("worker_config")` returns that config. The config of
+`self.get_current("worker_config")` returns that config. The config of
 each run is computed once, when the run is created, so a `slurm_params`
-property can use `self.get_run_component("dataset")` (but not
+property can use `self.get_current("dataset")` (but not
 `"worker_config"`, which depends on it).
 
 ## Caching across nodes and machines

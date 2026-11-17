@@ -28,7 +28,7 @@ solvers = bench.get_solvers()
 Solver = next(s for s in solvers if s.name == "my-solver")
 solver = Solver.get_instance()
 
-# The run context gives `get_seed` and `get_run_component` their run.
+# The run context gives `get_seed` and `get_current` their run.
 ctx = RunContext().set_run_context(
     objective, dataset, solver, repetition=0, base_seed=0
 )

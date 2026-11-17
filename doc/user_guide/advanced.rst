@@ -16,7 +16,7 @@ Some configurations of a benchmark cannot run. A dataset can have incompatible
 parameters, an objective might not apply to some datasets, and a solver might
 not support sparse data or scale to large datasets. Each component can skip
 them by implementing a ``skip(self)`` method, which can use the components
-chosen before it with ``self.get_run_component(name)``:
+chosen before it with ``self.get_current(name)``:
 
 - :func:`~benchopt.BaseDataset.skip` skips all the runs of the dataset.
 - :func:`~benchopt.BaseObjective.skip` can use the dataset, and skips the runs
@@ -31,7 +31,7 @@ The skips are checked once per configuration, before launching the runs.
 Checks on the parameters are free. Calling ``dataset.get_data()`` or
 ``objective.get_objective()`` loads the data of the first repetition on the
 machine running ``benchopt run``, once per dataset. ``get_seed`` and
-``get_run_component`` can use the component itself and the ones chosen before
+``get_current`` can use the component itself and the ones chosen before
 it. Other components are only set when :ref:`group_by <run_grouping>` chooses
 them first, and asking for a component that is not set raises an error.
 
@@ -50,8 +50,8 @@ For instance, with an objective parameter ``reg`` and a dataset giving ``X``:
         def skip(self):
             from scipy import sparse
 
-            objective = self.get_run_component("objective")
-            dataset = self.get_run_component("dataset")
+            objective = self.get_current("objective")
+            dataset = self.get_current("dataset")
             if objective.reg == 0:
                 return "solver does not work with reg=0"
 
@@ -64,7 +64,7 @@ hardware should look at the machine that will run the solver. For a GPU,
 :func:`~benchopt.helpers.requires_gpu.gpu_available` checks the local
 machine, or with the :ref:`submitit backend <slurm_backend>`, that the
 solver's jobs request a GPU. For other checks,
-``self.get_run_component("worker_config")`` returns the config of the workers
+``self.get_current("worker_config")`` returns the config of the workers
 that run the solver.
 
 .. code-block::

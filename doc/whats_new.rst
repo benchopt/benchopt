@@ -59,7 +59,7 @@ API
   By `Thomas Moreau`_ (:gh:`1031`)
 
 - ``skip`` takes no argument for all components. The new
-  ``get_run_component`` method gives the dataset, objective, solver,
+  ``get_current`` method gives the dataset, objective, solver,
   repetition or worker config of the current run in any method benchopt
   calls, including ``skip`` and a ``slurm_params`` property, and raises if
   the component is not chosen yet.

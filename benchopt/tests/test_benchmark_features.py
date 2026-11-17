@@ -456,7 +456,7 @@ def test_skip_before_dispatch(skip_on):
         def get_objective(self): return dict(X=None, y=None, n=self.n)
         def skip(self):
             print("OBJECTIVE#SKIP")
-            dataset = self.get_run_component("dataset")
+            dataset = self.get_current("dataset")
             n = {"dataset.get_data()['n']" if on_data else "dataset.n"}
             if n > self.max_n:
                 return "too large"
@@ -468,8 +468,8 @@ def test_skip_before_dispatch(skip_on):
         parameters = {{"min_n": [1, 2]}}
         def skip(self):
             print("SOLVER#SKIP")
-            objective = self.get_run_component("objective")
-            dataset = self.get_run_component("dataset")
+            objective = self.get_current("objective")
+            dataset = self.get_current("dataset")
             n = {"objective.get_objective()['n']" if on_data else "dataset.n"}
             if n < self.min_n:
                 return "too small"

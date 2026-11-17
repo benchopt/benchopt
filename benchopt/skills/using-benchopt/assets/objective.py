@@ -42,7 +42,7 @@ class Objective(BaseObjective):
     # launching any run. Better decide on the parameters, which is free:
     # dataset.get_data() works (cached) but loads the data.
     # def skip(self):
-    #     dataset = self.get_run_component("dataset")
+    #     dataset = self.get_current("dataset")
     #     if dataset.n_samples < dataset.n_features:
     #         return "underdetermined system not supported"
 

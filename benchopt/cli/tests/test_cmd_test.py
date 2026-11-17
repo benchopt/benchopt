@@ -186,7 +186,7 @@ class TestCmdTest:
         class Solver(TempSolver):
             name = "test solver"
             def skip(self):
-                dataset = self.get_run_component("dataset")
+                dataset = self.get_current("dataset")
                 print(f"Skip#{dataset.p}")
                 if dataset.p > 0: return "skip for p > 0"
             def set_objective(self, p): self.p = p

@@ -97,11 +97,11 @@ class RunContextMixin:
             warnings.warn(
                 f"`{name}` receives the data as keyword arguments, which is "
                 "deprecated and will be removed in benchopt 1.12. Define "
-                "`skip(self)` instead, and use `self.get_run_component` to "
+                "`skip(self)` instead, and use `self.get_current` to "
                 "access the other components without loading the data.",
                 FutureWarning,
             )
-            upstream = self.get_run_component(upstream_name)
+            upstream = self.get_current(upstream_name)
             data = (
                 upstream.get_objective() if upstream_name == 'objective'
                 else upstream.get_data()
@@ -128,7 +128,7 @@ class RunContextMixin:
             f"giving the reason to skip. Got {output!r}."
         )
 
-    def get_run_component(self, name):
+    def get_current(self, name):
         """Return a component or an information of the current run.
 
         It is available in the methods that benchopt calls on the component,
@@ -169,7 +169,7 @@ class RunContextMixin:
             raise ValueError(f"name should be one of {names}. Got {name!r}.")
         if self._run_context is None:
             raise RuntimeError(
-                "get_run_component() can only be called in the methods that "
+                "get_current() can only be called in the methods that "
                 f"benchopt calls on {self}."
             )
         return self._run_context.get_component(name)

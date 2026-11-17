@@ -222,7 +222,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         """Hook to decide if the ``Solver`` is compatible with the objective.
 
         It is called before launching the runs. The objective and the dataset
-        are given by ``self.get_run_component``. Checks on their parameters
+        are given by ``self.get_current``. Checks on their parameters
         (e.g. ``objective.reg``, ``dataset.n_samples``) are free. Calling
         ``objective.get_objective()`` or ``dataset.get_data()`` loads the data
         on the machine running ``benchopt run``.
@@ -818,7 +818,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
         It is called before launching the runs, so skipping here removes the
         runs of all solvers. The dataset is given by
-        ``self.get_run_component("dataset")``. Checks on its parameters (e.g.
+        ``self.get_current("dataset")``. Checks on its parameters (e.g.
         ``dataset.n_samples``) are free. Calling ``dataset.get_data()`` loads
         the data on the machine running ``benchopt run``.
 

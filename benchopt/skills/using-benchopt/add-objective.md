@@ -78,7 +78,7 @@ are deterministic and need no seeding.
 
 - **`skip(self)`**: return a reason string to skip incompatible
   dataset/objective combinations, or `None`/no return to run; any other value
-  raises. Get the dataset with `self.get_run_component("dataset")`.
+  raises. Get the dataset with `self.get_current("dataset")`.
   It is checked before launching any solver run. Prefer parameters
   (`dataset.n_samples`): `dataset.get_data()` works (cached) but loads the data
   on the machine running `benchopt run`. The old `skip(**data)` and the

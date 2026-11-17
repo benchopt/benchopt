@@ -239,7 +239,7 @@ def generate_run_kwargs(
         )
         if not collect:  # Collected runs are not dispatched.
             with run_ctx:
-                run_ctx.worker_config = solver.get_run_component(
+                run_ctx.worker_config = solver.get_current(
                     'worker_config'
                 )
         return dict(
