@@ -80,6 +80,19 @@ class TestPrepareCmd:
                 )
             out.check_output("#PREPARED", repetition=1)
 
+    def test_no_cache(self, tmp_path, monkeypatch):
+        cache = tmp_path / "cache"
+        monkeypatch.setenv("BENCHOPT_CACHE", str(cache))
+        with temp_benchmark(datasets=self.dataset) as bench:
+            args = [str(bench.benchmark_dir)]
+            with CaptureCmdOutput() as out:
+                prepare_cmd([*args, "--no-cache"], standalone_mode=False)
+                assert not cache.exists()
+                prepare_cmd(args, standalone_mode=False)
+                assert cache.exists()
+                prepare_cmd([*args, "--no-cache"], standalone_mode=False)
+            out.check_output("#PREPARED", repetition=3)
+
     def test_cache_ignore_deduplicates(self):
         """prepare_cache_ignore collapses correctly ignore params."""
         dataset = """from benchopt import BaseDataset

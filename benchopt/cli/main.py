@@ -437,6 +437,8 @@ def run(config_file=None, **kwargs):
               shell_complete=complete_config_files,
               help="YAML configuration file containing benchmark options. "
               "The `dataset` key is used to select which datasets to prepare.")
+@click.option('--no-cache', is_flag=True,
+              help="Skip disk cache reads and writes during preparation.")
 @click.option('--force',
               is_flag=True,
               help="If this flag is set, re-run preparation even if the "
@@ -466,7 +468,7 @@ def run(config_file=None, **kwargs):
               "the prepared data matches the one used during the run.")
 def prepare(benchmark, dataset_names, config_file=None,
             force=False, n_jobs=None, parallel_config=None, env_name='False',
-            seed=None):
+            seed=None, no_cache=False):
 
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -474,7 +476,7 @@ def prepare(benchmark, dataset_names, config_file=None,
         if not dataset_names:
             dataset_names = config.get("dataset", tuple())
 
-    benchmark = Benchmark(benchmark, seed=seed)
+    benchmark = Benchmark(benchmark, seed=seed, no_cache=no_cache)
 
     # Resolve env name (same logic as install)
     if env_name == 'False':

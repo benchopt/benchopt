@@ -13,6 +13,9 @@ Version 1.10.1 -- in developement
 CLI
 ~~~
 
+- Add ``--no-cache`` to ``benchopt prepare`` for benchmarks with a read-only
+  cache location. By `Zerui Ge`_ (`issue #1036 <https://github.com/benchopt/benchopt/issues/1036>`__).
+
 - Group runs into fewer execution units with ``group_by`` (and optional
   intra-group parallelism via ``batch_n_jobs``) to reduce per-run overhead when
   running in parallel, by sharing setup across the runs of a batch. ``group_by``
