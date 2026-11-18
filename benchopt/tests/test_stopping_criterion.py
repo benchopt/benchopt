@@ -406,8 +406,12 @@ def test_sampling_strategy_meta_independent_of_execution_order(no_debug_log):
         # *class* attribute `Solver.sampling_strategy` as a side effect.
         solver_instance = solver_class.get_instance()
         dataset1_instance = datasets["dataset1"].get_instance()
-        objective_instance._set_dataset(dataset1_instance)
-        solver_instance._set_objective(objective_instance)
+        with RunContext().for_run(
+            objective_instance, dataset1_instance, solver_instance,
+            repetition=0, base_seed=0,
+        ):
+            objective_instance._load_data()
+            solver_instance._set_objective(objective_instance)
 
         # Recomputing for `dataset2` must give the same, correct value --
         # unaffected by the unrelated `dataset1` run that happened in between.

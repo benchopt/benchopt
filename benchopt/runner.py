@@ -137,9 +137,9 @@ def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
     # The run context is attached to the components only during the run.
     with run_context, exception_handler(terminal, pdb=pdb) as ctx:
 
-        # `_set_dataset` is a no-op if already called for this dataset
+        # `_load_data` is a no-op if already called for this dataset
         # (e.g. for sequential runs).
-        objective._set_dataset(dataset)
+        objective._load_data()
         solver._set_objective(objective)
 
         stopping_criterion = (

@@ -572,10 +572,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     """
     _base_class_name = 'Objective'
 
-    # Set by `_attach_dataset`. `_dataset_ready` tells if `set_data` was
-    # called for it, so the data is loaded at most once.
-    _dataset = None
-    _dataset_ready = False
+    # Dataset whose data was given to `set_data`, to load it at most once.
+    _loaded_dataset = None
 
     # All class attributes that need to be parsed when we cannot import
     # the objective must be listed here. name is a special case as it is
@@ -609,7 +607,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
         @functools.wraps(get_objective)
         def get_objective_with_data(self):
-            if self._dataset is not None:
+            if (self._run_context is not None
+                    and self._run_context.dataset is not None):
                 self._load_data()
             return get_objective(self)
         cls.get_objective = get_objective_with_data
@@ -768,24 +767,15 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
                     return True
         return False
 
-    def _attach_dataset(self, dataset):
-        if dataset is not self._dataset:
-            self._dataset, self._dataset_ready = dataset, False
-
-    def _set_dataset(self, dataset):
-        """Set the data of `dataset`, if not already set."""
-        self._attach_dataset(dataset)
-        # The data is set again if its seed changed, e.g. for a new repetition.
-        if self._seed_changed() or dataset._seed_changed():
-            self._dataset_ready = False
-        self._load_data()
-
     def _load_data(self):
-        """Call `set_data` with the data of the attached dataset."""
-        if self._dataset_ready:
+        """Call `set_data` with the data of the run's dataset, if not set."""
+        dataset = self.get_current('dataset')
+        # The data is set again if its seed changed, e.g. for a new repetition.
+        if (dataset is self._loaded_dataset and not self._seed_changed()
+                and not dataset._seed_changed()):
             return
         assert self.is_installed(raise_on_not_installed=True)
-        data = self._dataset.get_data()
+        data = dataset.get_data()
 
         # Check if parameters are modified by set_data
         parameters = {}
@@ -805,7 +795,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
                     "modified by 'set_data'."
                 )
 
-        self._dataset_ready = True
+        self._loaded_dataset = dataset
 
     def skip(self):
         """Used to decide if the ``Objective`` is compatible with the data.

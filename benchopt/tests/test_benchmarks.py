@@ -93,7 +93,7 @@ def test_benchmark_objective(benchmark, test_dataset_name):
 
     with ctx:
         # get one value for the objective, with the test_dataset
-        objective._set_dataset(dataset)
+        objective._load_data()
         result = objective._get_one_result()
         if result is None:
             pytest.skip(
@@ -236,7 +236,7 @@ def test_solver_stopping_criterion(benchmark, solver_class, test_dataset_name):
         )
 
         with ctx:
-            objective._set_dataset(dataset)
+            objective._load_data()
             result = objective._get_one_result()
             if result is None:
                 return
@@ -274,7 +274,6 @@ def test_solver_run(
         ctx = RunContext().for_run(
             objective, dataset, solver, repetition=0, base_seed=benchmark.seed
         )
-        objective._attach_dataset(dataset)
         with ctx:
             for component in [dataset, objective, solver]:
                 reason = component._skip_reason()
@@ -282,7 +281,7 @@ def test_solver_run(
                     reasons.append(reason)
                     break
             else:
-                objective._set_dataset(dataset)
+                objective._load_data()
                 solver._set_objective(objective)
                 _test_solver_one_objective(solver, objective)
                 return

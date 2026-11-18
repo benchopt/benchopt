@@ -137,7 +137,6 @@ def _prepare_objective(benchmark, run_context, dataset, objective, solver,
         base_seed=benchmark.seed,
     )
 
-    objective._attach_dataset(dataset)
     try:
         with ctx:
             if n_repetitions is None and objective._is_using_cv():
@@ -211,8 +210,6 @@ def generate_run_kwargs(
         ctx = base_ctx.for_run(
             **components, repetition=0, base_seed=benchmark.seed
         )
-        if 'objective' in levels:
-            components['objective']._attach_dataset(components['dataset'])
         for level in levels:
             status, reason = 'error', None
             with ctx, exception_handler(terminal, pdb=base_ctx.pdb):

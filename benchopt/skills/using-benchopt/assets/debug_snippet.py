@@ -25,7 +25,7 @@ with ctx:
     # --- Inspect the data and the objective ---
     data = dataset.get_data()
     print("data keys:", list(data.keys()))
-    objective.set_data(**data)
+    # `get_objective` calls `set_data` with the data of the context's dataset.
     obj_dict = objective.get_objective()
     print("objective dict keys:", list(obj_dict.keys()))
 
