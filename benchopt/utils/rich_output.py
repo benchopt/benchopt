@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import signal
+import traceback
 import _thread
 import threading
 from time import time
@@ -308,6 +309,10 @@ class RichOutput(TerminalOutput):
             finished = 'done'
         except KeyboardInterrupt:
             finished = 'interrupted'
+            raise
+        except Exception:
+            # The run crashed: keep why, for `benchopt monitor`.
+            self._meta['traceback'] = traceback.format_exc()
             raise
         finally:
             stop.set()

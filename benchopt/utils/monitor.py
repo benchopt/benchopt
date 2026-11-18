@@ -8,6 +8,7 @@ from datetime import datetime
 from contextlib import contextmanager
 
 from .rich_output import STALE_AFTER, RichOutput, get_runs_dir, read_jsonl
+from .rich_output import SCROLL_HINT, SCROLL_KEYS, _line, _rule
 
 
 # Keys returned by `click.getchar` for up and down, on POSIX and Windows.
@@ -224,6 +225,53 @@ def _view(run, results, console, hint=None, progress=None):
     return view
 
 
+def _errors(run, results):
+    "Tracebacks of the failed runs, and of the whole run if it crashed."
+    parts = [
+        # A result is for the dataset, objective or solver at its level.
+        " / ".join(r[1:r[0] + 2]) + "\n" + (r[5] or "Traceback in the log.")
+        for r in results if r[4] == 'error'
+    ]
+    if run.get('traceback'):
+        parts.append("benchopt run\n" + run['traceback'])
+    return "\n\n".join(parts) or "No error."
+
+
+class _Pager:
+    "Text on the whole screen, scrolled with the keys, e.g. the log."
+
+    def __init__(self, title, text, top=0):
+        self.title, self.text, self.top = title, text, top
+        self._lines, self._width, self._n = [], None, 1
+
+    def render(self, console):
+        from rich.console import Group
+        from rich.text import Text
+
+        if console.width != self._width:
+            self._width = console.width
+            # The log holds the colors of the plain output.
+            self._lines = list(
+                Text.from_ansi(self.text).wrap(console, console.width)
+            )
+        self._n = n = max(1, console.height - 2)
+        self.top = max(0, min(self.top, len(self._lines) - n))
+        end = min(self.top + n, len(self._lines))
+        return Group(
+            _rule(self.title), *self._lines[self.top:end],
+            _line(f"[dim]lines {self.top + 1}-{end} of {len(self._lines)}"
+                  f" · esc back{SCROLL_HINT}[/]"),
+        )
+
+    def scroll(self, key):
+        if key in SCROLL_KEYS:
+            direction, unit = SCROLL_KEYS[key]
+            step = dict(line=1, page=max(1, self._n - 1),
+                        end=len(self._lines))[unit]
+            # Clamped on the next render.
+            self.top += direction * step
+
+
 def follow_run(run, console):
     """Live display of `run`, until the user quits or asks for its results.
 
@@ -233,7 +281,7 @@ def follow_run(run, console):
     from rich.live import Live
 
     results, offset = [], 0
-    hint = view = None
+    hint = view = pager = None
     updated = 0
     interactive = console.is_terminal and sys.stdin.isatty()
 
@@ -254,11 +302,17 @@ def follow_run(run, console):
         return view
 
     def render():
+        if pager is not None:
+            return pager.render(console)
         # Redraw often for the spinner, but only read the files every second.
         if view is None or time() - updated > 1:
-            kill = " · k kill" if run_state(run) == 'running' else ""
+            keys = " · k kill" if run_state(run) == 'running' else ""
+            if run['counts'].get('error') or run.get('traceback'):
+                keys += " · e errors"
+            if run['log_file']:
+                keys += " · l log"
             update(hint or f"[dim]esc back · q quit · p print results"
-                           f"{kill}[/]")
+                           f"{keys}[/]")
         return view._render()
 
     if interactive:
@@ -268,6 +322,25 @@ def follow_run(run, console):
                     refresh_per_second=8):
                 while True:
                     key = read(1)
+                    if pager is not None:
+                        if key in ('q', '\x1b'):
+                            pager = None
+                        elif key is not None:
+                            pager.scroll(key)
+                        continue
+                    if key == 'e':
+                        pager = _Pager("Errors", _errors(run, results))
+                        continue
+                    if key == 'l' and run['log_file']:
+                        try:
+                            log = Path(run['log_file']).read_text(
+                                errors='replace'
+                            )
+                        except OSError as e:
+                            log = f"Could not read the log: {e}"
+                        # Start at the end, where the run stopped.
+                        pager = _Pager("Log", log, top=len(log))
+                        continue
                     if key == 'q':
                         # Detach: the run itself goes on.
                         return

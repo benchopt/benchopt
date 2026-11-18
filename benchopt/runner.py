@@ -29,9 +29,10 @@ def _get_n_workers(parallel_config):
 
 class FailedRun(RuntimeError):
     """Exception raised when a solver run fails."""
-    def __init__(self, status):
+    def __init__(self, status, reason=None):
         super().__init__()
         self.status = status
+        self.reason = reason
 
 
 ##################################
@@ -217,7 +218,7 @@ def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
     # Avoid caching failed runs by raising an exception in this case,
     # and catching it in the monitoring loop.
     if ctx.status in FAILURE_STATUS:
-        raise FailedRun(ctx.status)
+        raise FailedRun(ctx.status, ctx.traceback)
 
     return curve, run_key, ctx.status, ""
 
@@ -332,7 +333,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
                 kwargs['meta']['objective_name'],
                 kwargs['meta']['solver_name']
             )
-            result = ([], key, e.status, "")
+            result = ([], key, e.status, e.reason)
         # Report the run as soon as it is over: the backend may only return
         # its result with the ones of other runs, e.g. a whole SLURM job.
         kwargs['terminal'].run_finished(*result[1:])

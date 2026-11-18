@@ -11,6 +11,8 @@ from ..config import RAISE_ON_ERROR
 class StatusHandler(object):
     def __init__(self):
         self.status = 'running'
+        # Traceback of the error, shown by `benchopt monitor`.
+        self.traceback = None
 
 
 @contextmanager
@@ -34,6 +36,7 @@ def exception_handler(terminal, pdb=False):
     except BaseException:
         print(end='', flush=True)
         ctx.status = 'error'
+        ctx.traceback = traceback.format_exc()
 
         if pdb:
             terminal.show_status('error')
