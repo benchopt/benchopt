@@ -139,8 +139,10 @@ the merged SLURM config of the solver (`gres`, `gpus_per_node`, ...).
 
 - **Local (`loky`/`dask`):** pressing **Ctrl+C** on the main process is
   sufficient — joblib sends the signal to all workers and they exit cleanly.
-- **SLURM (`submitit`):** Ctrl+C stops the orchestrator but the already-submitted
-  SLURM jobs keep running independently. You must cancel them explicitly:
+- **SLURM (`submitit`):** Ctrl+C on the orchestrator, or `k` in
+  `benchopt monitor`, saves the results and cancels the submitted jobs. If the
+  orchestrator is killed outright (`kill -9`, its own time limit), the jobs keep
+  running independently. You must cancel them explicitly:
   ```bash
   scancel <jobid>          # cancel a single job or array
   scancel --user=$USER     # cancel all your pending/running jobs
