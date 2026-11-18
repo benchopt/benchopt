@@ -19,9 +19,8 @@ Solver = next(s for s in solvers if s.name == "my-solver")
 solver = Solver.get_instance()
 
 # The run context gives `get_seed`, `get_current` and `get_split` their run.
-ctx = RunContext(dataset=dataset, objective=objective, solver=solver,
-                 repetition=0)
-with ctx:
+with RunContext(dataset=dataset, objective=objective, solver=solver,
+                repetition=0):
     # --- Inspect the data and the objective ---
     data = dataset.get_data()
     print("data keys:", list(data.keys()))

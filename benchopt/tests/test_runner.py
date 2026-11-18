@@ -868,7 +868,7 @@ def test_run_context_scope():
             assert solver.get_current("repetition") == 1
         assert solver._run_context is ctx1
     assert solver._run_context is None
-    with pytest.raises(RuntimeError, match="get_current"):
+    with pytest.raises(RuntimeError, match="No run context"):
         solver.get_current("solver")
     with ctx1, pytest.raises(ValueError, match="No dataset"):
         solver.get_current("dataset")

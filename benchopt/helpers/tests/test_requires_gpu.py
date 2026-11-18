@@ -76,5 +76,5 @@ def test_gpu_available_unknown_backend():
 
 def test_gpu_available_outside_run():
     # The parallel config depends on the run, so it needs its context.
-    with pytest.raises(RuntimeError, match="get_current"):
+    with pytest.raises(RuntimeError, match="No run context"):
         gpu_available(Solver.get_instance())

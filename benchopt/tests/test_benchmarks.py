@@ -61,8 +61,9 @@ def test_dataset_get_data(benchmark, dataset_class):
 
     # ensure classes calling `get_seed` work properly. Use placeholder
     # objective/solver names to mimic known dimension at runtime.
-    with RunContext().for_run(
-        "dummy", dataset, "dummy", repetition=0, base_seed=0
+    with RunContext(
+        objective="dummy", dataset=dataset, solver="dummy",
+        repetition=0, base_seed=0
     ):
         data = dataset.get_data()
     assert isinstance(data, (tuple, dict)), (
@@ -87,8 +88,9 @@ def test_benchmark_objective(benchmark, test_dataset_name):
 
     # ensure classes calling `get_seed` work properly. Use a placeholder
     # solver name so all methods can use any seed dimension.
-    ctx = RunContext().for_run(
-        objective, dataset, "dummy", repetition=0, base_seed=0
+    ctx = RunContext(
+        objective=objective, dataset=dataset, solver="dummy",
+        repetition=0, base_seed=0
     )
 
     with ctx:
@@ -230,9 +232,9 @@ def test_solver_stopping_criterion(benchmark, solver_class, test_dataset_name):
 
         # ensure classes calling `get_seed` work properly.
         dataset = dataset_class.get_instance(**config['dataset'])
-        ctx = RunContext().for_run(
-            objective, dataset, solver_class.name, repetition=0,
-            base_seed=benchmark.seed
+        ctx = RunContext(
+            objective=objective, dataset=dataset, solver=solver_class.name,
+            repetition=0, base_seed=benchmark.seed
         )
 
         with ctx:
@@ -271,8 +273,9 @@ def test_solver_run(
         dataset = dataset_class.get_instance(**config['dataset'])
         objective = objective_class.get_instance(**config['objective'])
         solver = solver_class.get_instance(**config['solver'])
-        ctx = RunContext().for_run(
-            objective, dataset, solver, repetition=0, base_seed=benchmark.seed
+        ctx = RunContext(
+            objective=objective, dataset=dataset, solver=solver,
+            repetition=0, base_seed=benchmark.seed
         )
         with ctx:
             for component in [dataset, objective, solver]:

@@ -165,8 +165,9 @@ class RunContextMixin:
             raise ValueError(f"name should be one of {names}. Got {name!r}.")
         if self._run_context is None:
             raise RuntimeError(
-                "get_current() can only be called in the methods that "
-                f"benchopt calls on {self}."
+                f"No run context is attached to {self}. The current run is "
+                "only available in the methods that benchopt calls on it, or "
+                "in a `with RunContext(...)` block."
             )
         return self._run_context.get_component(name)
 

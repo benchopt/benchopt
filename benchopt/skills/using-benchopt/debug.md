@@ -82,7 +82,8 @@ print(metrics)                               # dict of objective values
 
 If you only want the parameters a solver would receive, call
 `objective.get_objective()` — that is the dict handed to
-`Solver.set_objective(**...)`.
+`Solver.set_objective(**...)`. In a run context, it first sets the data of the
+context's dataset.
 
 ## Debug a solver
 
@@ -95,12 +96,12 @@ loop, caching or parallel workers around it:
 Solver = next(s for s in bench.get_solvers() if s.name == "my-solver")
 solver = Solver.get_instance(lr=1e-3)        # apply solver parameters
 
-obj_dict = objective.get_objective()         # what the runner passes to the solver
-
 # The run context gives `get_seed` and `get_current` their run.
 from benchopt.utils.run_context import RunContext
 with RunContext(dataset=dataset, objective=objective, solver=solver,
                 repetition=0):
+    obj_dict = objective.get_objective()     # what the runner passes to the solver
+
     # Optional: solvers can opt out of an objective/dataset combination.
     reason = solver.skip()                   # a reason to skip, or None
     print("runs" if reason is None else f"skipped: {reason}")

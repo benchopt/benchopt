@@ -51,10 +51,10 @@ For instance, with an objective parameter ``reg`` and a dataset giving ``X``:
             from scipy import sparse
 
             objective = self.get_current("objective")
-            dataset = self.get_current("dataset")
             if objective.reg == 0:
                 return "solver does not work with reg=0"
 
+            dataset = self.get_current("dataset")
             # Loads the data on the node running `benchopt run`.
             if sparse.issparse(dataset.get_data()["X"]):
                 return "solver does not support sparse data X."

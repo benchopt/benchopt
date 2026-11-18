@@ -70,6 +70,20 @@ def get_solver_slurm_config(solver, slurm_bench_cfg):
     return solver_cfg
 
 
+def get_run_slurm_config(slurm_config, run_context):
+    """Merge ``slurm_config`` with the SLURM config of the run's solver.
+
+    It is computed in the run context, as a ``slurm_params`` property can use
+    the components of the run.
+    """
+    if run_context.solver is not None:
+        with run_context:
+            slurm_config = get_solver_slurm_config(
+                run_context.solver, slurm_config
+            )
+    return slurm_config
+
+
 def hashable_pytree(pytree):
     """Flatten a pytree into a list."""
     if isinstance(pytree, (list, tuple)):

@@ -200,7 +200,8 @@ configuration.
 
 The SLURM configuration is computed for each run, in the context of the run.
 ``slurm_params`` can thus be a property that uses the run's other components,
-with ``self.get_current("dataset")``.
+with ``self.get_current("dataset")``. It should not use
+``self.get_current("run_parallel_config")``, which depends on it.
 
 The solvers' ``skip`` runs on the node running ``benchopt run``, which might
 not have the hardware of the jobs. To skip a solver when its jobs get no GPU,

@@ -406,9 +406,9 @@ def test_sampling_strategy_meta_independent_of_execution_order(no_debug_log):
         # *class* attribute `Solver.sampling_strategy` as a side effect.
         solver_instance = solver_class.get_instance()
         dataset1_instance = datasets["dataset1"].get_instance()
-        with RunContext().for_run(
-            objective_instance, dataset1_instance, solver_instance,
-            repetition=0, base_seed=0,
+        with RunContext(
+            objective=objective_instance, dataset=dataset1_instance,
+            solver=solver_instance, repetition=0,
         ):
             objective_instance._load_data()
             solver_instance._set_objective(objective_instance)

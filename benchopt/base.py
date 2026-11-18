@@ -607,8 +607,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
         @functools.wraps(get_objective)
         def get_objective_with_data(self):
-            if (self._run_context is not None
-                    and self._run_context.dataset is not None):
+            # Outside a run, the data is the one given to `set_data`.
+            if self._run_context is not None:
                 self._load_data()
             return get_objective(self)
         cls.get_objective = get_objective_with_data
