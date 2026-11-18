@@ -157,13 +157,7 @@ class RunContext:
             from ..parallel_backends.slurm_executor import (
                 get_run_slurm_config
             )
-            # Keys of the parallel config that do not configure the backend.
-            run_keys = ('backend', 'group_by', 'batch_n_jobs')
-            slurm_config = {
-                k: v for k, v in config.items() if k not in run_keys
-            }
-            slurm_config = get_run_slurm_config(slurm_config, self)
-            config = dict(backend='submitit', **slurm_config)
+            config = dict(backend='submitit', **get_run_slurm_config(self))
         return config
 
     def __enter__(self):

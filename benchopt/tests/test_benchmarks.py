@@ -88,12 +88,10 @@ def test_benchmark_objective(benchmark, test_dataset_name):
 
     # ensure classes calling `get_seed` work properly. Use a placeholder
     # solver name so all methods can use any seed dimension.
-    ctx = RunContext(
+    with RunContext(
         objective=objective, dataset=dataset, solver="dummy",
         repetition=0, base_seed=0
-    )
-
-    with ctx:
+    ):
         # get one value for the objective, with the test_dataset
         objective._load_data()
         result = objective._get_one_result()
@@ -232,12 +230,10 @@ def test_solver_stopping_criterion(benchmark, solver_class, test_dataset_name):
 
         # ensure classes calling `get_seed` work properly.
         dataset = dataset_class.get_instance(**config['dataset'])
-        ctx = RunContext(
+        with RunContext(
             objective=objective, dataset=dataset, solver=solver_class.name,
             repetition=0, base_seed=benchmark.seed
-        )
-
-        with ctx:
+        ):
             objective._load_data()
             result = objective._get_one_result()
             if result is None:
@@ -273,11 +269,10 @@ def test_solver_run(
         dataset = dataset_class.get_instance(**config['dataset'])
         objective = objective_class.get_instance(**config['objective'])
         solver = solver_class.get_instance(**config['solver'])
-        ctx = RunContext(
+        with RunContext(
             objective=objective, dataset=dataset, solver=solver,
             repetition=0, base_seed=benchmark.seed
-        )
-        with ctx:
+        ):
             for component in [dataset, objective, solver]:
                 reason = component._skip_reason()
                 if reason is not None:

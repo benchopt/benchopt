@@ -70,12 +70,19 @@ def get_solver_slurm_config(solver, slurm_bench_cfg):
     return solver_cfg
 
 
-def get_run_slurm_config(slurm_config, run_context):
-    """Merge ``slurm_config`` with the SLURM config of the run's solver.
+def get_run_slurm_config(run_context):
+    """Return the SLURM config of a run.
 
-    It is computed in the run context, as a ``slurm_params`` property can use
-    the components of the run.
+    It merges the SLURM keys of the run's parallel config with the SLURM config
+    of its solver. It is computed in the run context, as a ``slurm_params``
+    property can use the components of the run.
     """
+    # Keys of the parallel config that do not configure SLURM.
+    run_keys = ('backend', 'group_by', 'batch_n_jobs')
+    slurm_config = {
+        k: v for k, v in run_context.parallel_config.items()
+        if k not in run_keys
+    }
     if run_context.solver is not None:
         with run_context:
             slurm_config = get_solver_slurm_config(
