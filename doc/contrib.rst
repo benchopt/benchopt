@@ -11,6 +11,42 @@ We use benchopt `GitHub repo <https://github.com/benchopt/benchopt/issues>`_ to 
 an issue if you have found a bug or wish to see a feature implemented.
 
 
+.. _contrib_policy:
+
+Contribution policy
+-------------------
+
+The goal of benchopt is not only to build a tool, but also to build a
+community around best practices for benchmarking. Contributing is a way to
+join this community: discussing designs, reviewing each other's work, and
+sharing what makes a benchmark reliable. benchopt is maintained by a small
+team, and every pull request is reviewed by hand. We want contributions from
+people who are interested in the project and who discuss their changes with
+us. Please follow these guidelines:
+
+- **Discuss before coding.** For anything beyond a typo or a small fix,
+  comment on the issue first and say how you plan to tackle it. We can then
+  agree on the design before you spend time on it, and two people do not work
+  on the same issue. Do not hesitate to tell us about the benchmarks you
+  develop with benchopt: knowing your use case helps us understand the issue
+  and find the right design.
+
+- **Good first issues are kept for newcomers.** The code change of an issue
+  labeled ``good first issue`` is often small. We keep these issues as an entry
+  point for people who want to get involved with benchopt, through the
+  discussion and the reviews.
+
+- **Own your changes.** You can use AI tools to help you write code, tests or
+  documentation. You remain the author: you should understand every line of
+  your pull request, be able to explain your choices, and answer the review
+  comments yourself.
+
+- **No automated contributions.** We close pull requests and comments opened
+  in bulk by automated agents, without a person engaging in the discussion.
+
+When in doubt, ask on the issue. We are happy to help you get started.
+
+
 Code contribution
 -----------------
 
