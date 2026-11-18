@@ -27,7 +27,9 @@ us. Please follow these guidelines:
 - **Discuss before coding.** For anything beyond a typo or a small fix,
   comment on the issue first and say how you plan to tackle it. We can then
   agree on the design before you spend time on it, and two people do not work
-  on the same issue.
+  on the same issue. Do not hesitate to tell us about the benchmarks you
+  develop with benchopt: knowing your use case helps us understand the issue
+  and find the right design.
 
 - **Good first issues are kept for newcomers.** The code change of an issue
   labeled ``good first issue`` is often small. We keep these issues as an entry
