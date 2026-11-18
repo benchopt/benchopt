@@ -17,6 +17,8 @@ MOVES = {
     '\x1b[A': -1, '\xe0H': -1, '\x00H': -1, 'k': -1,
     '\x1b[B': 1, '\xe0P': 1, '\x00P': 1, 'j': 1,
 }
+# How often `benchopt monitor --wait` checks if the run is over.
+WAIT_PERIOD = 5
 STATE_STYLE = {
     'running': 'cyan', 'done': 'green', 'interrupted': 'yellow',
     'error': 'red', 'stale': 'red'
@@ -267,10 +269,32 @@ class _Pager:
             self.top += direction * step
 
 
-def follow_run(run, console):
+def _has_failed(run):
+    "Whether a solver failed, or the run ended otherwise than `done`."
+    return run_state(run) not in ('running', 'done') or any(
+        run['counts'].get(s) for s in ['error', 'diverged', 'not installed']
+    )
+
+
+def _print_errors(view, run, console):
+    "Print the traceback of each failed run, and of the run if it crashed."
+    from rich.markup import escape
+    from rich.text import Text
+
+    console.print(_rule("Errors"))
+    failed = [(line.name, line.traceback) for line in _failed(view)]
+    if run.get('traceback'):
+        failed.append(("benchopt run", run['traceback']))
+    for name, traceback in failed:
+        console.print(f"[bold red]{escape(name)}[/]")
+        console.print(Text(traceback or "Traceback in the log.\n"))
+
+
+def follow_run(run, console, wait=False, errors=False):
     """Live display of `run`, until the user quits or asks for its results.
 
-    Without a terminal, its results are printed right away. Return True if
+    Without a terminal, or to `wait` for the run to end, its results, or its
+    `errors`, are printed. Exit with code 1 if the run failed. Return True if
     the user asked to go back to the list of runs.
     """
     from rich.live import Live
@@ -278,7 +302,9 @@ def follow_run(run, console):
     results, offset = [], 0
     hint = view = pager = selected = None
     updated = 0
-    interactive = console.is_terminal and sys.stdin.isatty()
+    interactive = (
+        console.is_terminal and sys.stdin.isatty() and not (wait or errors)
+    )
 
     def update(hint=None):
         nonlocal run, offset, view, updated
@@ -385,17 +411,30 @@ def follow_run(run, console):
         except KeyboardInterrupt:
             pass
 
+    # ponytail: polls the snapshot, a run lasts way more than `WAIT_PERIOD`.
+    while wait and run_state(run) == 'running':
+        sleep(WAIT_PERIOD)
+        run = _load(run['path']) or run
     view = update()
-    view._print_results()
-    console.print(view._footer)
-    view.show_outputs(**run.get('outputs', {}))
+    if errors:
+        console.print(view._counters())
+        console.print(view._footer)
+        _print_errors(view, run, console)
+    else:
+        view._print_results()
+        console.print(view._footer)
+        view.show_outputs(**run.get('outputs', {}))
+    if _has_failed(run):
+        raise SystemExit(1)
 
 
-def monitor(name=None):
+def monitor(name=None, wait=False, errors=False):
     """Pick one of the last runs, or the one matching `name`, and follow it.
 
     `name` is either the start of the run's name or `last` for the most
     recent run. Without a terminal, the matching runs are only listed.
+    `wait` and `errors` print the run once it is over, or its errors, for
+    scripts and agents: they default to the last run.
     """
     import click
     from rich.console import Console
@@ -408,6 +447,8 @@ def monitor(name=None):
             return runs[-1:]
         return [run for run in runs if run['run_name'].startswith(name)]
 
+    if (wait or errors) and name is None:
+        name = 'last'
     console = Console(highlight=False)
     runs = find_runs()
     if not runs:
@@ -417,8 +458,12 @@ def monitor(name=None):
         return
 
     if len(runs) == 1 and name is not None:
-        follow_run(runs[0], console)
+        follow_run(runs[0], console, wait, errors)
         return
+    if wait or errors:
+        raise click.BadParameter(
+            f"'{name}' matches {len(runs)} runs, give more of the name."
+        )
     if not sys.stdin.isatty() or not console.is_terminal:
         console.print(runs_table(runs))
         return

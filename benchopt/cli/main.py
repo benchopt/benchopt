@@ -425,9 +425,15 @@ def run(config_file=None, **kwargs):
     "another machine sharing the home folder. See the `runs_dir` config."
 )
 @click.argument('run', required=False, metavar='[RUN]')
-def monitor(run=None):
+@click.option('--wait', is_flag=True,
+              help="Wait for the run to end, then print its results. Exit "
+              "with code 1 if a solver failed or the run did not end well.")
+@click.option('--errors', is_flag=True,
+              help="Print the traceback of each failed solver run, and the "
+              "counts of the runs, rather than all the results.")
+def monitor(run=None, wait=False, errors=False):
     from benchopt.utils.monitor import monitor
-    monitor(run)
+    monitor(run, wait, errors)
 
 
 @main.command(

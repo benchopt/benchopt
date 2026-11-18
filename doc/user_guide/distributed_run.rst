@@ -267,7 +267,10 @@ In ``benchopt run`` and ``benchopt monitor``, the
 results that do not fit on the screen are scrolled with the arrow keys, or the
 mouse wheel in most terminals, ``PgUp``/``PgDn`` and ``Home``/``End``: ``End``
 follows the new results again. Without a terminal, ``benchopt monitor`` only prints the
-list of runs, or the results of the selected one. Set the ``no_rich`` config option to fall back on the
+list of runs, or the results of the selected one. For scripts and agents,
+``benchopt monitor --wait`` waits for the last run to end and prints its
+results, and ``benchopt monitor --errors`` prints the tracebacks of its failed
+runs: both exit with code 1 if a solver failed. Set the ``no_rich`` config option to fall back on the
 plain line by line output of ``benchopt run``.
 
 

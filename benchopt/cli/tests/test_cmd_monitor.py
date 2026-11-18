@@ -1,3 +1,6 @@
+import json
+from time import time
+
 import click
 import pytest
 
@@ -38,6 +41,21 @@ def test_monitor(tmp_path, monkeypatch):
     with pytest.raises(click.BadParameter, match="No run matching"):
         monitor(["unknown"], "benchopt", standalone_mode=False)
 
+    # `--wait` polls the run until it is over, then prints its results.
+    (path,) = tmp_path.glob("*.json")
+    snapshot = json.loads(path.read_text())
+    path.write_text(json.dumps(dict(snapshot, finished=None, updated=time())))
+    polls = []
+
+    def sleep(_):
+        polls.append(1)
+        path.write_text(json.dumps(snapshot))
+    monkeypatch.setattr("benchopt.utils.monitor.sleep", sleep)
+    with CaptureCmdOutput() as out:
+        monitor(["--wait"], "benchopt", standalone_mode=False)
+    out.check_output("done · monitored_run")
+    assert polls == [1]
+
 
 def test_monitor_errors(tmp_path, monkeypatch, no_debug_log):
     from rich.console import Console
@@ -71,3 +89,15 @@ def test_monitor_errors(tmp_path, monkeypatch, no_debug_log):
     pager = _Pager(line.name, line.traceback, top=len(line.traceback))
     console.print(pager.render(console))
     assert "Intentional Error" in console.export_text()
+
+    # For agents: the tracebacks are printed, and the failure is the exit
+    # code, also once the run is waited for.
+    for args in [["--errors"], ["last", "--wait"]]:
+        with CaptureCmdOutput(exit=1) as out:
+            monitor(args, "benchopt", standalone_mode=False)
+        out.check_output(r"· error [1-9]")
+    out.check_output("Intentional Error", repetition=0)
+    with CaptureCmdOutput(exit=1) as out:
+        monitor(["--errors"], "benchopt", standalone_mode=False)
+    out.check_output("ValueError: Intentional Error")
+    out.check_output("Results", repetition=0)
