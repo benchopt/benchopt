@@ -138,7 +138,12 @@ def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
             if (check_in_cache is not None
                     and not run_kwargs.get('force', False)
                     and check_in_cache(**run_kwargs)):
-                ready.append((*run(**run_kwargs), True))
+                result = run(**run_kwargs)
+                if terminal is not None:
+                    # Shown now, as the backend can take long to return its
+                    # first result, e.g. a SLURM job.
+                    terminal.show_result(*result[1:], cached=True)
+                ready.append((*result, True))
             elif collect:
                 # Skip non-cache configs in collect mode.
                 meta = run_kwargs['meta']

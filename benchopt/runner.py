@@ -293,6 +293,10 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         n_repetitions, show_progress, pdb=pdb,
         n_jobs=_get_n_workers(parallel_config),
     )
+    if (parallel_config or {}).get('backend') == 'submitit':
+        # Nothing runs before the SLURM jobs start, which `run_on_slurm`
+        # probes once they are submitted.
+        terminal.set_running_probe(list)
 
     # Resolve the output path before runs start so that run_output_base is
     # stable across all workers. A value containing a path separator is an
@@ -370,7 +374,8 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         with terminal.live(log_file=log_file, benchmark=benchmark.name):
             for result, key, status, reason, cached in results_generator:
                 run_statistics.extend(result)
-                terminal.show_result(key, status, reason, cached)
+                if not cached:  # Already shown by `parallel_run`.
+                    terminal.show_result(key, status, reason, cached)
                 if status == 'interrupted':
                     raise SystemExit(1)
     except KeyboardInterrupt:
