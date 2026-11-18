@@ -111,6 +111,10 @@ SCROLL_KEYS = {
 SCROLL_HINT = " · ↑/↓ PgUp/PgDn to scroll"
 
 
+class _ErrorLine(str):
+    "Result line of a failed run, with its `name` and `traceback`."
+
+
 def _rule(title):
     """Section separator in the live display."""
     from rich.rule import Rule
@@ -233,6 +237,8 @@ class RichOutput(TerminalOutput):
         self._top, self._window = None, (0, 0)
         # Whether the keys scroll the results, to tell it on the display.
         self._scrollable = False
+        # Index of the failed run highlighted by `benchopt monitor`, if any.
+        self._selected = None
         # Line added below the counters, used by `benchopt monitor`.
         self._footer = None
         # Outputs of a run that is over, shown by `benchopt monitor` in place
@@ -509,6 +515,13 @@ class RichOutput(TerminalOutput):
             outputs = list(map(_line, _output_lines(self._outputs)))
             middle = [_rule("Outputs"), *outputs] if outputs else []
         n = free + 1 - len(middle)
+        errors = [i for i, line in enumerate(results)
+                  if isinstance(line, _ErrorLine)]
+        if self._selected is not None and errors:
+            i = errors[self._selected % len(errors)]
+            results[i] = f"[reverse]{results[i]}[/]"
+            # Scroll to the selected run, in the middle of the screen.
+            self._top = max(0, i - n // 2)
         hint = SCROLL_HINT if self._scrollable else ""
         shown, self._top = _crop(results, n, self._top, hint)
         self._window = (len(results), n)
@@ -812,6 +825,10 @@ class RichOutput(TerminalOutput):
         lines = [
             f"{_guides(level)}[{style}]{glyph}[/] {escape(name)} {result}"
         ]
+        if status == 'error':
+            lines[0] = _ErrorLine(lines[0])
+            lines[0].name = " / ".join([data, obj, solver][:level + 1])
+            lines[0].traceback = reason
         if status == 'skip' and reason is not None:
             lines.append(
                 f"{GUIDE * level}[dim]Reason: {escape(reason)}[/]"

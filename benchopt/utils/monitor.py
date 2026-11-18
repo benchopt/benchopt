@@ -9,6 +9,7 @@ from contextlib import contextmanager
 
 from .rich_output import STALE_AFTER, RichOutput, get_runs_dir, read_jsonl
 from .rich_output import SCROLL_HINT, SCROLL_KEYS, _line, _rule
+from .rich_output import _ErrorLine
 
 
 # Keys returned by `click.getchar` for up and down, on POSIX and Windows.
@@ -225,16 +226,9 @@ def _view(run, results, console, hint=None, progress=None):
     return view
 
 
-def _errors(run, results):
-    "Tracebacks of the failed runs, and of the whole run if it crashed."
-    parts = [
-        # A result is for the dataset, objective or solver at its level.
-        " / ".join(r[1:r[0] + 2]) + "\n" + (r[5] or "Traceback in the log.")
-        for r in results if r[4] == 'error'
-    ]
-    if run.get('traceback'):
-        parts.append("benchopt run\n" + run['traceback'])
-    return "\n\n".join(parts) or "No error."
+def _failed(view):
+    "Result lines of the failed runs, carrying their traceback."
+    return [line for line in view._lines() if isinstance(line, _ErrorLine)]
 
 
 class _Pager:
@@ -246,6 +240,7 @@ class _Pager:
 
     def render(self, console):
         from rich.console import Group
+        from rich.markup import escape
         from rich.text import Text
 
         if console.width != self._width:
@@ -258,7 +253,7 @@ class _Pager:
         self.top = max(0, min(self.top, len(self._lines) - n))
         end = min(self.top + n, len(self._lines))
         return Group(
-            _rule(self.title), *self._lines[self.top:end],
+            _rule(escape(self.title)), *self._lines[self.top:end],
             _line(f"[dim]lines {self.top + 1}-{end} of {len(self._lines)}"
                   f" · esc back{SCROLL_HINT}[/]"),
         )
@@ -281,7 +276,7 @@ def follow_run(run, console):
     from rich.live import Live
 
     results, offset = [], 0
-    hint = view = pager = None
+    hint = view = pager = selected = None
     updated = 0
     interactive = console.is_terminal and sys.stdin.isatty()
 
@@ -311,8 +306,13 @@ def follow_run(run, console):
                 keys += " · e errors"
             if run['log_file']:
                 keys += " · l log"
-            update(hint or f"[dim]esc back · q quit · p print results"
-                           f"{keys}[/]")
+            if selected is not None:
+                keys = "[dim]↑/↓ select · enter traceback · esc back[/]"
+            else:
+                keys = (f"[dim]esc back · q quit · p print results"
+                        f"{keys}[/]")
+            update(hint or keys)
+        view._selected = selected
         return view._render()
 
     if interactive:
@@ -328,8 +328,28 @@ def follow_run(run, console):
                         elif key is not None:
                             pager.scroll(key)
                         continue
+                    if selected is not None:
+                        # Picking a failed run, to show its traceback.
+                        failed = _failed(view)
+                        if key in ('\r', '\n') and failed:
+                            line = failed[selected % len(failed)]
+                            pager = _Pager(
+                                line.name,
+                                line.traceback or "Traceback in the log."
+                            )
+                        elif key in ('\x1b', 'e', 'q'):
+                            selected = None
+                        elif key in MOVES:
+                            selected += MOVES[key]
+                        updated = 0
+                        continue
                     if key == 'e':
-                        pager = _Pager("Errors", _errors(run, results))
+                        if view is not None and _failed(view):
+                            selected = 0
+                        elif run.get('traceback'):
+                            # The run itself crashed.
+                            pager = _Pager("benchopt run", run['traceback'])
+                        updated = 0
                         continue
                     if key == 'l' and run['log_file']:
                         try:

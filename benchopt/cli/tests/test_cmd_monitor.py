@@ -41,7 +41,7 @@ def test_monitor(tmp_path, monkeypatch):
 
 def test_monitor_errors(tmp_path, monkeypatch, no_debug_log):
     from rich.console import Console
-    from benchopt.utils.monitor import _errors, _Pager, load_runs
+    from benchopt.utils.monitor import _failed, _Pager, _view, load_runs
     from benchopt.utils.monitor import read_results
 
     monkeypatch.setenv("BENCHOPT_RUNS_DIR", str(tmp_path))
@@ -56,13 +56,18 @@ def test_monitor_errors(tmp_path, monkeypatch, no_debug_log):
                  "--no-plot", "-s", "failing-solver"],
                 "benchopt", standalone_mode=False)
 
-    # The traceback of the failed run is kept, to be shown on a screen.
+    # The failed run is selected in the results, with its traceback.
     (snapshot,) = load_runs()
-    errors = _errors(snapshot, read_results(snapshot)[0])
-    assert "failing-solver" in errors
-    assert 'ValueError: Intentional Error' in errors
+    console = Console(width=80, height=20, record=True)
+    view = _view(snapshot, read_results(snapshot)[0], console)
+    line = _failed(view)[0]
+    assert line.name.endswith("failing-solver")
+    assert "ValueError: Intentional Error" in line.traceback
 
-    console = Console(width=80, height=10, record=True)
-    pager = _Pager("Errors", errors, top=len(errors))
+    view._selected = 0
+    console.print(view._render())
+    assert "failing-solver" in console.export_text()
+
+    pager = _Pager(line.name, line.traceback, top=len(line.traceback))
     console.print(pager.render(console))
     assert "Intentional Error" in console.export_text()
