@@ -16,9 +16,13 @@ an issue if you have found a bug or wish to see a feature implemented.
 Contribution policy
 -------------------
 
-benchopt is maintained by a small team, and every pull request is reviewed by
-hand. We want contributions from people who are interested in the project and
-who discuss their changes with us. Please follow these guidelines:
+The goal of benchopt is not only to build a tool, but also to build a
+community around best practices for benchmarking. Contributing is a way to
+join this community: discussing designs, reviewing each other's work, and
+sharing what makes a benchmark reliable. benchopt is maintained by a small
+team, and every pull request is reviewed by hand. We want contributions from
+people who are interested in the project and who discuss their changes with
+us. Please follow these guidelines:
 
 - **Discuss before coding.** For anything beyond a typo or a small fix,
   comment on the issue first and say how you plan to tackle it. We can then
