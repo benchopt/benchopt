@@ -19,6 +19,7 @@ class Objective(BaseObjective):
     def get_objective(self): return dict(X=None, y=None, lmbd=None)
 """
 
+
 IDX_BENCHMARK = 0
 
 DEFAULT_DATASETS = {
@@ -46,11 +47,29 @@ DEFAULT_SOLVERS = {
     """
 }
 
+# Create classes DefaultObjective, DefaultDataset and DefaultSolver
+# in the global scope, so that they can be used to override specific parts
+# easily when creating temporary benchmarks. These classes are not meant to be
+# used directly, but to be subclassed in test.
+exec(
+    inspect.cleandoc(DEFAULT_OBJECTIVE)
+    .replace("Objective(", "TempObjective(")
+)
+exec(
+    inspect.cleandoc(DEFAULT_DATASETS['test_dataset.py'])
+    .replace("Dataset(", "TempDataset(")
+)
+exec(
+    inspect.cleandoc(DEFAULT_SOLVERS['test_solver.py'])
+    .replace("Solver(", "TempSolver(")
+)
+
 
 @contextlib.contextmanager
 def temp_benchmark(
-        objective=None, datasets=None, solvers=None, config=None,
-        benchmark_utils=None, extra_files=None
+        objective=None, datasets=None, solvers=None, plots=None,
+        config=None, benchmark_utils=None, extra_files=None,
+        name=None, no_default=False
 ):
     """Create Benchmark in a temporary folder, for test purposes.
 
@@ -61,10 +80,16 @@ def temp_benchmark(
         ``DEFAULT_OBJECTIVE``.
     datasets: str | list of str | None (default=None)
         Content of the dataset.py file(s). If None, defaults to
-        ``DEFAULT_DATASETS``.
+        ``DEFAULT_DATASETS``. Note that if a str or a list is passed, only the
+        passed dataset(s) are created. If a dict is passed, the default
+        datasets are created in addition to the passed ones.
     solvers: str | list of str | dict of str | None (default=None)
         Content of the solver.py file(s). If None, defaults to
-        ``DEFAULT_SOLVERS``.
+        ``DEFAULT_SOLVERS``. Note that if a str or a list is passed, only the
+        passed solver(s) are created. If a dict is passed, the default solvers
+        are created in addition to the passed ones.
+    plots: str | list of str | dict of str | None (default=None)
+        Content of the plot.py file(s). If None, no plot file is created.
     config: str | dict(fname->content) | None (default=None)
         Configuration files for running the Benchmark. If only one str is
         passed, this creates only one `config.yml` file. If None, no config
@@ -75,6 +100,13 @@ def temp_benchmark(
     extra_files: dict(fname->str) | None (default=None)
         Additional files to be added to the benchmark directory. If None,
         no extra files are created.
+    name: str | None (default=None)
+        Name of the benchmark. If None, a name is generated as ``bench_#``.
+    no_default: bool (default=False)
+        If True, the default dataset/solver files are not created,
+        and only the ones passed as arguments are created. If False, the
+        default files are created and can be overridden by passing files with
+        the same name in the `datasets` and `solvers` arguments.
     """
     if objective is None:
         objective = DEFAULT_OBJECTIVE
@@ -87,37 +119,59 @@ def temp_benchmark(
         datasets = [datasets]
     if isinstance(solvers, str):
         solvers = [solvers]
+    if isinstance(plots, str):
+        plots = [plots]
 
+    default_solver = {} if no_default else DEFAULT_SOLVERS
     if isinstance(solvers, list):
         solvers = {f"solver_{idx}.py": s for idx, s in enumerate(solvers)}
     else:
-        solvers = {**DEFAULT_SOLVERS, **solvers}
+        solvers = {**default_solver, **solvers}
 
+    default_dataset = {} if no_default else DEFAULT_DATASETS
     if isinstance(datasets, list):
         datasets = {f"dataset_{idx}.py": d for idx, d in enumerate(datasets)}
     else:
-        datasets = {**DEFAULT_DATASETS, **datasets}
+        datasets = {**default_dataset, **datasets}
+
+    if isinstance(plots, list):
+        plots = {f"plot_{idx}.py": p for idx, p in enumerate(plots)}
 
     global IDX_BENCHMARK
     idx = IDX_BENCHMARK
     IDX_BENCHMARK += 1
 
+    if name is None:
+        name = f"bench_{idx}"
+
     with tempfile.TemporaryDirectory(
-            prefix="temp_benchmarks", suffix="", dir="."
+            prefix="temp_benchmark_", suffix="", dir="."
     ) as tempdir:
-        temp_path = Path(tempdir) / f"bench_{idx}"
+        temp_path = Path(tempdir) / name
         temp_path.mkdir()
         (temp_path / "solvers").mkdir()
         (temp_path / "datasets").mkdir()
+        (temp_path / "plots").mkdir()
         with open(temp_path / "objective.py", "w", encoding='utf-8') as f:
             f.write(inspect.cleandoc(objective))
         for fname, content in solvers.items():
             fname = temp_path / "solvers" / fname
+            if fname.suffix == "":
+                fname = fname.with_suffix(".py")
             fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
         for fname, content in datasets.items():
             fname = temp_path / "datasets" / fname
+            if fname.suffix == "":
+                fname = fname.with_suffix(".py")
             fname.write_text(inspect.cleandoc(content), encoding='utf-8')
+
+        if plots is not None:
+            for fname, content in plots.items():
+                fname = temp_path / "plots" / fname
+                if fname.suffix == "":
+                    fname = fname.with_suffix(".py")
+                fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
         if config is not None:
             if not isinstance(config, dict):

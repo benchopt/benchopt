@@ -1,7 +1,10 @@
 import yaml
-import warnings
+from collections import deque
 from joblib import parallel_config
 from joblib import Parallel, delayed
+
+from .._generate_runs import group_runs, _normalize_group_by
+from ..utils.run_context import use_components
 
 _DISTRIBUTED_FRONTAL = False
 
@@ -17,65 +20,166 @@ def is_distributed_frontal():
     return _DISTRIBUTED_FRONTAL
 
 
-def parallel_run(benchmark, run, kwargs, all_runs, config, collect=False):
+def run_batch(run, n_jobs=1):
+    """Decorator to run a whole batch of run-kwargs at once.
+
+    The returned ``run_batch(batch)`` runs ``run(**kwargs)`` for each kwargs
+    in one process if ``n_jobs == 1`` (max cache/state reuse across the batch),
+    else across ``n_jobs`` sub-processes.
+    """
+    def _run_batch(batch):
+        if n_jobs == 1:
+            return [run(**run_kwargs) for run_kwargs in batch]
+        return Parallel(n_jobs=n_jobs)(
+            delayed(run)(**run_kwargs) for run_kwargs in batch
+        )
+    return _run_batch
+
+
+def _release_sent_components(batches):
+    """Release the front node state of the components sent to the workers.
+
+    The workers reload the components, as only their parameters are pickled.
+    """
+    for batch in batches:
+        for run_kwargs in batch:
+            use_components(
+                run_kwargs.get('dataset'), run_kwargs.get('objective'),
+                run_kwargs.get('solver'),
+            )
+        yield batch
+
+
+def _dispatch(backend, benchmark, run, run_kwargs_iter, config,
+              group_by=None, batch_n_jobs=1):
+    """Run ``run(**kwargs)`` for each kwargs on the chosen backend, yielding
+    results as they complete.
+
+    Runs are grouped by ``group_by`` (see `group_runs`) so that runs sharing
+    the group key run in the same process/job, reusing dataset/objective
+    state loaded on their front-end instance.
+    """
+    batches = group_runs(run_kwargs_iter, group_by)
+    in_process = backend == 'loky' and config.get('n_jobs') in (None, 1)
+    if not in_process:
+        batches = _release_sent_components(batches)
+    run_one_batch = run_batch(run, batch_n_jobs)
+    if backend == 'submitit':
+        from .slurm_executor import run_on_slurm
+        yield from run_on_slurm(
+            benchmark, run_one_batch, batches, batch_n_jobs=batch_n_jobs,
+        )
+    else:
+        if backend == 'dask':
+            from .dask_backend import check_dask_config
+            config = check_dask_config(config)
+        # `batch_size` is a `Parallel` argument, not a `parallel_config` one.
+        batch_size = config.pop('batch_size', 'auto')
+        with parallel_config(backend, **config):
+            for batch_results in Parallel(
+                return_as="generator_unordered", batch_size=batch_size
+            )(
+                delayed(run_one_batch)(batch) for batch in batches
+            ):
+                yield from batch_results
+
+
+def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
     config = config or {}
     backend = config.pop('backend', 'loky')
+    group_by = config.pop('group_by', None)
+    batch_n_jobs = config.pop('batch_n_jobs', 1)
     if collect:  # Collect should not run complicated parallelism
         backend = 'loky'
     assert backend in DISTRIBUTED_BACKENDS, (
         f"Unknown backend {backend}. Valid backends: {DISTRIBUTED_BACKENDS}."
     )
-    if backend == 'submitit':
-        from .slurm_executor import run_on_slurm
-        results = run_on_slurm(benchmark, config, run, kwargs, all_runs)
-    else:
-        if backend == 'dask':
-            from .dask_backend import check_dask_config
-            config = check_dask_config(config)
-        with parallel_config(backend, **config):
-            results = Parallel()(
-                delayed(run)(**kwargs, **run_kwargs)
-                for run_kwargs in all_runs
-            )
 
-    return results
+    # Load cache hits directly on the front node, and only dispatch
+    # necessary configs. Use `ready` to park items that are collected
+    # and merged back when consuming the iterator.
+    # Append cache status at the end of the tuple result.
+    ready = deque()
+    check_in_cache = getattr(run, "check_call_in_cache", None)
+
+    def _to_dispatch():
+        for run_kwargs in run_kwargs_generator:
+            if (check_in_cache is not None
+                    and not run_kwargs.get('force', False)
+                    and check_in_cache(**run_kwargs)):
+                ready.append((*run(**run_kwargs), True))
+            elif collect:
+                # Skip non-cache configs in collect mode.
+                meta = run_kwargs['meta']
+                key = (
+                    meta['dataset_name'],
+                    meta['objective_name'],
+                    meta['solver_name'],
+                )
+                ready.append(([], key, 'not run yet', "", False))
+            else:
+                yield run_kwargs
+
+    for item in _dispatch(backend, benchmark, run, _to_dispatch(), config,
+                          group_by=group_by, batch_n_jobs=batch_n_jobs):
+        while ready:
+            yield ready.popleft()
+        yield (*item, False)
+    while ready:
+        yield ready.popleft()
 
 
-def check_parallel_config(parallel_config_file, slurm_config_file, n_jobs):
+def check_parallel_config(parallel_config_file, n_jobs, group_by=None):
     """Returns the parallelism config information for the run.
 
     If nothing is provided, default to `loky` backend with n_jobs=1.
 
     Parameters
     ----------
+    parallel_config_file: str or dict or None
+        Path to the parallel config YAML file, or a dict containing the config
+        information. If None, defaults to None.
+    n_jobs: int or None
+        Number of parallel jobs to run. If None, defaults to None.
+    group_by: str or list or None
+        Axes to hold constant per batch of runs. If None, default to
+        one run per (dataset, objective, solver, rep)
+
+    Returns
+    -------
+    parallel_config: dict
+        The parallel config information for the run.
     """
-    # XXX: remove in benchopt 1.8
-    if slurm_config_file is not None:
-        assert parallel_config_file is None, (
-            "Cannot use both `--slurm` and `--parallel-backend`. Only use the "
-            "latter as the former is deprecated."
-        )
-        warnings.warn(
-            "`--slurm` is deprecated, use `--parallel-backend` instead. "
-            "The config files are similar but the new one should include the "
-            "extra argument `backend : submitit` to select the submitit "
-            "backend. This will cause an error starting benchopt 1.8.",
-            DeprecationWarning
-        )
-        parallel_config_file = slurm_config_file
 
     # Load parallel config from config file. If None is provided,
     # default to joblib backend ('loky').
     if parallel_config_file is not None:
-        with open(parallel_config_file, "r") as f:
-            parallel_config = yaml.safe_load(f)
-        # XXX: remove in benchopt 1.8
-        if slurm_config_file is not None:
-            parallel_config['backend'] = "submitit"
+        if not isinstance(parallel_config_file, dict):
+            with open(parallel_config_file, "r") as f:
+                parallel_config = yaml.safe_load(f)
+            if ("slurm_time" in parallel_config
+                    and isinstance(parallel_config["slurm_time"], int)):
+                # YAML may parse unquoted sexagesimal times (e.g. 10:30) as
+                # integer seconds. Convert back to HH:MM:SS, because submitit
+                # interprets raw int values as minutes.
+                total_seconds = parallel_config["slurm_time"]
+                hours, rem_seconds = divmod(total_seconds, 3600)
+                minutes, seconds = divmod(rem_seconds, 60)
+                parallel_config['slurm_time'] = (
+                    f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                )
+        else:
+            parallel_config = parallel_config_file
         if n_jobs is not None:
             parallel_config['n_jobs'] = n_jobs
     else:
         parallel_config = {'backend': 'loky', 'n_jobs': n_jobs}
+
+    # CLI `--group-by` (comma-separated) overrides the parallel-config file.
+    if group_by:
+        if isinstance(group_by, str):
+            group_by = [a.strip() for a in group_by.split(',')]
+        parallel_config['group_by'] = group_by
 
     assert 'backend' in parallel_config, (
         "Could not find `backend` specification in parallel_config file. "
@@ -83,6 +187,26 @@ def check_parallel_config(parallel_config_file, slurm_config_file, n_jobs):
     )
 
     backend = parallel_config['backend']
+    group_by = parallel_config.get('group_by')
+    batch_n_jobs = parallel_config.get('batch_n_jobs', 1)
+    if group_by is not None:
+        # Normalized once here, for both the generator and the dispatch.
+        parallel_config['group_by'] = _normalize_group_by(group_by)
+    if 'batch_n_jobs' in parallel_config:
+        # On loky/dask a batch runs sequentially in its worker.
+        assert backend == 'submitit', (
+            "`batch_n_jobs` is only supported with the `submitit` backend. "
+            f"Got backend={backend!r}."
+        )
+        assert group_by is not None, (
+            "`batch_n_jobs` requires `group_by` to be set."
+        )
+        # bools are ints in Python, but never a valid `batch_n_jobs`
+        assert (
+            isinstance(batch_n_jobs, int)
+            and not isinstance(batch_n_jobs, bool) and batch_n_jobs != 0
+        ), f"`batch_n_jobs` must be a non-zero integer. Got {batch_n_jobs}."
+
     if backend in ('dask', 'submitit'):
         print(f"Distributed run with backend: {backend}")
         set_distributed_frontal()

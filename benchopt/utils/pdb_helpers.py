@@ -5,6 +5,7 @@ from contextlib import contextmanager
 
 # Get config values
 from ..config import DEBUG
+from ..config import RAISE_ON_ERROR
 
 
 class StatusHandler(object):
@@ -27,10 +28,11 @@ def exception_handler(terminal, pdb=False):
     try:
         yield ctx
     except KeyboardInterrupt:
+        print(end='', flush=True)
         ctx.status = 'interrupted'
-        terminal.show_status('interrupted')
-        raise SystemExit(1)
+        raise
     except BaseException:
+        print(end='', flush=True)
         ctx.status = 'error'
 
         if pdb:
@@ -43,7 +45,10 @@ def exception_handler(terminal, pdb=False):
                 from pdb import post_mortem
             post_mortem()
 
-        if DEBUG:
+        # Re-raise on the first error to make the run fail fast. `DEBUG` keeps
+        # this behavior for backward compatibility, but `raise_on_error` offers
+        # it without turning on any of the extra debug logging.
+        if DEBUG or RAISE_ON_ERROR:
             terminal.show_status('error')
             raise
         else:

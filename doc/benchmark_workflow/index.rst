@@ -8,10 +8,7 @@ Benchmark workflow
 .. toctree::
     :maxdepth: 2
 
-    install_benchmark
-    run_benchmark
-    visualize_benchmark
-    manage_benchmark_results
     write_benchmark
+    run_benchmark
+    manage_benchmark_results
     test_benchmark
-    config_benchopt

@@ -1,13 +1,21 @@
-import pytest
-submitit = pytest.importorskip("submitit")
-from submitit.slurm.test_slurm import mocked_slurm  # noqa: E402
+from types import SimpleNamespace
 
+import pytest
+
+from benchopt.runner import run_benchmark
+from benchopt.tests.utils import CaptureCmdOutput
+from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.results import read_results
+from benchopt.utils.run_context import RunContext
+
+submitit = pytest.importorskip("submitit")
+
+from submitit.slurm.test_slurm import mocked_slurm  # noqa: E402
 from benchopt.parallel_backends.slurm_executor import (  # noqa: E402
+    _split_by_slurm_config,
+    get_run_slurm_config,
     get_slurm_executor,
-    run_on_slurm,
-    merge_configs,
 )
-from benchopt.utils.temp_benchmark import temp_benchmark  # noqa: E402
 
 
 @pytest.fixture
@@ -35,72 +43,295 @@ def dummy_solver():
     return DummySolver()
 
 
+def _annotate_task_result(result, config):
+    # `run` returns a (results, key, status, msg) tuple where
+    # `results` is a list of run-statistics dicts. Only annotate those dicts
+    # with the SLURM config used to run the job.
+    if isinstance(result, tuple):
+        res, *rest = result
+        res = _annotate_task_result(res, config)
+        return (res, *rest)
+    if isinstance(result, list):
+        return [_annotate_task_result(item, config) for item in result]
+    if isinstance(result, dict):
+        return {**result, **{f"s_{k}": v for k, v in config.items()}}
+    return result
+
+
+class MockedTask:
+    """Stand-in for a submitit job future, used by the slurm tests."""
+
+    job_id = "fake"
+
+    def __init__(self, func, args, kwargs, config):
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+        self.config = config
+
+    def done(self): return True
+    def exception(self): return None
+    def cancel(self): return None
+
+    def results(self):
+        result = self.func(*self.args, **self.kwargs)
+        return [_annotate_task_result(result, self.config)]
+
+
+@pytest.fixture
+def mocked_submitit(monkeypatch):
+    """Capture submitit submissions and run them locally, returning the list
+    of captured submissions for inspection.
+    """
+    submissions = []
+
+    def submit(self, func, *args, **kwargs):
+        # The front node keeps the data of at most one submitted dataset: the
+        # one shared with the next runs.
+        datasets = {
+            id(run["dataset"]): run["dataset"]
+            for sub in submissions for run in sub["args"][0]
+        }
+        assert sum(
+            getattr(d, "_data", None) is not None for d in datasets.values()
+        ) <= 1
+        config = self._executor.parameters
+        submissions.append(
+            dict(func=func, args=args, kwargs=kwargs, config=config)
+        )
+        return MockedTask(func, args, kwargs, config)
+
+    monkeypatch.setattr("submitit.AutoExecutor.submit", submit)
+    monkeypatch.setattr(
+        "submitit.helpers.as_completed.__defaults__", (None, 0.1)
+    )
+    return submissions
+
+
 def test_get_slurm_executor(dummy_slurm_config):
 
-    with temp_benchmark() as bench:
-        # Test without solver overrides
-        with mocked_slurm():
-            executor = get_slurm_executor(bench, dummy_slurm_config)
+    with mocked_slurm(), temp_benchmark() as bench:
+        executor = get_slurm_executor(bench, dummy_slurm_config)
     parameters = executor._executor.parameters
     assert parameters["time"] == dummy_slurm_config["slurm_time"]
     assert parameters["partition"] == dummy_slurm_config["slurm_partition"]
     assert parameters["nodes"] == dummy_slurm_config["slurm_nodes"]
 
 
-def test_merge_configs(dummy_solver, dummy_slurm_config):
+def test_merge_configs(dummy_slurm_config):
     # Test with solver overrides
-    config_override = merge_configs(dummy_slurm_config, dummy_solver)
+    solver = """
+    from benchopt.utils.temp_benchmark import TempSolver
 
-    with temp_benchmark() as bench:
-        with mocked_slurm():
-            executor = get_slurm_executor(bench, config_override)
+    class Solver(TempSolver):
+        name = "dummy"
+        slurm_params = {
+            "slurm_time": "00:01",
+            "slurm_nodes": 2,
+            "slurm_mem": "1234MB",
+        }
+    """
+
+    with mocked_slurm(), temp_benchmark(solvers=solver) as bench:
+        solver = bench.get_solvers()[0].get_instance()
+        run_context = RunContext(
+            parallel_config=dummy_slurm_config, solver=solver
+        )
+        config_override = get_run_slurm_config(run_context)
+        executor = get_slurm_executor(bench, config_override)
 
     parameters = executor._executor.parameters
-    assert parameters["time"] == dummy_solver.slurm_params["slurm_time"]
-    assert parameters["nodes"] == dummy_solver.slurm_params["slurm_nodes"]
-    assert parameters["mem"] == dummy_solver.slurm_params["slurm_mem"]
+    assert parameters["time"] == solver.slurm_params["slurm_time"]
+    assert parameters["nodes"] == solver.slurm_params["slurm_nodes"]
+    assert parameters["mem"] == solver.slurm_params["slurm_mem"]
     assert parameters["partition"] == dummy_slurm_config["slurm_partition"]
 
 
-def test_run_on_slurm(monkeypatch, dummy_solver, dummy_slurm_config):
+def test_run_on_slurm(mocked_submitit, dummy_slurm_config):
+    parallel_config = {
+        "backend": "submitit",
+        "slurm_nodes": 1,
+        "slurm_gres": "gpu:1",
+    }
 
-    class MockedTask:
-        def __init__(self, config):
-            self.job_id = "12"
-            self.config = config
+    slurm_params = {
+        "slurm_time": "00:01",
+        "slurm_nodes": 2,
+        "slurm_mem": "1234MB",
+    }
+    my_params = {"p": [0, 1], "slurm_nodes": [3]}
+    slurm_params_str = f"slurm_params = {slurm_params}"
+    my_params_str = f"parameters = {my_params}"
 
-        def done(self): return True
-        def exception(self): return None
-        def result(self): return self.config
+    solver = """
+        from benchopt.utils.temp_benchmark import TempSolver
 
-    def submit(self, *args, **kwargs):
-        # Mock submit to return a mocked task, with the executor's parameters
-        return MockedTask(self._executor.parameters)
-    monkeypatch.setattr(submitit.AutoExecutor, 'submit', submit)
+        class Solver(TempSolver):
+            name = "{name}"
+            {parameters}
+            {slurm_params}
+    """
+    solvers = [
+        solver.format(name='solver_no_params', parameters="", slurm_params=""),
+        solver.format(
+            name='solver_slurm_params', parameters="",
+            slurm_params=slurm_params_str
+        ),
+        solver.format(
+            name='solver_my_params', parameters=my_params_str, slurm_params=""
+        ),
+        solver.format(
+            name='solver_all_params', parameters=my_params_str,
+            slurm_params=slurm_params_str
+        ),
+    ]
 
-    # Run the function
-    with temp_benchmark() as bench:
-        with mocked_slurm():
-            res = run_on_slurm(
-                benchmark=bench,
-                slurm_config=dummy_slurm_config,
-                run_one_solver=lambda **kwargs: "done",
-                common_kwargs={"timeout": None},
-                all_runs=[
-                    {"solver": dummy_solver},
-                    {"solver": None}
-                ],
+    # Run the function on a mocked slurm cluster
+    with temp_benchmark(solvers=solvers) as bench, mocked_slurm():
+        with CaptureCmdOutput(delete_result_files=False) as out:
+            run_benchmark(
+                bench.benchmark_dir, [
+                    "solver_no_params", "solver_slurm_params",
+                    "solver_my_params[p=2]",
+                    "solver_my_params[p=2,slurm_nodes=4]",
+                    "solver_all_params[p=2]",
+                    "solver_all_params[p=2,slurm_nodes=4]"
+                ], dataset_names=["test-dataset"],
+                max_runs=0, n_repetitions=None,  # load data on front node
+                timeout=None,
+                parallel_config=parallel_config,
+                plot_result=False,
             )
 
-    assert len(res) == 2
-    p_overwrite = res[0]
+        # Get the results
+        df = read_results(out.result_files[0]).set_index("solver_name")
 
-    assert p_overwrite["time"] == dummy_solver.slurm_params["slurm_time"]
-    assert p_overwrite["nodes"] == dummy_solver.slurm_params["slurm_nodes"]
-    assert p_overwrite["mem"] == dummy_solver.slurm_params["slurm_mem"]
-    assert p_overwrite["partition"] == dummy_slurm_config["slurm_partition"]
+    assert len(df) == 6
+    assert len(mocked_submitit) == 6
 
-    p_default = res[1]
-    assert p_default["time"] == dummy_slurm_config["slurm_time"]
-    assert p_default["nodes"] == dummy_slurm_config["slurm_nodes"]
-    assert p_default["partition"] == dummy_slurm_config["slurm_partition"]
+    # Default parameter from global config is never overidden
+    assert (df['s_gres'] == "gpu:1").all()
+
+    # If no parameters and no slurm_params, no override of global config
+    p_default = df.loc['solver_no_params'].fillna("")
+    for p in ["nodes", "time", "mem"]:
+        assert p_default[f"s_{p}"] == parallel_config.get(f"slurm_{p}", "")
+
+    # If slurm_params is set, it is used as a global config
+    p_slurm_params = df.loc["solver_slurm_params"].fillna("")
+    for p in ["nodes", "time", "mem"]:
+        assert p_slurm_params[f"s_{p}"] == slurm_params.get(f"slurm_{p}", "")
+
+    # Check that parameters override works
+    all_params = df.query("p_solver_p == 2")
+    assert len(all_params) == 4
+    assert all(all_params["p_solver_slurm_nodes"] == all_params["s_nodes"])
+
+    # Check that default are either parallel_config or slurm_params
+    p_my_params = df[df.index.str.contains("solver_my_params")]
+    for p in ["time", "mem"]:
+        assert all(
+            p_my_params[f"s_{p}"].fillna("") ==
+            parallel_config.get(f"slurm_{p}", "")
+        )
+    p_all_params = df[df.index.str.contains("solver_all_params")]
+    for p in ["time", "mem"]:
+        assert all(
+            p_all_params[f"s_{p}"].fillna("") ==
+            slurm_params.get(f"slurm_{p}", "")
+        )
+
+
+def test_split_by_slurm_config():
+    # A `group_runs` batch shares its `group_by` key but can still span
+    # several solvers with different `slurm_params`; `_split_by_slurm_config`
+    # further partitions it so each distinct SLURM config gets its own job.
+    # The SLURM config of each run is given by its run context.
+    config = SimpleNamespace(run_parallel_config={"backend": "submitit"})
+    other = SimpleNamespace(
+        run_parallel_config={"backend": "submitit", "slurm_nodes": 4}
+    )
+    batch = [
+        {"meta": {"dataset_name": "d1"}, "run_context": config},
+        {"meta": {"dataset_name": "d1"}, "run_context": config},
+        {"meta": {"dataset_name": "d1"}, "run_context": other},
+    ]
+    groups = _split_by_slurm_config(batch)
+    assert sorted(len(kw) for _cfg, kw in groups) == [1, 2]
+
+
+@pytest.mark.parametrize("batch_n_jobs, waves", [(1, 2), (2, 1), (-1, 2)])
+def test_run_on_slurm_grouped(mocked_submitit, batch_n_jobs, waves):
+    # Two solvers grouped by dataset are collapsed into a single job that runs
+    # them in `waves` rounds, with a wall-time sized for the whole batch.
+    timeout = 100
+    parallel_config = {
+        "backend": "submitit",
+        "group_by": "dataset",
+        "batch_n_jobs": batch_n_jobs,
+    }
+    solver = """
+        from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "{name}"
+    """
+    solvers = [solver.format(name="solver_1"), solver.format(name="solver_2")]
+
+    with temp_benchmark(solvers=solvers) as bench, mocked_slurm():
+        with CaptureCmdOutput(delete_result_files=False) as out:
+            run_benchmark(
+                bench.benchmark_dir, ["solver_1", "solver_2"],
+                dataset_names=["test-dataset"], max_runs=0, timeout=timeout,
+                parallel_config=parallel_config, plot_result=False,
+            )
+        df = read_results(out.result_files[0])
+
+    assert len(df) == 2
+    assert len(mocked_submitit) == 1
+    sub = mocked_submitit[0]
+    # The submitted function is the batched runner (`run_batch` factory's
+    # closure); `batch_n_jobs` is validated via the wall-time `waves` below.
+    assert sub["func"].__name__ == "_run_batch"
+    assert sub["config"]["time"] == f"00:{int(1.5 * waves * timeout)}"
+
+
+def test_slurm_params_property(mocked_submitit):
+    # A `slurm_params` property can use the run's dataset and the global
+    # parallel config: each run gets the config of its own components,
+    # computed in the run context.
+    solver = """
+        from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "solver"
+
+            @property
+            def slurm_params(self):
+                assert self.parallel_config_["backend"] == "submitit"
+                return {"slurm_nodes": self.dataset_.n}
+
+            def skip(self):
+                config = self.run_parallel_config_
+                print(f"#NODES#{config['slurm_nodes']}#")
+    """
+    dataset = """
+        from benchopt.utils.temp_benchmark import TempDataset
+
+        class Dataset(TempDataset):
+            name = "test-dataset"
+            parameters = {"n": [1, 2]}
+    """
+    with temp_benchmark(solvers=[solver], datasets=[dataset]) as bench, \
+            mocked_slurm():
+        with CaptureCmdOutput() as out:
+            run_benchmark(
+                bench.benchmark_dir, ["solver"],
+                dataset_names=["test-dataset"], max_runs=0, timeout=None,
+                parallel_config={"backend": "submitit"}, plot_result=False,
+            )
+
+    assert sorted(sub["config"]["nodes"] for sub in mocked_submitit) == [1, 2]
+    # The front node sees the same config in `skip`.
+    out.check_output("#NODES#1#", repetition=1)
+    out.check_output("#NODES#2#", repetition=1)

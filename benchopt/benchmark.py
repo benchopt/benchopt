@@ -1,4 +1,3 @@
-import re
 import sys
 import click
 import warnings
@@ -6,13 +5,21 @@ import importlib
 import itertools
 from pathlib import Path
 
-from joblib.externals import cloudpickle
+try:
+    # compat with joblib version < 1.6
+    from joblib.externals import cloudpickle
+except ImportError:
+    import cloudpickle
 
 from .config import get_setting
-from .base import BaseSolver, BaseDataset
+from .base import BaseSolver, BaseDataset, _prepare_one
 
 from .utils.dynamic_modules import _load_class_from_module
-from .utils.parametrized_name_mixin import product_param
+from .utils.dynamic_modules import FailedImport
+from .utils.parametrized_name_mixin import sanitize
+from .utils.parametrized_name_mixin import _get_used_parameters
+from .utils.parametrized_name_mixin import _check_patterns, _select_params
+from .utils.parametrized_name_mixin import _extract_options, is_file_selector
 
 from .utils.terminal_output import colorify
 from .utils.terminal_output import GREEN, YELLOW
@@ -23,6 +30,8 @@ from .utils.shell_cmd import _run_shell_in_conda_env
 
 # Get config values
 from .config import RAISE_INSTALL_ERROR
+from .parallel_backends import parallel_run
+from .utils.run_context import RunContext
 
 
 # Global variable to access the benchmark currently running globally
@@ -43,8 +52,6 @@ MISSING_DEPS_MSG = (
     "   requirements = ['pip::pkg'] # PyPi package `pkg`"
 )
 
-SUBSTITUTIONS = {"*": ".*"}
-
 
 def get_running_benchmark():
     """Return the benchmark currently running."""
@@ -56,10 +63,15 @@ class Benchmark:
 
     Parameters
     ----------
-    benchmark_dir : str or Path-like
+    benchmark_dir : str or Path-like or Benchmark object
         Folder containing the benchmark. The folder should at least
         contain an `objective.py` file defining the `Objective`
         function for the benchmark.
+        If a Benchmark object act as a no-op.
+    seed: int | None
+        Random seed for the benchmark. If None, an arbitrary seed is chosen.
+    no_cache : bool (default: False)
+        If set to True, the benchmark will not use caching.
     allow_meta_from_json : bool
         If set to True, allow the object to be instanciated even when
         objective.py cannot be found. In this case, the metadata are retrieved
@@ -72,11 +84,21 @@ class Benchmark:
         Caching mechanism for the benchmark.
     """
 
+    def __new__(cls, benchmark_dir=None, **kwargs):
+        # if already a Benchmark, act as a no-op
+        if isinstance(benchmark_dir, cls):
+            return benchmark_dir
+        return super().__new__(cls)
+
     def __init__(
             self, benchmark_dir,
+            seed=None,
             no_cache=False,
             allow_meta_from_json=False,
     ):
+        if isinstance(benchmark_dir, self.__class__):
+            return
+
         self.benchmark_dir = Path(benchmark_dir)
         self.no_cache = no_cache
 
@@ -88,9 +110,12 @@ class Benchmark:
         # in `benchmark_meta.json`.
         try:
             objective = self.get_benchmark_objective()
-            self.pretty_name = objective.name
-            self.url = getattr(objective, "url", None)
-            self.min_version = getattr(objective, 'min_benchopt_version', None)
+            self.pretty_name = (
+                objective.name.replace("benchmark_", "")
+                .replace("_benchmark", "").replace("_", " ")
+            )
+            self.url = objective.url
+            self.min_version = objective.min_benchopt_version
         except RuntimeError:
             if not allow_meta_from_json:
                 raise click.BadParameter(
@@ -118,6 +143,25 @@ class Benchmark:
             self.name = Path(self.url).name
         # replace dots to avoid issues with `with_suffix``
         self.name = self.name.replace('.', '-')
+
+        self._seed = seed
+
+    def __repr__(self):
+        return f"Benchmark(name={self.name}, url={self.url})"
+
+    @property
+    def safe_name(self):
+        "Get a safe name for the benchmark, to use in file names."
+        from urllib.parse import quote
+        return quote(self.name.replace(" ", "_").replace("/", "_"))
+
+    @property
+    def seed(self):
+        "Only set the seed if needed in the dataset"
+        if self._seed is None:
+            self._seed = 0
+            print(f"No seed was specified. Selected global seed: {self._seed}")
+        return self._seed
 
     def set_benchmark_module(self):
         # add PACKAGE_NAME as a module if it exists.
@@ -177,8 +221,8 @@ class Benchmark:
 
     def check_solver_patterns(self, solver_patterns, class_only=False):
         "Check that the patterns are valid and return selected configurations."
-        return _check_patterns(
-            self.get_solvers(), solver_patterns, name_type='solver',
+        return self._select_classes(
+            self.get_solvers(), solver_patterns, "Solver", 'solver',
             class_only=class_only
         )
 
@@ -190,12 +234,179 @@ class Benchmark:
         "List all available dataset names for the benchmark."
         return [d.name for d in self.get_datasets()]
 
+    def get_test_dataset(self, name=None, solver_class=None):
+        """Return the benchmark test dataset, or the one linked to the solver.
+
+        Parameters
+        ----------
+        name : str or None
+            Explicit dataset name to for direct override.
+        solver_class : Solver or None
+            Solver context, used to retrieve test_dataset['name'] when
+            the dataset is not given explicitly.
+        """
+        if name is None:
+            name = self.get_test_dataset_names(solver_class=solver_class)[0]
+
+        datasets = self.get_datasets()
+        test_datasets = [
+            d for d in datasets if sanitize(d.name) == sanitize(name)
+        ]
+        if len(test_datasets) == 0 and len(datasets) == 1:
+            test_datasets = datasets
+
+        assert len(test_datasets) == 1, (
+            "All benchmarks should have one test_dataset. The default is a "
+            "simulated dataset, but the name can be tweaked by setting "
+            "`Objective.test_config['dataset']['name']` (or the legacy "
+            "`Objective.test_dataset_name`) or per-solver via "
+            "`Solver.test_config['dataset']['name']`. The dataset should "
+            f"have `name='{name}' in the current benchmark. "
+            f"Found possible datasets {test_datasets}."
+        )
+        test_class = test_datasets[0]
+        if not test_class.is_installed():
+            import pytest
+            pytest.skip(f"Test dataset {name!r} is not installed")
+        return test_class
+
+    def get_test_dataset_names(self, solver_class=None):
+        """Resolve the list of test dataset names for the given context.
+
+        Names come from (in increasing priority):
+
+          1. ``Objective.test_dataset_name`` (legacy default).
+          2. ``Objective.test_config['dataset']['name']`` (str or list).
+          3. ``Solver.test_config['dataset']['name']`` (str or list) when
+             ``solver_class`` is provided.
+
+        Returns
+        -------
+        list[str]
+            One or more dataset names to exercise for this test context.
+        """
+        objective = self.get_benchmark_objective()
+        names = [objective.test_dataset_name]
+
+        for component in (objective, solver_class):
+            if component is None:
+                continue
+            ds_cfg = (component.test_config or {}).get('dataset', {})
+            name = ds_cfg.get('name')
+            if name is None:
+                continue
+            names = [name] if isinstance(name, str) else list(name)
+        if names == [None]:
+            datasets = self.get_dataset_names()
+            names = datasets if len(datasets) == 1 else ['simulated']
+        return names
+
     def check_dataset_patterns(self, dataset_patterns, class_only=False):
         "Check that the patterns are valid and return selected configurations."
-        return _check_patterns(
-            self.get_datasets(), dataset_patterns, name_type='dataset',
+        return self._select_classes(
+            self.get_datasets(), dataset_patterns, "Dataset", 'dataset',
             class_only=class_only
         )
+
+    def _select_classes(self, all_classes, patterns, class_name, name_type,
+                        class_only=False):
+        """Resolve solver/dataset selectors into concrete classes.
+
+        A selector pointing to a ``.py`` file (optionally with a
+        ``file.py[param=value]`` bracket) loads the class directly from that
+        file, even outside the benchmark's ``solvers/`` / ``datasets/``
+        folders, and selects it by identity. Its own ``name`` is kept, so it
+        never collides with a benchmark class of the same name. Other selectors
+        match by name against the benchmark's classes as usual.
+        """
+        if patterns is not None and not isinstance(patterns, (list, tuple)):
+            patterns = [patterns]
+        patterns = list(patterns) if patterns else []
+        file_patterns = [p for p in patterns if is_file_selector(p)]
+
+        if not file_patterns:
+            return _check_patterns(
+                all_classes, patterns, name_type=name_type,
+                class_only=class_only
+            )
+
+        matched = []
+        for pattern in file_patterns:
+            filename, args, kwargs = _extract_options(pattern)
+            path = Path(filename)
+            if not path.is_file():
+                raise click.BadParameter(f"Could not find file: {path}")
+            cls = _load_class_from_module(self.benchmark_dir, path, class_name)
+            matched.append(
+                (cls, ([], {})) if isinstance(cls, FailedImport)
+                else (cls, (args, kwargs))
+            )
+        selected = _select_params(matched, name_type, class_only)
+
+        name_patterns = [p for p in patterns if not is_file_selector(p)]
+        if name_patterns:
+            named = _check_patterns(
+                all_classes, name_patterns, name_type=name_type,
+                class_only=class_only
+            )
+            selected = (selected | named) if class_only else selected + named
+        return selected
+
+    def _get_plots_classes(self):
+        "List all available custom plot classes for the benchmark"
+        from .plotting.base import BasePlot
+        from .plotting.default_plots import (
+            ObjectiveCurvePlot,
+            BarChart,
+            BoxPlot,
+            TablePlot
+        )
+        default_plots = [
+            ObjectiveCurvePlot,
+            BarChart,
+            BoxPlot,
+            TablePlot
+        ]
+        custom_plots = self._list_benchmark_classes(BasePlot)
+        return default_plots + custom_plots
+
+    def get_plots(self):
+        return [
+            plot.get_instance()
+            for plot in self._get_plots_classes()
+        ]
+
+    def get_plot_names(self):
+        "List all custom plot names available"
+        return [
+            plot._get_name() for plot in self._get_plots_classes()
+        ]
+
+    def check_plots(self):
+        "Check if the available custom plots have valid definitions"
+        for plot in self.get_plots():
+            plot._check()
+
+    def get_plot_data(self, df, kinds):
+        "Get the data to plot for the benchmark."
+        from .plotting.short_labels import shorten_names
+
+        all_plots = self.get_plots()
+        self.check_plots()
+
+        # Short names for the whole report, full ones in `*_full_name`.
+        df = shorten_names(df)
+
+        all_data = {}
+        all_options = {}
+        for plot in all_plots:
+            plot_name = plot._get_name()
+            if plot_name not in kinds:
+                continue
+            data, options = plot._get_all_plots(df)
+            all_data[plot_name] = data
+            all_options[plot_name] = options
+        return all_data, all_options
 
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.
@@ -255,14 +466,20 @@ class Benchmark:
         slurm_dir = self.benchmark_dir / SLURM_JOB_NAME
         return slurm_dir
 
-    def get_result_file(self, filename=None):
-        """Get a result file from the benchmark.
+    def get_result_files(self, filenames=None):
+        """Get result files from the benchmark.
 
         Parameters
         ----------
-        filename : str
+        filenames : list[str] | str | None
             Select a specific file from the benchmark. If None, this will
             select the most recent result file in the benchmark output folder.
+            If 'all', will select all files in the output folder.
+
+        Returns
+        -------
+        result_files : list[Path]
+            List of result files matching the given names.
         """
         # List all result files
         output_folder = self.get_output_folder()
@@ -272,13 +489,27 @@ class Benchmark:
         all_result_files = sorted(
             all_result_files, key=lambda t: t.stat().st_mtime
         )
+        if len(all_result_files) == 0:
+            raise RuntimeError(
+                "Could not find any Parquet nor "
+                f"CSV result files in {output_folder}."
+            )
+        if filenames == "all":
+            return all_result_files
+        if filenames is None:
+            return all_result_files[-1:]
 
-        if filename is not None and filename != 'all':
-            result_path = (output_folder / filename)
-            result_filename = result_path.with_suffix('.parquet')
+        # Now select specific files based on the given name.
+        if isinstance(filenames, str):
+            filenames = [filenames]
+
+        result_files = []
+        for filename in filenames:
+            filename = Path(filename)
+            result_filename = filename.with_suffix('.parquet')
 
             if not result_filename.exists():
-                result_filename = result_path.with_suffix('.csv')
+                result_filename = filename.with_suffix('.csv')
 
             if not result_filename.exists():
                 if Path(filename).exists():
@@ -291,30 +522,10 @@ class Benchmark:
                         f"Could not find result file {filename}. Available "
                         f"result files are:\n- {all_result_files}"
                     )
-        else:
-            if len(all_result_files) == 0:
-                raise RuntimeError(
-                    "Could not find any Parquet nor "
-                    f"CSV result files in {output_folder}."
-                )
-            result_filename = all_result_files[-1]
-            if filename == 'all':
-                result_filename = all_result_files
+            else:
+                result_files.append(result_filename)
 
-        if isinstance(result_filename, list):
-            is_csv_file = any(fname.suffix == ".csv"
-                              for fname in result_filename)
-        else:
-            is_csv_file = result_filename.suffix == ".csv"
-
-        if is_csv_file:
-            print(colorify(
-                "WARNING: CSV files are deprecated."
-                "Please use Parquet files instead.",
-                YELLOW
-            ))
-
-        return result_filename
+        return result_files
 
     #####################################################
     # Caching mechanism
@@ -337,42 +548,36 @@ class Benchmark:
 
         return Path(benchopt_cache_dir) / self.name
 
-    def cache(self, func, force=False, ignore=None, collect=False):
+    def cache(self, func, force=False, ignore=None):
         """Create a cached function for the given function.
 
         A special behavior is enforced for the 'force' kwargs. If it is present
-        and True, the function will always be recomputed.
-
-        If the collect flag is set to True, the function will return the result
-        if it exists, or None if it does not. This is useful to gather results
-        that are already in cache.
+        and True, the function will always be recomputed. The returned function
+        exposes `check_call_in_cache` to test for a cache hit without running.
         """
         if self.no_cache:
-            assert not collect, "Cannot collect when using `--no-cache`."
-            return func
+            # Wrap `func` to expose a cache lookup without mutating the
+            # shared module-level `func`.
+            def _func_no_cache(**kwargs):
+                return func(**kwargs)
+
+            _func_no_cache.check_call_in_cache = lambda **kwargs: False
+            return _func_no_cache
 
         # Create a cached version of `func` and handle cases where we force
         # the run.
         func_cached = self.mem.cache(func, ignore=ignore)
         if force:
-            assert not collect, "Cannot collect and force computation."
-
             def _func_cached(**kwargs):
                 return func_cached.call(**kwargs)[0]
-        elif collect:
-            def _func_cached(**kwargs):
-                assert not kwargs.get('force', False), (
-                    "Cannot collect and force computation."
-                )
-                if func_cached.check_call_in_cache(**kwargs):
-                    return func_cached(**kwargs)
-                return None
         else:
             def _func_cached(**kwargs):
                 if kwargs.get('force', False):
                     return func_cached.call(**kwargs)[0]
                 return func_cached(**kwargs)
 
+        # Expose the cache lookup to collect and avoid unneeded dispatch.
+        _func_cached.check_call_in_cache = func_cached.check_call_in_cache
         return _func_cached
 
     #####################################################
@@ -394,6 +599,15 @@ class Benchmark:
             benchmark_name=self.name, default_config=default_config
         )
 
+    def get_plot_config(self, default_config=None):
+        params = ["plots", "hidden_plots", "plot_configs"]
+        config = {}
+        for param in params:
+            options = self.get_setting(param, default_config=default_config)
+            if options is not None:
+                config[param] = options
+        return config if config else {}
+
     def get_test_config_file(self):
         """Get the location for the test config file for the benchmark.
 
@@ -413,7 +627,8 @@ class Benchmark:
     def install_all_requirements(self, include_solvers, include_datasets,
                                  minimal=False, env_name=None,
                                  force=False, quiet=False, download=False,
-                                 gpu=False):
+                                 prepare=False, gpu=False,
+                                 env_need_confirm=True):
         """Install all classes that are required for the run.
 
         Parameters
@@ -432,13 +647,29 @@ class Benchmark:
         quiet : bool (default: False)
             If True, silences the output of install commands.
         download : bool (default: False)
-            If True, make sure the data are downloaded on the computer.
+            Deprecated. Use *prepare* instead.
+        prepare : bool (default: False)
+            If True, call ``Dataset.prepare()`` for all datasets after
+            installing requirements.
         gpu : bool (default: False)
             If True and the requirements of a class are a dict, install
             requirements["gpu"] instead of requirements["cpu"].
+        env_need_confirm : bool (default: False)
+            If not False, this should be the name of the current conda env,
+            and it will asks for user confirmation before installing packages.
         """
+        if download:
+            warnings.warn(
+                "The --download flag is deprecated. Use --prepare with "
+                "'benchopt install' or use 'benchopt prepare'.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            prepare = True
+
         # Collect all classes matching one of the patterns
-        print("Collecting packages...", end='', flush=True)
+        print("Collecting packages:")
+        exit_code = 0
 
         check_installs, missings = [], []
         objective = self.get_benchmark_objective()
@@ -448,12 +679,14 @@ class Benchmark:
         if missing_deps:
             raise AttributeError(
                 "Could not find dependencies in objective.py while it is not "
-                f"importable. {MISSING_DEPS_MSG}"
+                f"importable.\n\n{MISSING_DEPS_MSG}"
             )
 
         if len(shell_install_scripts) > 0 or len(conda_reqs) > 0:
             check_installs += [objective]
-        to_install = itertools.chain(include_datasets, include_solvers)
+        to_install = itertools.chain(
+            set(cls for cls, _ in include_datasets), include_solvers
+        )
 
         if not minimal:
             for klass in to_install:
@@ -480,17 +713,27 @@ class Benchmark:
             f"- {klass.name}" for klass in check_installs
         ])
         if len(list_install) == 0:
-            self.check_missing(missings)
-            print("All required solvers are already installed.")
-            if download:
-                self.download_all_data(include_datasets, env_name, quiet)
-            return
+            exit_code = self.check_missing(missings)
+            print("No new requirements installed")
+            if prepare:
+                exit_code = max(
+                    exit_code,
+                    self.prepare_all_data(include_datasets, force=force)
+                )
+            return exit_code
+
+        # ask for user confirmation to install in current conda env
+        # Only ask for confirmation if we are trying to install something.
+        if env_name is None and env_need_confirm:
+            click.confirm(
+                f"Install in the current env '{env_need_confirm}'?",
+                abort=True
+            )
 
         print(f"Installing required packages for:\n{list_install}\n...",
               end='', flush=True)
         install_in_conda_env(
-            *list(set(conda_reqs)), env_name=env_name, force=force,
-            quiet=quiet
+            *list(set(conda_reqs)), env_name=env_name, quiet=quiet
         )
         for install_script in shell_install_scripts:
             shell_install_in_conda_env(
@@ -504,14 +747,16 @@ class Benchmark:
         print('- Checking installed packages...', end='', flush=True)
         not_installed = set()
         for klass in set(check_installs + missings):
-            cls_success = klass.is_installed(env_name=env_name)
+            cls_success = klass.is_installed(
+                env_name=env_name, reload=True
+            )
             if cls_success and klass in missings:
                 # This class only depends on global requirements
                 missings.remove(klass)
             elif not cls_success:
                 not_installed.add(klass.name)
 
-        self.check_missing(missings)
+        exit_code = self.check_missing(missings)
 
         # If one failed, raise a warning to explain how to see the install
         # errors.
@@ -526,352 +771,172 @@ class Benchmark:
             )
             print(colorify(f" done (missing deps: {not_installed})", YELLOW))
 
-        if download:
-            self.download_all_data(include_datasets, env_name, quiet)
+        if prepare:
+            exit_code = max(
+                exit_code,
+                self.prepare_all_data(include_datasets, force=force)
+            )
+        return exit_code
+
+    def create_test_env(self, env_name, recreate=False):
+        from .utils.conda_env_cmd import create_conda_env
+        create_conda_env(
+            env_name, benchmark=self, recreate=recreate, pytest=True
+        )
+
+        # Don't import modules when parsing dependencies for another env.
+        from .utils.dynamic_modules import skip_import_ctx
+        with skip_import_ctx(env_name is not None):
+            # Install the objective + required test datasets.
+            test_dataset_names = set(self.get_test_dataset_names())
+            for solver_class in self.get_solvers():
+                test_dataset_names.update(
+                    self.get_test_dataset_names(solver_class=solver_class)
+                )
+            try:
+                test_datasets = self.check_dataset_patterns(
+                    sorted(test_dataset_names)
+                )
+            except click.BadParameter as e:
+                # If a test dataset name is invalid,
+                # raise a comprehensible error
+                raise ValueError(f"Bad test dataset names: {e.args[0]}")
+
+        self.install_all_requirements(
+            include_solvers=[],
+            include_datasets=test_datasets,
+            env_name=env_name,
+            env_need_confirm=False,
+        )
 
     def download_all_data(self, datasets, env_name, quiet):
         if len(datasets) == 0:
-            return
-        cmd = f"benchopt check-data {self.benchmark_dir} -d "
+            return 0
+        cmd = f"python -m benchopt check-data {self.benchmark_dir} -d "
         cmd += " -d ".join(d.name for d in datasets)
-        _run_shell_in_conda_env(
+        return _run_shell_in_conda_env(
             cmd, env_name=env_name, raise_on_error=True, capture_stdout=False
         )
+
+    def prepare_all_data(self, datasets, force=False, parallel_config=None):
+        """Prepare all specified datasets using their ``prepare()`` method.
+
+        For each dataset class, parameterizations that only differ on
+        ``prepare_cache_ignore`` parameters are collapsed into a single
+        preparation job. Results are cached via the benchmark cache so that
+        repeated calls are no-ops unless *force* is True.
+
+        If a dataset does not override ``prepare()``, this falls back to
+        calling ``get_data()`` for backward compatibility.
+
+        Parameters
+        ----------
+        datasets : list of BaseDataset subclasses
+            Dataset classes to prepare.
+        force : bool, default False
+            If True, bypass the cache and re-run preparation unconditionally.
+        parallel_config : dict or None
+            Backend configuration as produced by
+            ``check_parallel_config(parallel_config_file, n_jobs)``.
+            If None, preparation runs sequentially.
+
+        Returns
+        -------
+        exit_code : int
+            0 if all preparations succeeded, 1 if any failed.
+        """
+        if len(datasets) == 0:
+            return 0
+
+        all_datasets = list(_list_parametrized_classes(
+            *datasets, prepare=True
+        ))
+
+        # The parallel config is copied, as `parallel_run` pops its run keys.
+        base_ctx = RunContext(
+            parallel_config=dict(parallel_config or {}), base_seed=self.seed
+        )
+
+        # Handle not-installed datasets sequentially before parallelising
+        n_total = len(all_datasets)
+        to_prepare = []
+        for dataset, is_install in all_datasets:
+            if not is_install:
+                print(f"Dataset {dataset} is not installed, "
+                      "skipping preparation.")
+                n_total -= 1
+            else:
+                # Only the dataset is chosen when preparing it.
+                run_context = base_ctx.for_run(
+                    objective=None, dataset=dataset, solver=None,
+                    repetition=None,
+                )
+                to_prepare.append(dict(
+                    benchmark=self,
+                    dataset=dataset,
+                    run_context=run_context,
+                    force=force
+                ))
+
+        if not to_prepare:
+            print("Summary: 0/0 datasets ready.")
+            return 0
+
+        results = parallel_run(
+            self, _prepare_one,
+            run_kwargs_generator=to_prepare,
+            config=parallel_config,
+        )
+
+        n_failed = sum(1 for _, err, _ in results if err is not None)
+        if n_failed:
+            print(
+                f"Summary: {n_total - n_failed}/{n_total} datasets ready, "
+                f"{n_failed} failed."
+            )
+            return 1
+        print(f"Summary: {n_total}/{n_total} datasets ready.")
+        return 0
 
     def check_missing(self, missings):
         # Check that classes not importable, with no requirements, only depends
         # on global requirements specified in Objective.requirements.
         # Otherwise, we raise a comprehensible error.
-        if len(missings) > 0:
-            # Format the list of classes missing requirements.
-            cls_types = {'Solver': [], 'Dataset': []}
-            for klass in missings:
-                cls_type = klass.__base__.__name__.replace("Base", "")
-                cls_types[cls_type].append(klass.name)
-            cls_types = {
-                k: f'{cls_type}\n' + '\n'.join([f'- {c}' for c in v])
-                for k, v in cls_types.items() if len(v) > 0
-            }
-            missing_cls = '\n'.join(cls_types.values())
+        if len(missings) == 0:
+            return 0
 
-            raise AttributeError(
-                f"Could not find dependencies for the following classes while "
-                f"they are not importable:\n{missing_cls}\n{MISSING_DEPS_MSG}"
-            )
+        # Format the list of classes missing requirements.
+        cls_types = {'Solver': [], 'Dataset': []}
+        for klass in missings:
+            cls_type = klass._base_class_name
+            try:
+                # Check for invalid install_cmd
+                klass.install_cmd_
+                # Check for invalid requirements
+                if klass.requirements is None:
+                    reason = "no requirements"
+                else:
+                    reason = "incomplete requirements"
+            except AttributeError as e:
+                if "install_cmd" in str(e):
+                    reason = "invalid install_cmd"
+                else:
+                    reason = "invalid requirements"
+            cls_types[cls_type].append(f"{klass.name} ({reason})")
+        cls_types = {
+            k: f'{cls_type}\n' + '\n'.join([f'- {c}' for c in v])
+            for k, v in cls_types.items() if len(v) > 0
+        }
+        missing_cls = '\n'.join(cls_types.values())
 
-    def get_all_runs(self, solvers=None, forced_solvers=None,
-                     datasets=None, objectives=None, terminal=None):
-        """Generator with all combinations to run for the benchmark.
-
-        Parameters
-        ----------
-        solvers : list | None
-            List of solvers to include in the benchmark. If None
-            all solvers available are run.
-        forced_solvers : list | None
-            List of solvers to include in the benchmark and for
-            which one forces recomputation.
-        datasets : list | None
-            List of datasets to include. If None all available
-            datasets are used.
-        objectives : list | None
-            Filters to select specific objective parameters. If None,
-            all objective parameters are tested
-        terminal : TerminalOutput or None
-            Object to format string to display the terminal.
-
-        Yields
-        ------
-        dataset : BaseDataset instance
-        objective : BaseObjective instance
-        solver : BaseSolver instance
-        force : bool
-        """
-        all_datasets = _list_parametrized_classes(*datasets)
-        all_solvers, solvers_buffer = buffer_iterator(
-            _list_parametrized_classes(*solvers)
+        print(
+            f"Could not find dependencies for the following classes while "
+            f"they are not importable:\n{missing_cls}\n\n{MISSING_DEPS_MSG}"
         )
-        for dataset, is_installed in all_datasets:
-            terminal.set(dataset=dataset)
-            if not is_installed:
-                terminal.show_status('not installed', dataset=True)
-                continue
-            terminal.display_dataset()
-            all_objectives = _list_parametrized_classes(
-                *objectives, check_installed=False
-            )
-            for objective, is_installed in all_objectives:
-                terminal.set(objective=objective)
-                if not is_installed:
-                    terminal.show_status('not installed', objective=True)
-                    continue
-                terminal.display_objective()
-                for i_solver, (solver, is_installed) in enumerate(all_solvers):
-                    terminal.set(solver=solver, i_solver=i_solver)
-
-                    if not is_installed:
-                        terminal.show_status('not installed')
-                        continue
-
-                    force = is_matched(
-                        str(solver), forced_solvers, default=False
-                    )
-                    yield dict(
-                        dataset=dataset, objective=objective, solver=solver,
-                        force=force, terminal=terminal.clone()
-                    )
-                all_solvers = solvers_buffer
+        return 1
 
 
-def _check_name_lists(*name_lists):
-    "Normalize name_list to a list of string."
-    res = []
-    for name_list in name_lists:
-        if name_list is None:
-            continue
-        res.extend([str(name) for name in name_list])
-    return res
-
-
-def is_matched(name, include_patterns=None, default=True):
-    """Check if a certain name is matched by any pattern in include_patterns.
-
-    When include_patterns is None or [], always return `default`.
-    """
-    if include_patterns is None or len(include_patterns) == 0:
-        return default
-    name = str(name)
-    name = _extract_options(name)[0]
-    for p in include_patterns:
-        p = _extract_options(p)[0]
-        for old, new in SUBSTITUTIONS.items():
-            p = p.replace(old, new)
-        if re.match(f"^{p}$", name, flags=re.IGNORECASE) is not None:
-            return True
-    return False
-
-
-def _extract_options(name):
-    """Remove options indicated within '[]' from a name.
-
-    Parameters
-    ----------
-    name : str
-        Input name.
-
-    Returns
-    -------
-    basename : str
-        Name without options.
-    args : list
-        List of unnamed options.
-    kwargs : dict()
-        Dictionary with options.
-
-    Examples
-    --------
-    >>> _extract_options("foo")  # "foo", [], dict()
-    >>> _extract_options("foo[bar=2]")  # "foo", [], dict(bar=2)
-    >>> _extract_options("foo[baz]")  # "foo", ["baz"], dict()
-    """
-    if name.count("[") != name.count("]"):
-        raise ValueError(f"Invalid name (missing bracket): {name}")
-
-    basename = "".join(re.split(r"\[.*\]", name))
-    matches = re.findall(r"\[.*\]", name)
-
-    if len(matches) == 0:
-        return basename, [], {}
-    elif len(matches) > 1:
-        raise ValueError(f"Invalid name (multiple brackets): {name}")
-    else:
-        match = matches[0]
-        match = match[1:-1]  # remove brackets
-
-        result = _extract_parameters(match)
-        if isinstance(result, dict):
-            return basename, [], result
-        elif isinstance(result, list):
-            return basename, result, {}
-        else:
-            raise ValueError(
-                f"Impossible. Please report this bug.\n"
-                f"_extract_parameters returned '{result}'"
-            )
-
-
-def _extract_parameters(string):
-    """Extract parameters from a string.
-
-    If the string contains a "=", returns a dict, otherwise returns a list.
-
-    Examples
-    --------
-    >>> _extract_parameters("foo")  # ["foo"]
-    >>> _extract_parameters("foo, 42, True")  # ["foo", 42, True]
-    >>> _extract_parameters("foo=bar")  # {"foo": "bar"}
-    >>> _extract_parameters("foo=[bar, baz]")  # {"foo": ["bar", "baz"]}
-    >>> _extract_parameters("foo=1, baz=True")  # {"foo": 1, "baz": True}
-    >>> _extract_parameters("'foo, bar'=[(0, 1),(1, 0)]")
-    >>> # {"foo, bar": [(0, 1),(1, 0)]}
-    """
-    import ast
-    original = string
-
-    # First, replace some expressions with their hashes, to avoid modification:
-    # - quoted names
-    all_matches = re.findall(r"'[^'\"]*'", string)
-    all_matches += re.findall(r'"[^\'"]*"', string)
-    # - numbers of the form "1e-3" (but not names like "foo1e3")
-    all_matches += re.findall(
-        r"(?<![a-zA-Z0-9_])[+-]?[0-9]+[.]?[0-9]*[eE][-+]?[0-9]+", string)
-    for match in all_matches:
-        string = string.replace(match, str(hash(match)))
-
-    # Second, add quotes to all variable names (foo -> 'foo').
-    # Accepts dots, dashes and slashes within names.
-    string = re.sub(r"[a-zA-Z/\\][a-zA-Z0-9._\-/\\]*", r"'\g<0>'", string)
-
-    # double all backslashes for ast eval
-    string = re.sub(r"\\", r"\\\\", string)
-
-    # Third, change back the hashes to their original names.
-    for match in all_matches:
-        string = string.replace(str(hash(match)), match)
-
-    # Prepare the sequence for AST parsing.
-    # Sequences with "=" are made into a dict expression {'foo': 'bar'}.
-    # Sequences without "=" are made into a list expression ['foo', 'bar'].
-    if "=" in string:
-        string = "{" + string.replace("=", ":") + "}"
-    else:
-        string = "[" + string + "]"
-
-    # Remove quotes for python language tokens
-    for token in ["True", "False", "None"]:
-        string = string.replace(f'"{token}"', token)
-        string = string.replace(f"'{token}'", token)
-
-    # Evaluate the string.
-    try:
-        return ast.literal_eval(string)
-    except (ValueError, SyntaxError):
-        raise ValueError(f"Invalid name '{original}', evaluated as {string}.")
-
-
-def _check_patterns(all_classes, patterns, name_type='dataset',
-                    class_only=False):
-    """Check the patterns and return a list of selected classes and params.
-
-    Raise an error if a pattern does not match any dataset name,
-    or if a parameter does not appear as a class parameter.
-
-    Parameters
-    ----------
-    all_classes: list of ParametrizedNameMixin
-        The possible classes to select from.
-    patterns: list of str | dict
-        List of patterns to select the classes. These patterns can be either:
-            - str with the class name and parameters values:
-                "cls_name[params1=[...],params2=...]"
-            - dict with keys as cls_name and a dictionary of parameter values.
-                {'cls_name': dict(params1=[...], params2=[])}
-    name_type: str
-        Used to raise sensible error depending on the type of classes which
-        are selected.
-    class_only: bool
-        Only return the classes that are matched, without a list of parameters.
-
-    Returns
-    -------
-    selected_classes: list of (ParametrizedNameMixin, parameters dict)
-        A list with 2-tuple containing the selected class and a dictionary
-        with selected parameters for this class.
-    """
-    # If no patterns is provided or all is provided, return all the classes.
-    if (patterns is None or len(patterns) == 0
-            or any(p == 'all' for p, *_ in patterns)):
-        all_valid_patterns = [(cls, cls.parameters) for cls in all_classes]
-        if not class_only:
-            return all_valid_patterns
-        return set(cls for cls, _ in all_valid_patterns)
-
-    # Patterns can be either str or dict. Convert everything to 3-tuple with
-    # (cls_name, args, kwargs). cls_name and kwargs correspond to class and
-    # parameters selector. args is used to allow passing directly a list when
-    # the class have only one parameter.
-    def preprocess_patterns(pattern):
-        if isinstance(pattern, str):
-            return [_extract_options(pattern)]
-        if isinstance(pattern, dict):
-            return [
-                (name, options, {}) if isinstance(options, list)
-                else (name, [], options)
-                for name, options in pattern.items()]
-        raise TypeError()
-    patterns = [p for q in patterns for p in preprocess_patterns(q)]
-
-    # Check that the provided patterns match at least one dataset and pair the
-    # matching clas with the selector.
-    matched, invalid_patterns = [], []
-    for p, args, kwargs in patterns:
-        matched += [
-            (cls, (args, kwargs))
-            for cls in all_classes
-            if is_matched(cls.name, [p])
-        ]
-        if len(matched) == 0:
-            invalid_patterns.append(p)
-
-    # If some patterns did not matched any class, raise an error
-    if len(invalid_patterns) > 0:
-        all_names = '- ' + '\n- '.join(cls.name for cls in all_classes)
-        raise click.BadParameter(
-            f"Patterns {invalid_patterns} did not match any {name_type}.\n"
-            f"Available {name_type}s are:\n{all_names}"
-        )
-
-    # Check that the parameters are well formated:
-    # - not ambiguous nor duplicated
-    # - parameters correspond to existing one for a given class.
-    all_valid_patterns = []
-    for cls, (args, kwargs) in matched:
-        param_names = [p.strip() for k in cls.parameters for p in k.split(',')]
-        if len(args) != 0:
-            if len(cls.parameters) > 1:
-                raise ValueError(
-                    f"Ambiguous positional parameter for {cls.name}."
-                )
-            elif len(kwargs) > 0:
-                raise ValueError(
-                    f"Both positional and keyword parameters for {cls.name}."
-                )
-            kwargs = {list(cls.parameters.keys())[0]: args}
-        else:
-            bad_params = [
-                p.strip() for k in kwargs for p in k.split(',')
-                if p.strip() not in param_names
-            ]
-            if len(bad_params) > 0:
-                msg = "Possible parameters are:\n- " + "\n- ".join(param_names)
-                if len(param_names) == 0:
-                    msg = f"This {name_type} has no parameters."
-                bad_params = ', '.join(f"'{p}'" for p in bad_params)
-                raise ValueError(
-                    f"Unknown parameter {bad_params} for {name_type} "
-                    f"{cls.name}.\n{msg}"
-                )
-        params = cls.parameters.copy()
-        params.update(kwargs)
-        all_valid_patterns.append((cls, params))
-
-    if not class_only:
-        return all_valid_patterns
-
-    return set(cls for cls, _ in all_valid_patterns)
-
-
-def _list_parametrized_classes(*classes, check_installed=True):
+def _list_parametrized_classes(*classes, check_installed=True, prepare=False):
     """Generator with class instances for all selected parameters."""
     for klass, params in classes:
         if (check_installed and not klass.is_installed(
@@ -880,46 +945,13 @@ def _list_parametrized_classes(*classes, check_installed=True):
             yield klass.name, False
             continue
 
-        for parameters in _get_used_parameters(klass, params):
-            yield klass.get_instance(**parameters), True
+        # Quick check to avoid doing the product when ignoring all parameters.
+        ignore = (
+            getattr(klass, 'prepare_cache_ignore', None) if prepare else None
+        )
+        if ignore == "all":
+            yield klass.get_instance(), True
+        else:
 
-
-def _get_used_parameters(klass, params):
-    """Get the list of parameters to use in the class."""
-    # Make sure that all parameters are passed as iterables.
-    params = {
-        key: (val if isinstance(val, (list, tuple)) else [val])
-        for key, val in params.items()
-    }
-
-    # Use product_param to get all combinations of parameters.
-    # Then, update the default parameters (klass.parameters) with the
-    # parameters extracted from filter names.
-    used_parameters = []
-    for update in product_param(params):
-        for default in product_param(klass.parameters):
-            default = default.copy()  # avoid modifying the original
-
-            # check that all parameters are defined in klass.parameters
-            for key in update:
-                if key not in default:
-                    raise ValueError(
-                        f"Unknown parameter '{key}', parameter must be in "
-                        f"{list(default.keys())}")
-
-            default.update(update)
-            if default not in used_parameters:  # avoid duplicates
-                used_parameters.append(default)
-                yield default
-
-
-def buffer_iterator(it):
-    """Buffer the output of an iterator to repeat it without recomputing."""
-    buffer = []
-
-    def buffered_it(buffer):
-        for val in it:
-            buffer.append(val)
-            yield val
-
-    return buffered_it(buffer), buffer
+            for params in _get_used_parameters(klass, params, ignore=ignore):
+                yield klass.get_instance(**params), True

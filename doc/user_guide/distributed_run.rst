@@ -19,6 +19,49 @@ This will run all computations on the local machine where the command is invoked
 Note that ``joblib`` tries to mitigate oversubscription by reducing the number of threads that are used in C-level parallelism -- such as in BLAS calls.
 This means that these parallel runs might be slower than their sequential counterpart on the same machine, and shouldn't be compared to each other.
 
+.. _run_grouping:
+
+Grouping runs to reduce overhead
+--------------------------------
+
+When a run carries heavy fixed overhead -- loading a large dataset,
+initializing a GPU, or scheduling a job on a cluster -- running each
+``(dataset, objective, solver, repetition)`` as its own execution unit is
+inefficient, as that setup is repeated for every run. To reduce overhead, ``group_by``
+collapses the runs sharing one or more axes into a single batch, run as one
+unit, so the shared setup is paid once and reused across the batch.
+
+``group_by`` is an ordered list of axes to hold constant within a batch
+(outermost first), passed on the CLI or in the parallel config:
+
+.. prompt:: bash $
+
+    benchopt run . --group-by dataset,objective
+
+.. code-block:: yaml
+    :caption: ./config_parallel.yml
+
+    group_by: dataset             # one batch per dataset
+    batch_n_jobs: 4               # 4 workers inside each batch (submitit)
+
+On submitit, ``batch_n_jobs`` runs a batch's runs in parallel with ``joblib``.
+It can only be set in the parallel config. It defaults to ``1``, which
+maximises the reuse above. Grouping never changes the results, only how runs
+are scheduled.
+
+**Grouping cross-validation folds.** With ``repetition`` in ``group_by`` (e.g.
+``dataset,objective,repetition``), each fold is prepared once and shared across
+solvers instead of once per solver. ``dataset`` and ``objective`` must be
+listed before ``repetition``, and the fold data must be solver-independent. If
+``set_data`` seeds on the solver (``get_seed(use_solver=True)``), benchopt
+raises an error.
+
+.. note::
+
+    On ``submitit``, runs with different SLURM configurations (e.g. solvers with
+    different ``slurm_params``) are never grouped together, and unless
+    ``slurm_time`` is set the job wall-time is sized for the whole batch.
+
 .. _distributed_run:
 
 Distributed computations with ``dask`` or ``submitit``
@@ -29,17 +72,17 @@ Run the following command to install the dependencies of the backend you want to
 
 .. tab-set::
 
-    .. tab-item:: Dask
-
-        .. prompt:: bash $
-
-            pip install benchopt[dask]
-
     .. tab-item:: Submitit
 
         .. prompt:: bash $
 
             pip install benchopt[submitit]
+
+    .. tab-item:: Dask
+
+        .. prompt:: bash $
+
+            pip install benchopt[dask]
 
 
 Using the ``--parallel-config`` option for ``benchopt run``, one can pass a configuration file used to setup the distributed jobs.
@@ -67,25 +110,105 @@ Hereafter is an example of such config file:
     :caption: ./config_parallel.yml
 
     backend: submitit
-    slurm_time: 01:00:00        # max runtime 1 hour
-    slurm_gres: gpu:1           # requires 1 GPU per job
+    slurm_time: 01:00:00          # max runtime 1 hour
+    slurm_gres: gpu:1             # requires 1 GPU per job
+    slurm_stderr_to_stdout: True  # redirect all outputs to a single log file
     slurm_additional_parameters:
-      ntasks: 1                 # Number of tasks per job
-      cpus-per-task: 10         # requires 10 CPUs per job
-      qos: QOS_NAME             # Queue used for the jobs
-      distribution: block:block # Distribution on the node's architectures
-      account: ACC@NAME         # Account for the jobs
+      ntasks: 1                   # Number of tasks per job
+      cpus-per-task: 10           # requires 10 CPUs per job
+      qos: QOS_NAME               # Queue used for the jobs
+      distribution: block:block   # Distribution on the node's architectures
+      account: ACC@NAME           # Account for the jobs
     slurm_setup:  # sbatch script commands added before the main job
       - '#SBATCH -C v100-16g'
       - module purge
       - module load cuda/10.1.2 cudnn/7.6.5.32-cuda-10.1 nccl/2.5.6-2-cuda
 
+Using this backend, each configuration of ``(dataset, objective, solver)`` with
+unique parameters is launched as a separated job in a job-array on the SLURM
+cluster. The logs of each run can be found in ``./benchopt_run/``. Cache hits
+are detected on the submitting node before dispatching, so no SLURM job is
+allocated for a configuration whose result is already cached.
+
+The parameters defined in this config file should be compatible with
+the ``submitit`` library, as they are passed to the ``submitit.AutoExecutor``
+class. For more information on the available parameters, please refer to
+the `submitit documentation <https://github.com/facebookincubator/submitit>`_.
+
 Note that by default, no limitation is used on the number of
-simultaneous jobs that are run.
+simultaneous jobs that are run, leaving the cluster to adjust this. The
+``slurm_array_parallelism`` parameter can be set to limit the number of
+simultaneous jobs that are run when necessary.
 
 If ``slurm_time`` is not set in the config file, benchopt uses by default
 the value of ``--timeout`` multiplied by ``1.5`` for each job.
-Note that the logs of each benchmark run can be found in ``./benchopt_run/``.
+
+As we rely on ``joblib.Memory`` for caching the results, the cache should work
+exactly as if you were running the computation sequentially, as long as you have
+a shared file-system between the nodes used for the computations.
+
+.. _slurm_override:
+
+Overriding the SLURM parameters for one solver or one run
+---------------------------------------------------------
+
+It is possible to override the SLURM parameters for a specific solver, or varying
+them for different runs of a given solver.
+
+To specify a specific configuration for one solver, you can use the
+``slurm_params`` attribute in the solver class, which specifies different
+SLURM's job parameters for the solver. If you want to vary some parameters
+per run, you can define them in the ``parameters`` attribute of the solver.
+Note that for this to work, the parameters defined in the ``parameters``
+dictionary should all be prefixed with ``slurm_`` to be recognized as parameters
+for this backend.
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        """GPU-based solver that needs GPU partition and specific resources."""
+        name = 'GPU-Solver'
+
+        parameters = {
+            ...
+            'slurm_nodes': [1, 2],  # Varying number of nodes per run
+        }
+
+        # Override global SLURM config for this solver
+        slurm_params = {
+            'slurm_partition': 'gpu',
+            'slurm_gres': 'gpu:1',
+            'slurm_time': '02:00:00',
+            'slurm_cpus_per_task': 8,
+            'slurm_mem': '16GB',
+        }
+
+        requirements = ['torch']
+
+        def set_objective(self, X, y):
+            ...
+
+As discussed above, the parameters described here should be compatible with the
+``submitit`` backend. When the benchmark is run with the ``submitit`` backend,
+the global SLURM config will be updated with the parameters defined in the
+``slurm_params`` attribute of the solver, and then for each run. The final
+configuration used for a given run is thus obtained by merging the global SLURM
+config, the solver-specific parameters, and the run-specific parameters, with
+priority given to the run-specific parameters. Note that in this case, the jobs
+with different SLURM parameters will be launched as one job array per
+configuration.
+
+The SLURM configuration is computed for each run, in the context of the run.
+``slurm_params`` can thus be a property that uses the run's other components,
+with ``self.dataset_``, and the config given with ``--parallel-config``, with
+``self.parallel_config_``. It should not use ``self.run_parallel_config_``,
+which depends on it.
+
+The solvers' ``skip`` runs on the node running ``benchopt run``, which might
+not have the hardware of the jobs. To skip a solver when its jobs get no GPU,
+use :func:`~benchopt.helpers.requires_gpu.gpu_available` in ``skip``. It
+checks that the merged SLURM configuration of the solver requests a GPU. See
+:ref:`skipping_config`.
 
 
 .. _dask_backend:

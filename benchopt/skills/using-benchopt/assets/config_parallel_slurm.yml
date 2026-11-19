@@ -1,0 +1,15 @@
+# benchopt run . --parallel-config config_parallel_slurm.yml --n-jobs 20
+# Requires: pip install benchopt[submitit]
+
+backend: submitit
+slurm_time: "01:00:00"          # per-job wall-clock limit (1.5x --timeout if unset)
+slurm_gres: "gpu:1"             # remove if CPU-only
+slurm_additional_parameters:
+  cpus-per-task: 4
+  account: "myaccount"          # replace with your SLURM account
+  # partition: gpu              # uncomment if needed
+
+# Limit simultaneous jobs (useful when the scheduler has quotas):
+# slurm_array_parallelism: 50
+
+# Logs land in ./benchopt_run/ inside the benchmark directory.

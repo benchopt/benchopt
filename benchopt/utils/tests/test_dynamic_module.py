@@ -1,7 +1,17 @@
+import sys
+import uuid
+
+import pytest
 from joblib import Parallel, delayed
 
-from benchopt.tests.utils import CaptureCmdOutput
+from benchopt.cli.main import run as run_cmd
+from benchopt.cli.main import install as install_cmd
+from benchopt.utils.dynamic_modules import FailedImport
 from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.utils.temp_benchmark import DEFAULT_SOLVERS
+
+from benchopt.tests.utils import CaptureCmdOutput
+from benchopt.cli.tests.completion_cases import _test_shell_completion
 
 
 def test_pickling_dynamic_module():
@@ -12,14 +22,12 @@ def test_pickling_dynamic_module():
     # that the dynamic benchmark_utils module can be retrieved in the process.
 
     solver = """
-    from benchopt import BaseSolver
+    from benchopt.utils.temp_benchmark import TempSolver
     from benchmark_utils.test1 import func1
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "test-solver"
-        def set_objective(self, X, y, reg): self.X, self.y = X, y
         def run(self, _): func1()
-        def get_result(self): return dict(beta=1)
     """
 
     with temp_benchmark(
@@ -40,3 +48,217 @@ def test_pickling_dynamic_module():
             Parallel(n_jobs=2)(
                 delayed(Solver.run)(None, None) for _ in range(2)
             )
+
+
+def test_get_module_from_file_no_duplicate(tmp_path):
+    # Loading the same file twice reuses the cached module (no duplicate),
+    # while two different files with the same stem get distinct modules.
+    from benchopt.utils.dynamic_modules import _get_module_from_file
+
+    bench_dir = tmp_path / f"bench_{uuid.uuid4().hex}"
+    bench_dir.mkdir()
+    # Both files live outside the benchmark and share the stem "ext", so they
+    # map to the same semantic package name and exercise the collision guard.
+    file_a, file_b = tmp_path / "a" / "ext.py", tmp_path / "b" / "ext.py"
+    for path, value in [(file_a, 1), (file_b, 2)]:
+        path.parent.mkdir()
+        path.write_text(f"VALUE = {value}\n")
+
+    mod_a1 = _get_module_from_file(file_a, bench_dir, subpkg="solvers")
+    mod_a2 = _get_module_from_file(file_a, bench_dir, subpkg="solvers")
+    mod_b = _get_module_from_file(file_b, bench_dir, subpkg="solvers")
+
+    # Same file -> same module, loaded once (no duplicate).
+    assert mod_a1 is mod_a2 and mod_a1.VALUE == 1
+    # Different file, same stem -> distinct module, not a wrong reuse.
+    assert mod_b is not mod_a1 and mod_b.VALUE == 2
+
+
+def test_ast_replacement_no_name():
+    # Test that the AST replacement works when a dynamic module is not
+    # importable. In particular, this makes sure that the module filename
+    # is correctly stored in the class.
+
+    solver = """
+    from benchopt import BaseSolver
+    failure
+
+    class Solver(BaseSolver):
+        pass
+    """
+    with temp_benchmark(solvers=solver) as bench:
+        # Get the solver from the list of tuples
+        with pytest.warns(UserWarning, match="has no name attribute"):
+            Solver, _ = bench.check_solver_patterns(["solver_0"])[0]
+        assert not Solver.is_installed()
+        with pytest.raises(NameError, match="'failure' is not defined"):
+            Solver.is_installed(raise_on_not_installed=True)
+
+
+def test_ast_replacement_name_undefined():
+    # Test that the AST replacement works when a dynamic module is not
+    # importable. In particular, this makes sure that the module filename
+    # is correctly stored in the class.
+
+    solver = """
+    from benchopt import BaseSolver
+    failure
+
+    class Solver(BaseSolver):
+        name = undefined
+    """
+    with temp_benchmark(solvers=solver) as bench:
+        # Get the solver from the list of tuples
+        Solver, _ = bench.check_solver_patterns(["solver_0"])[0]
+        assert not Solver.is_installed()
+        with pytest.raises(AttributeError) as excinfo:
+            Solver.is_installed(raise_on_not_installed=True)
+        assert "Could not evaluate the name" in str(excinfo.value)
+        assert "'failure' is not defined" in str(excinfo.value.__cause__)
+
+
+@pytest.mark.parametrize("params", [
+    # undefined install_cmd
+    "install_cmd = undefined",
+    # undefined requirements
+    "requirements = undefined",
+    # failing requirements
+    "requirements = ['', f'{undefined}']",
+])
+def test_ast_replacement(params):
+    # Test that the AST replacement works when a dynamic module is not
+    # importable. In particular, this makes sure that the module filename
+    # is correctly stored in the class.
+
+    solver = f"""
+    from benchopt.utils.temp_benchmark import TempSolver
+    failure
+
+    class Solver(TempSolver):
+        name = 'my-solver'
+        {params}
+    """
+
+    component = params.split('=')[0].strip()
+
+    with temp_benchmark(solvers=solver) as bench:
+        Solver, _ = bench.check_solver_patterns(["my-solver"])[0]
+        assert not Solver.is_installed(quiet=True)
+        with pytest.raises(NameError, match="'failure' is not defined"):
+            Solver.is_installed(raise_on_not_installed=True)
+
+        with pytest.raises(AttributeError) as excinfo:
+            print(Solver.requirements, Solver.install_cmd)
+
+        assert "Could not evaluate statically" in str(excinfo.value)
+        assert "solver_0.py" in str(excinfo.value)
+        assert f"'{component}'" in str(excinfo.value)
+
+
+@pytest.mark.parametrize("params", [
+    # no name
+    "pass",
+    # undefined name
+    "name = undefined",
+    # undefined install_cmd
+    "name = 'my-solver'\n        install_cmd = undefined",
+    # undefined requirements
+    "name = 'my-solver'\n        requirements = undefined",
+    # failing requirements
+    "name = 'my-solver'\n        requirements = ['', f'{undefined}']",
+], ids=["no name", "undefined name", "undefined install_cmd",
+        "undefined requirements", "failing requirements",])
+def test_ast_failures_dont_block_run(params, no_raise_install, fake_conda_env):
+    solver = f"""
+    from benchopt.utils.temp_benchmark import TempSolver
+    failure
+
+    class Solver(TempSolver):
+        {params}
+    """
+
+    invalid_component = params.splitlines()[-1].split("=")[0].strip()
+    if invalid_component == "pass":
+        invalid_component = "name"
+
+    # Check that the failing solver does not prevent other solvers to be run.
+    with temp_benchmark(solvers=[*DEFAULT_SOLVERS.values(), solver]) as bench:
+        run_cmd(
+            f"{bench.benchmark_dir} -s test-solver --no-plot".split(),
+            'benchopt', standalone_mode=False
+        )
+
+        # Check that completion also works
+        expected_solvers = (
+            ['test-solver', 'solver_1'] if 'my-solver' not in params
+            else ['my-solver', 'test-solver']
+        )
+        _test_shell_completion(
+            run_cmd, f"{bench.benchmark_dir} -s".split(),
+            [("", expected_solvers)]
+        )
+
+        for args in ["-s test-solver", "--minimal", ""]:
+            exit_code = 1 if not args else None
+            with CaptureCmdOutput(exit=exit_code) as out:
+                install_cmd(
+                    f"{bench.benchmark_dir} -y {args}".split(),
+                    'benchopt', standalone_mode=False
+                )
+            print(out.raw_output)
+            if args:
+                out.check_output("No new requirements installed")
+            else:
+                if invalid_component == "name":
+                    out.check_output("solver_1: collected ✓")
+                    out.check_output(r"solver_1 \(no requirements\)")
+                else:
+                    out.check_output("my-solver: failed to get requirements ✗")
+                    out.check_output(f"invalid {invalid_component}")
+
+
+@pytest.mark.parametrize("safe_import", [True, False])
+def test_reload_class_after_install(tmp_path, safe_import):
+    # When installing in the current env, the classes have already been
+    # imported, and the failed ones are `FailedImport` classes, whether the
+    # import failure was caught by a `safe_import_context` or not. Check that
+    # reloading them detects the requirements installed after this first
+    # import.
+
+    # This package is not installed yet, and is only made importable once the
+    # benchmark has been collected.
+    pkg = f"missing_pkg_{uuid.uuid4().hex[:8]}"
+    if safe_import:
+        import_pkg = (
+            "with safe_import_context() as import_ctx:\n"
+            f"        import {pkg}"
+        )
+    else:
+        import_pkg = f"import {pkg}"
+
+    solver = f"""
+    from benchopt import safe_import_context
+    from benchopt.utils.temp_benchmark import TempSolver
+
+    {import_pkg}
+
+    class Solver(TempSolver):
+        name = "test-solver"
+    """
+
+    with temp_benchmark(solvers=[solver]) as bench:
+        Solver, _ = bench.check_solver_patterns(["test-solver"])[0]
+        assert isinstance(Solver, FailedImport)
+        assert not Solver.is_installed(quiet=True)
+
+        # Install the missing package in the current env.
+        (tmp_path / f"{pkg}.py").write_text("")
+        sys.path.insert(0, str(tmp_path))
+        try:
+            # Without a reload, the import failure hides the install.
+            assert not Solver.is_installed(quiet=True)
+            # Reloading re-imports the class and detects the install.
+            assert Solver.is_installed(reload=True)
+        finally:
+            sys.path.remove(str(tmp_path))
+            sys.modules.pop(pkg, None)

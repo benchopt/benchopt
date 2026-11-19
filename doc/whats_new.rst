@@ -5,13 +5,438 @@ What's new
 
 .. currentmodule:: benchopt
 
-.. _changes_1_8:
+.. _dev:
 
-Version 1.8 - in development
-----------------------------
+Version 1.10.1 -- in developement
+---------------------------------
 
 CLI
----
+~~~
+
+- Group runs into fewer execution units with ``group_by`` (and optional
+  intra-group parallelism via ``batch_n_jobs``) to reduce per-run overhead when
+  running in parallel, by sharing setup across the runs of a batch. ``group_by``
+  is settable from the CLI (``--group-by dataset,objective``) and accepts
+  ``repetition`` to share a cross-validation fold across solvers. See
+  :ref:`run_grouping`. By `Bruno Aristimunha`_ and `Thomas Moreau`_ (:gh:`903`)
+
+
+FIX
+~~~
+
+- Datasets, objectives and solvers whose ``__init__`` does not call
+  ``super().__init__()`` no longer fail with an ``AttributeError`` on
+  ``_used_seed``. By `Thomas Moreau`_ (:gh:`1029`)
+
+- The front node no longer calls ``Dataset.get_data`` before dispatching runs
+  when ``-r`` is set, and the ``submitit`` backend no longer keeps every
+  dataset in memory while submitting jobs. By `Hippolyte Verninas`_
+  (:gh:`1020`)
+
+- Consecutive runs in a process share the state of their dataset, objective
+  and solver, and release it once a run uses another component. Memory no
+  longer grows with the number of solvers, and ``Objective.set_data`` is
+  called once per dataset and objective instead of once per run. The front
+  node applies the same rule to the runs it sends to other processes. See
+  :ref:`data_memory`. By `Hippolyte Verninas`_ and `Thomas Moreau`_
+  (:gh:`1030`)
+
+- The "Export LaTeX" button of the HTML report shows the table in a text box
+  when the clipboard is unavailable, and no longer adds an extra column. By
+  `Thomas Moreau`_ (:gh:`1023`)
+
+API
+~~~
+
+- Component classes are represented as ``Solver<name>``, e.g. in error
+  messages, instead of the default class representation.
+  By `Thomas Moreau`_ (:gh:`1032`)
+
+- ``Dataset.skip(self)``, ``Objective.skip(self, dataset)`` and
+  ``Solver.skip(self, objective, dataset)`` are checked before launching the
+  runs, and return the reason to skip or ``None``. The old signature and the
+  ``(skip, reason)`` tuple are deprecated. See :ref:`skipping_config`.
+  By `Thomas Moreau`_ (:gh:`1031`)
+
+- ``skip`` takes no argument for all components. The new attributes
+  ``dataset_``, ``objective_``, ``solver_``, ``repetition_``,
+  ``parallel_config_`` and ``run_parallel_config_`` give the current run in any method benchopt
+  calls, including ``skip`` and a ``slurm_params`` property, and raise if
+  the component is not chosen yet. See :ref:`current_run`.
+  The run context is only attached to the components during these calls.
+  By `Thomas Moreau`_ (:gh:`1042`)
+
+- :func:`~benchopt.helpers.requires_gpu.gpu_available` tells in
+  ``Solver.skip`` if the runs of a solver will have a GPU, using the SLURM
+  config of its jobs with the ``submitit`` backend.
+  By `Thomas Moreau`_ (:gh:`1040`)
+
+- Add a ``hidden_plots`` benchmark config option to hide some plot kinds,
+  e.g. some of the default plots. By `Hippolyte Verninas`_ (:gh:`1019`)
+
+PLOT
+~~~~
+
+- The "Suboptimal Curve" and "Relative Curve" toggles are replaced by a
+  ``Y_axis`` option of the ``objective_curve`` plot, so they no longer apply
+  to custom scatter plots. Views using the deprecated ``suboptimal_curve``
+  or ``relative_curve`` keys are converted to ``objective_curve_Y_axis``.
+  By `Hippolyte Verninas`_ (:gh:`1018`)
+
+- Improve ``'image'`` plots in the HTML report: borderless grid that keeps
+  each image's aspect ratio, and click-to-enlarge.
+  By `Hippolyte Verninas`_ (:gh:`1017`)
+
+- The HTML report shortens solver, dataset and objective names to the
+  parameters that vary, with a hover icon showing the docstring and full
+  parameters. Custom plots receive the short names, with ``*_full_name`` and
+  ``*_description`` columns, and can set a ``description`` on traces, table
+  cells and option values.
+  By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`935`)
+
+- Add ``Download PDF`` button in the HTML interface to download the current
+  plot as a PDF file.
+  By `Jad Yehya`_ & `Hippolyte Verninas`_ (:gh:`989`)
+
+TST
+~~~
+
+- Tests needing a conda env are skipped when no conda env is active, e.g. the
+  install tests of ``benchopt test``, instead of failing.
+  By `Thomas Moreau`_ (:gh:`1033`)
+
+DOC
+~~~
+
+- Show how to install a requirement from source, e.g. a git branch, with a
+  ``pip::`` requirement. See :ref:`specify_requirements`. Also fix a dead link
+  to the CLI documentation. By `Mark Santos`_ (:gh:`1027`)
+
+
+.. _changes_1_10:
+
+Version 1.10.0 -- 21/09/2026
+----------------------------
+
+.. warning::
+    This release changes the run cache key, so upgrading will recompute
+    every cached run once.
+
+CLI
+~~~
+
+- ``-s`` / ``-d`` now accept a path to a ``.py`` file, loading the
+  ``Solver`` / ``Dataset`` directly from that file (even outside the
+  benchmark's ``solvers/`` / ``datasets/`` folders), with optional
+  ``file.py[param=value]`` sub-selection. By `Thomas Moreau`_ (:gh:`1003`)
+
+- ``--output`` now accepts a path: a value containing a path separator is
+  written verbatim instead of under ``<BENCHMARK>/outputs/``.
+  By `Thomas Moreau`_ (:gh:`1003`)
+
+- Add ``benchopt info -f <result_file>`` (repeatable, or ``-f all``) to
+  summarize result file(s) instead of listing benchmark solvers/datasets;
+  plain ``benchopt info`` now also lists available result files.
+  By `Thomas Moreau`_ (:gh:`990`)
+
+- Add ``benchopt info <benchmark> --version`` to check that the installed
+  benchopt satisfies the benchmark's ``min_benchopt_version``.
+  By `Thomas Moreau`_ (:gh:`1009`)
+
+- Add a ``raise_on_error`` config setting (``BENCHOPT_RAISE_ON_ERROR``) that
+  re-raises the first solver/dataset/objective error to make a run fail fast,
+  without turning on the extra logging of ``BENCHOPT_DEBUG``.
+  By `Thomas Moreau`_ (:gh:`1005`)
+
+- Ship agent skills (``SKILL.md``, `Agent Skills <https://agentskills.io>`_
+  standard) as package data and add ``benchopt sync-skills`` to install them
+  into a project's ``.agents/skills/`` (or globally with ``--global``), with a
+  ``.claude/skills/`` mirror for Claude Code. The skills are consolidated into a
+  single ``using-benchopt`` skill (router ``SKILL.md`` plus task sub-files and
+  asset templates) and ``sync-skills`` stamps the installed version and
+  retargets doc links.
+  By `Thomas Moreau`_ (:gh:`959`, :gh:`980`, :gh:`982`, :gh:`1008`)
+
+PLOT
+~~~~
+
+- Table cells can be formatted with ``**bold**``, ``*italic*`` and
+  ``__underlined__`` markers.
+  By `Hippolyte Verninas`_ (:gh:`993`)
+
+- Change the plotly style to make it more like matplotlib.
+  By `Hippolyte Verninas`_ (:gh:`966`)
+
+- Figures in the html interface are now resizable.
+  By `Hippolyte Verninas`_ (:gh:`965`)
+
+- Quantile toggle is now hidden if no quantiles are available
+  By `Hippolyte Verninas`_ (:gh:`964`)
+
+- Improve the html report table, now rendered with `Grid.js
+  <https://gridjs.io/>`_: sortable by any column, filter by solver name,
+  hide/show any columns. By `Hippolyte Verninas`_ (:gh:`953`)
+
+API
+~~~
+
+- Cache hits are now detected on the main process before dispatching, so no
+  parallel job (loky, dask or SLURM/submitit) is launched for a
+  ``(dataset, objective, solver)`` run whose result is already cached. Such
+  runs are reported as ``done (cached)``. The same skip and ``done (cached)``
+  reporting also apply to dataset preparation.
+  By `Thomas Moreau`_ (:gh:`976`)
+
+- Custom plot ``options`` values can now be a callable taking the results
+  DataFrame as input and returning the list of possible values for the option.
+  By `Hippolyte Verninas`_ (:gh:`952`)
+
+- Add ``param=all`` shorthand to sweep every valid value of a parameter,
+  e.g. ``-d "Foo[x=all]"``. The valid values are declared per class through
+  the ``get_all_parameter_values`` classmethod, and are also listed
+  by ``benchopt info -v``. By `Eduardo Montesuma`_ (:gh:`941`)
+
+- Add ``get_run_output_path`` method to all benchmark components (``Dataset``,
+  ``Objective``, ``Solver``). It returns a directory unique to the current
+  (dataset/objective/solver/repetition) run, to save per-run artifacts such as
+  model checkpoints or diagnostic logs. See :ref:`run_artifacts` for usage
+  details. By `Thomas Moreau`_ (:gh:`961`)
+
+TST
+~~~
+
+- Improve test configuration for multi-task benchmarks:
+  ``test_config['dataset']['name']`` now accepts a list of dataset names.
+  Also flag solvers whose every ``test_solver_run`` variant was skipped, and
+  raise a clear error when no test dataset is configured.
+  By `Thomas Moreau`_ (:gh:`942`)
+
+- Add ``test_dataset_install`` test to check install of datasets and
+  make sure to install test_datasets when creating a test env.
+  By `Thomas Moreau`_ (:gh:`944`)
+
+FIX
+~~~
+
+- Config warnings cleanup: setting a benchmark option (e.g. ``data_home``)
+  through its ``BENCHOPT_*`` environment variable no longer warns, since these
+  are honored for every benchmark. The unused ``data_dir`` global option is
+  removed, and the internal ``_g_config_check``/``_bench_config_check`` flags
+  no longer leak into the warning's option list or the documented settings.
+  By `Thomas Moreau`_ (:gh:`1005`)
+- Fix warning onvalid a benchmark option (e.g. ``data_home``) passed
+  through its ``BENCHOPT_*`` env var. Also clean up trailing unused or
+  private keys from user facing information.
+  By `Thomas Moreau`_ (:gh:`1005`)
+- Fix ``get_seed`` raising in a ``Dataset``'s ``get_data`` when running with
+  ``-j`` greater than 1. By `Thomas Moreau`_ (:gh:`984`)
+
+- Fix shell handling on Windows so ``benchopt install``/``test`` work with a
+  bash-like shell (e.g. GitHub ``shell: bash`` runners).
+  On Windows the ``SHELL`` env var is now ignored, use ``BENCHOPT_SHELL``
+  to override it. Underlying shell errors are also better reported,
+  instead of being swallowed. By `Johan Larsson`_ (:gh:`974`)
+
+- Fix ``sampling_strategy`` inherited from the objective being resolved too
+  late, causing the reported strategy -- and the cache key it feeds into --
+  to depend on which solver had already run in the process.
+  By `Thomas Moreau`_ (:gh:`981`)
+
+- Fix ``benchopt sync-skills`` symlink with global install for Claude.
+  By `Thomas Moreau`_ (:gh:`969`)
+
+- Fix ``get_seed`` failing during ``benchopt prepare`` when a dataset's
+  ``get_data`` uses it. ``prepare`` now sets up a seeding context and accepts a
+  ``--seed`` option that is part of the preparation cache. Datasets whose
+  preparation does not depend on the seed can drop it from the cache key with
+  ``prepare_cache_ignore = ('base_seed',)``.
+  By `Thomas Moreau`_ (:gh:`962`)
+
+- Fix single dataset benchmark test_dataset_names detection for test env
+  creation. By `Thomas Moreau`_ (:gh:`951`)
+
+- Fix ``benchopt archive`` not including ``benchmark_utils/`` in the generated
+  archive. By `Thomas Moreau`_ (:gh:`970`)
+
+- Fix ``--profile`` parsing that was resulting in always activated profile.
+  By `Thomas Moreau`_ (:gh:`950`)
+
+- Fix error reporting when ``Solver.set_objective`` fails, which was
+  preventing the run to finish normally.
+  By `Thomas Moreau`_ (:gh:`949`)
+
+- Detect the requirements installed by ``benchopt install`` in the current
+  environment, by reloading the classes instead of relying on the import
+  outcome cached when collecting the benchmark.
+  By `Felix Divo`_ (:gh:`978`)
+
+.. _changes_1_9_1:
+
+Version 1.9.1 -- 28/05/2026
+---------------------------
+
+CLI
+~~~
+
+- Add ``benchopt prepare`` command to prepare the benchmark's dataset
+  before launching them. Also deprecate the ``--download`` option in
+  ``benchopt install``, replaced by ``--prepare``. By `Thomas Moreau`_ (:gh:`912`)
+
+API
+~~~
+
+- Add validation step on config options, to avoid silent failure when
+  setting the wrong option. By `Thomas Moreau`_ (:gh:`910`)
+
+- Add ``prepare`` method to ``Dataset`` to allow specifying preparation steps
+  for a dataset. This method is cached, and some parameters of the class can
+  be ignored for caching by specifying them in ``prepare_cache_ignore``.
+  By `Thomas Moreau`_ (:gh:`912`)
+
+- Add an API function for merging benchmark result files, similar to
+  the ``benchopt merge`` command. By `Damien Lesens`_ (:gh:`916`)
+
+- Add ``'image'`` plot type to display images and per-iteration frame
+  animations (as animated GIFs) in the HTML result page. Return a list of
+  dicts with ``"image"`` (a NumPy array or a list of arrays) and an optional
+  ``"label"`` key from :meth:`BasePlot.plot`.
+  By `Thomas Moreau`_ (:gh:`923`)
+
+- Non-primitive objective values (NumPy arrays, etc.) can now be serialized
+  into the parquet result file using ``safetensors`` and safe pickler.
+  By `Thomas Moreau`_ (:gh:`923`, :gh:`934`)
+
+- New metadata plot options.
+  By `Hippolyte Verninas`_ (:gh:`920`, :gh:`928` & :gh:`932`)
+
+- Repetitions are now parallelised by default when submitting runs with a parallel backend.
+  By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`860`)
+
+- Make `get_one_result` optional, to make it easier to have a first working
+  benchmark without having to implement it.
+  By `Thomas Moreau`_ (:gh:`933`)
+
+DOC
+~~~
+
+- Improve documentation on extenging a benchmark and on using benchopt
+  with various programming languages. see :ref:`solver_languages`
+  and :ref:`write_benchmark` for more details.
+  By `Thomas Moreau`_ (:gh:`905`, :gh:`933`)
+
+- Add a gallery of examples for ``benchopt``, with easy to explore
+  benchmark definition. By `Thomas Moreau`_ (:gh:`905`)
+
+- Make it possible to download the benchmark examples as a zip file from
+  the example gallery. By `Thomas Moreau`_ (:gh:`927`)
+
+FIX
+~~~
+
+- Fix quantile display with suboptimality and relative plots.
+  Also fix median computation for objective curve, to ensure the same
+  number of points for all solvers even when one stops earlier.
+  By `Thomas Moreau`_ (:gh:`904`)
+
+- Fix boxplot displays when encountering NaN values, and improved the matplotlib
+  backend to display the boxplots. By `Hippolyte Verninas`_ (:gh:`921` & :gh:`913`)
+
+- When passing un-supported extension to ``--output``, benchopt now fallback
+  to parquet and raise a warning instead of an error. By `Thomas Moreau`_ (:gh:`926`)
+
+- Fix ``save_last_result`` behavior when using cache results.
+  By `Thomas Moreau`_ (:gh:`931`)
+
+.. _changes_1_9:
+
+Version 1.9 - 15/03/2026
+------------------------
+
+CLI
+~~~
+
+- Add ``benchopt merge`` to merge results from multiple benchopt runs.
+  See :ref:`merge_results` for more details.
+  By `Thomas Moreau`_ (:gh:`892`)
+
+- Add ``--hub`` option to ``benchopt publish`` to allow publishing results
+  to `Hugging Face <https://huggingface.co/>`_ in addition to GitHub.
+  Results are merged with any existing ones in the HF dataset repo.
+  See :ref:`publish_benchmark` for more details.
+  By `Thomas Moreau`_
+
+- Remove deprecated ``--slurm`` option in ``benchopt run``. SLURM runs should
+  now be setup with the parallel backend system. See :ref:`parallel_run` for
+  more details.
+  By `Thomas Moreau`_ (:gh:`902`, :gh:`673`)
+
+API
+~~~
+
+- Add ``python_version`` attribute to :class:`BaseObjective` to specify the
+  Python version to use when creating a dedicated conda environment with
+  ``benchopt install --env-name``. Both an exact minor version (e.g. ``"3.11"``)
+  and a PEP-440 specifier (e.g. ``">=3.11"``) are accepted.
+  By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`885`)
+
+- Allow to specify ``test_config`` in all classes, and ``Objective.test_dataset``
+  to tweak the behavior of ``benchopt test``.
+  By `Thomas Moreau`_ (:gh:`889`)
+
+DOC
+~~~
+
+- Improve documentation on how to get started with benchopt.
+  See :ref:`get_started`. By `Thomas Moreau`_ (:gh:`899`)
+
+FIX
+~~~
+
+- Fix failure in ``benchopt test`` when using ``get_seed`` in a class.
+  By `Thomas Moreau`_ (:gh:`889`)
+
+- Fix conda env creation and ``--recreate`` option, to include minimal reqs.
+  By `Thomas Moreau`_ (:gh:`891`)
+
+- Fix display in boxplot to show variance correctly.
+  By `Thomas Moreau`_ (:gh:`898`)
+
+- Fix display for `n_repetitions=None` correctly render.
+  By `Thomas Moreau`_ (:gh:`901`)
+
+.. _changes_1_8_1:
+
+Version 1.8.1 - 16/02/2026
+--------------------------
+
+API
+~~~
+
+- Add ``minimize`` param to the stopping criterions to specify if the criterion
+  should be minimized or maximized.
+  By `Hippolyte Verninas`_ (:gh:`878`)
+
+- Add API to control randomness in benchmarks via ``get_seed`` method in
+  base classes. See :ref:`controlling_randomness` for more details.
+  By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`837`)
+
+FIX
+~~~
+
+- Add ``minimize`` option for the default bar-chart, to allow visualising solvers
+  which are minimizing or maximizing the objective.
+  By `Hippolyte Verninas`_ (:gh:`881`)
+
+- ``benchopt install`` now uses the ``conda-forge`` channel by default
+  By `Hippolyte Verninas`_ (:gh:`879`)
+
+.. _changes_1_8:
+
+Version 1.8 - 19/01/2026
+------------------------
+
+CLI
+~~~
 
 - Allow skipping any tests in ``benchopt test`` with configuration in
   ``test_conf.py``, by defining a function ``check_TEST_NAME``, which
@@ -22,15 +447,57 @@ CLI
   run with ``dask`` and ``submitit``. See :ref:`parallel_run` for details.
   By `Thomas Moreau`_ (:gh:`673`).
 
-- Deprecate the ``--slurm`` parameter which will be removed in benchopt 1.8.
+- Deprecate the ``--slurm`` parameter which will be removed in benchopt 1.9.
   By `Thomas Moreau`_ (:gh:`673`).
 
+- Improved output formatting for benchmark ``run/install/test``.
+  By `Thomas Moreau`_ (:gh:`847`).
 
 API
----
+~~~
+
+- Allow to set the default ``sampling_strategy`` and ``stopping_criterion``
+  globally for a benchmark in the ``Objective``.
+  By `Thomas Moreau`_ (:gh:`874`)
+
+- Add the possibility of creating custom plots for each benchmark.
+  See :ref:`add_custom_plot` for the documentation.
+  By `Hippolyte Verninas`_ (:gh:`842`)
+
+- Implement ``bar_chart`` and ``boxplot`` using the new plotting backend.
+  By `Hippolyte Verninas`_ (:gh:`852`)
+
+- Add possibility to output a table in the HTML interface, with the new
+  plot type ``table`` using the new plotting backend.
+  By `Hippolyte Verninas`_ and `Melvine Nargeot`_ (:gh:`866`)
+
+- Allow to override SLURM config on a per run basis with ``Solver.parameters``
+  See :ref:`slurm_override`. By `Geraud Ilinca`_ and `Thomas Moreau`_ (:gh:`848`)
+
+- Add filename metadata in the result parquet files for
+  objective, solver, and dataset. By `Thomas Moreau`_ (:gh:`873`)
+
+DOC
+~~~
+
+- Improve documentation on how to run a ML benchmark.
+  By `Thomas Moreau`_ (:gh:`874`)
+
+- Allow to run benchmarks as examples in the documentation.
+  By `Thomas Moreau`_ (:gh:`841`)
 
 FIX
----
+~~~
+
+- Improve tests for ML benchmarks, by avoiding constraints linked
+  to evaluating iterative solvers.
+  By `Thomas Moreau`_ (:gh:`874`)
+
+- Improve AST parsing when missing attributes in the class.
+  By `Thomas Moreau`_ (:gh:`846`)
+
+- Fix check_patterns when a class is not installed and represented with a
+  FailedImport class. By `Thomas Moreau`_ (:gh:`844`)
 
 - Fix running ``benchopt test`` when ``pytest`` is not installed
   in the conda env. By `Thomas Moreau`_ (:gh:`838`)
@@ -47,18 +514,20 @@ Version 1.7 - 18/09/2025
 ------------------------
 
 Major change
-------------
+~~~~~~~~~~~~
 
 - Benchopt is now supported on Windows!! \\o/
   By `Wassim Mazouz`_, `Mathurin Massias`_ and `Thomas Moreau`_ (:gh:`717`)
 
 - Imports in the benchmark are now done without the ``safe_import_context``,
   while keeping the possibility to list solvers and datasets even when a
-  package is not installed. The helper is deprecated and will be removed in
-  benchopt ``1.8``. By `Mathurin Massias`_  and `Thomas Moreau`_ (:gh:`788`)
+  package is not installed. The helper should only be used when a class
+  attribute that should be accessed without install (``name``, ``requirements``)
+  is computed dynamically.
+  By `Mathurin Massias`_  and `Thomas Moreau`_ (:gh:`788`)
 
 CLI
----
+~~~
 
 - Add ``--no-cache`` option to ``benchopt run``, to disable caching.
   By `Thomas Moreau`_ (:gh:`800`)
@@ -70,7 +539,7 @@ CLI
   running in various environment and debugging. By `Rémi Flamary`_ (:gh:`685`)
 
 API
----
+~~~
 
 - Add ``slurm_params`` attribute to ``Solver`` to allow overriding the
   default SLURM config. By `Pierre-Louis Barbarant`_ (:gh:`805`)
@@ -93,7 +562,7 @@ API
   By `Thomas Moreau`_ (:gh:`778`).
 
 FIX
----
+~~~
 
 - Display for boxplot in the ``result.js`` was broken.
   By `Thomas Moreau`_ (:gh:`757`)
@@ -335,9 +804,9 @@ CLI
 ~~~
 
 - Add support for custom parameters in CLI for objectives, datasets, and
-  solvers, through the syntax ``-s solver_name[parameter=value]``. See the `CLI
-  documentation <https://benchopt.github.io/stable/cli.html>`_ for more details on the
-  syntax. By `Tom Dupré la Tour`_ (:gh:`362`).
+  solvers, through the syntax ``-s solver_name[parameter=value]``. See the
+  :ref:`CLI documentation <cli_ref>` for more details on the syntax.
+  By `Tom Dupré la Tour`_ (:gh:`362`).
 
 - Add ``--slurm`` option in ``benchopt run`` to allow running the benchmark on
   a SLURM cluster. See the :ref:`slurm_backend` for more details on the config.

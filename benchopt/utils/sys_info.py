@@ -15,17 +15,20 @@ from .shell_cmd import _run_shell
 def _get_processor_name():
     "Return processor name in a cross-platform way."
     out = ""
-    if platform.system() == "Windows":
-        out = platform.processor()
-    elif platform.system() == "Darwin":
-        os.environ["PATH"] = os.environ["PATH"] + os.pathsep + "/usr/sbin"
-        command = ["sysctl", "-n", "machdep.cpu.brand_string"]
-        out = subprocess.check_output(command).strip().decode("utf-8")
-    elif platform.system() == "Linux":
-        all_info = Path('/proc/cpuinfo').read_text()
-        for line in all_info.splitlines():
-            if "model name" in line:
-                out = re.sub(r".*model name.*:\s*", "", line, count=1)
+    try:
+        if platform.system() == "Windows":
+            out = platform.processor()
+        elif platform.system() == "Darwin":
+            os.environ["PATH"] = os.environ["PATH"] + os.pathsep + "/usr/sbin"
+            command = ["sysctl", "-n", "machdep.cpu.brand_string"]
+            out = subprocess.check_output(command).strip().decode("utf-8")
+        elif platform.system() == "Linux":
+            all_info = Path('/proc/cpuinfo').read_text()
+            for line in all_info.splitlines():
+                if "model name" in line:
+                    out = re.sub(r".*model name.*:\s*", "", line, count=1)
+    except Exception:
+        warnings.warn("Could not get processor name.")
     return out
 
 
@@ -79,8 +82,14 @@ def _get_numpy_libs():
 
 
 def _get_git_tag():
-    err, tag = _run_shell("git describe --tags --abbrev=0", return_output=True)
-    if err != 0:
+    tag = None
+    try:
+        err, tag = _run_shell(
+            "git describe --tags --abbrev=0", return_output=True
+        )
+        if err != 0:
+            raise RuntimeError(err)
+    except Exception as err:
         if DEBUG:
             print(err, tag)
         tag = None

@@ -1,4 +1,4 @@
-const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
+const UNDEFINED_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -19,9 +19,7 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  *   - plot_kind (string),
  *   - scale (string)
  *   - with_quantiles (boolean)
- *   - xaxis_type (string)
- *   - yaxis_type (string)
- *   - hidden_solvers (array)
+ *   - hidden_curves (array)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
@@ -32,12 +30,46 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  * @param {Object} partialState
  */
 const setState = (partialState) => {
+  const plotKindChanged = (
+    "plot_kind" in partialState && partialState.plot_kind !== window._state?.plot_kind
+  );
+
   window._state = {...state(), ...partialState};
 
+  // When changing chart type, apply the default scale defined by the plot data
+  if (plotKindChanged) {
+    const plotData = getPlotData();
+    if (plotData && "scale" in plotData) {
+      window._state.scale = plotData.scale;
+    }
+  }
+
   renderSidebar();
-  renderPlot();
-  renderLegend();
-}
+
+  /**
+   * Hide all containers for the different plots
+   */
+  ["table", "image", "plot", "plot_with_legend", "legend"].forEach(key => {
+    let container = document.getElementById(`${key}_container`);
+    hide(container);
+  });
+
+  // Hide the size controls; renderPlot re-shows them for plot charts.
+  hide(document.getElementById('figsize_controls'));
+
+  if  (isChart('table')) {
+    renderTable();
+  } else {
+    // Pending table-view settings only apply to tables; drop them otherwise.
+    tablePendingView = null;
+    if (isChart('image')) {
+      renderImages();
+    } else {
+      renderPlot();
+    }
+  }
+
+};
 
 /**
  * Retrieve the state object from window._state
@@ -59,11 +91,10 @@ const config_mapping = {
   'dataset': 'dataset_selector',
   'objective': 'objective_selector',
   'objective_column': 'objective_column',
-  'kind': 'plot_kind',
-  'scale': 'change_scaling',
+  'plot_kind': 'plot_kind',
+  'scale': 'change_scale',
   'with_quantiles': 'change_shades',
-  'xaxis_type':'change_xaxis_type',
-  'yaxis_type':'change_yaxis_type',
+  'hidden_curves': '',
 };
 
 /*
@@ -79,11 +110,119 @@ const config_mapping = {
  * Create/Update the plot.
  */
 const renderPlot = () => {
-  const div = document.getElementById('unique_plot');
+
+  // Show and purge the container
+  let plot_container = document.getElementById('plot_container');
+  let plot_with_legend_container = document.getElementById('plot_with_legend_container');
+  Plotly.purge(plot_with_legend_container);
+  Plotly.purge(plot_container);
+  show(plot_container);
+
+  let div = plot_container;
+  if (isChart('scatter')) {
+    plot_container.classList.remove('js-plotly-plot');
+    plot_container.style.width = '';
+    plot_container.style.height = '';
+    show(plot_with_legend_container);
+    div = plot_with_legend_container;
+    renderLegend();
+  }
+
+  // Render the plot with PlotlyJS
   const data = getChartData();
   const layout = getLayout();
-
   Plotly.react(div, data, layout);
+
+  // Enable drag/typed resizing of this figure (works on touch too).
+  const controls = document.getElementById('figsize_controls');
+  controls.style.display = 'flex';
+  div.appendChild(controls);  // anchor the size overlay to the current figure
+  addResizeHandles(div);
+  resizeFig(div);
+};
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * FIGURE RESIZING
+ *
+ * Resize the current Plotly figure by dragging its edges/corner or by typing
+ * a width/height into the overlay tucked in the figure's corner. resizeFig
+ * refits Plotly to the box and keeps the overlay inputs in sync.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+// The div Plotly draws into for the current chart (scatter keeps its legend
+// separate, so its plot lives in plot_with_legend_container).
+const getPlotDiv = () => document.getElementById(
+  isChart('scatter') ? 'plot_with_legend_container' : 'plot_container'
+);
+
+const applyLogDtick = (div) => {
+  const fl = div._fullLayout;
+  if (!fl) return;
+  const update = {};
+  ['xaxis', 'yaxis'].forEach(name => {
+    const ax = fl[name];
+    if (!ax || ax.type !== 'log' || !ax.range || !ax._length) return;
+    const decades = Math.abs(ax.range[1] - ax.range[0]);
+    const dtick = Math.max(1, Math.ceil(decades / Math.max(2, ax._length / 60)));
+    if (ax.dtick !== dtick) update[name + '.dtick'] = dtick;
+  });
+  if (Object.keys(update).length) Plotly.relayout(div, update);
+};
+
+// Refit Plotly to the figure box and reflect the actual size in the inputs.
+const resizeFig = (div) => {
+  Plotly.Plots.resize(div).then(() => applyLogDtick(div));
+  document.getElementById('figsize_width').value = Math.round(div.offsetWidth);
+  document.getElementById('figsize_height').value = Math.round(div.offsetHeight);
+};
+
+const setFigSize = () => {
+  const div = getPlotDiv();
+  const w = parseInt(document.getElementById('figsize_width').value, 10);
+  const h = parseInt(document.getElementById('figsize_height').value, 10);
+  if (w > 0) div.style.width = `${w}px`;
+  if (h > 0) div.style.height = `${h}px`;
+  resizeFig(div);
+};
+
+// (Re)create the drag handles on the right ('x') and bottom ('y') edges.
+// Plotly.purge leaves these children in place, so clear any stale ones first.
+const addResizeHandles = (div) => {
+  // Clear both figure divs so handles left on the other chart type's div are
+  // removed too. Direct children only: the legend has its own handle.
+  document.querySelectorAll(
+    '#plot_container > .resize-handle, #plot_with_legend_container > .resize-handle'
+  ).forEach(h => h.remove());
+  ['x', 'y', 'xy'].forEach(axis => div.appendChild(makeResizeHandle(div, axis)));
+};
+
+const makeResizeHandle = (div, axis, onResize = resizeFig) => {
+  const handle = document.createElement('div');
+  handle.className = `resize-handle resize-handle-${axis}`;
+  handle.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    div.classList.add('resizing');  // keep the size overlay visible while dragging
+    const startX = e.clientX, startY = e.clientY;
+    const startW = div.offsetWidth, startH = div.offsetHeight;
+    const onMove = (ev) => {
+      if (axis !== 'y')
+        div.style.width = `${Math.max(200, startW + ev.clientX - startX)}px`;
+      if (axis !== 'x')
+        div.style.height = `${Math.max(200, startH + ev.clientY - startY)}px`;
+      onResize(div);
+    };
+    const onUp = () => {
+      div.classList.remove('resizing');
+      handle.removeEventListener('pointermove', onMove);
+      handle.removeEventListener('pointerup', onUp);
+    };
+    handle.addEventListener('pointermove', onMove);
+    handle.addEventListener('pointerup', onUp);
+  });
+  return handle;
 };
 
 /**
@@ -92,15 +231,14 @@ const renderPlot = () => {
  * @returns {Array|*[]}
  */
 const getChartData = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
-    return getScatterCurves();
+  if (isChart('scatter')) {
+    return getScatterData();
   } else if (isChart('bar_chart')) {
     return getBarData();
   } else if (isChart('boxplot')) {
     return getBoxplotData();
   }
-
-  throw new Error('Unknown plot kind.');
+  throw new Error("Unknown plot kind : " + state().plot_kind);
 }
 
 /**
@@ -109,15 +247,14 @@ const getChartData = () => {
  * @returns Object
  */
 const getLayout = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+  if (isChart('scatter')) {
     return getScatterChartLayout();
   } else if (isChart('bar_chart')) {
     return getBarChartLayout();
   } else if (isChart('boxplot')) {
     return getBoxplotChartLayout();
   }
-
-  throw new Error('Unknown plot kind.');
+  throw new Error("Unknown plot kind : " + state().plot_kind);
 }
 
 /**
@@ -128,7 +265,7 @@ const getLayout = () => {
 const getBarData = () => {
   if (!isAvailable()) return [{type:'bar'}];
 
-  const {x, y, colors, texts} = barDataToArrays()
+  const {x, y, colors, texts} = barDataToArrays();
 
   // Add bars
   const barData = [{
@@ -144,16 +281,14 @@ const getBarData = () => {
     textangle: '-90',
   }];
 
-  x.forEach(solver => {
-    // Add times for each convergent solver
-    // Check if text is not 'Did not converge'
-    if (data(solver).bar.text === '') {
-      let nbTimes = data(solver).bar.times.length
-
+  getPlotData().data.forEach(curveData => {
+    // Add the individual times of bars with several values
+    let nbTimes = curveData.y.length;
+    if (nbTimes > 1) {
       barData.push({
         type: 'scatter',
-        x: new Array(nbTimes).fill(solver),
-        y: data(solver).bar.times,
+        x: new Array(nbTimes).fill(curveData.label),
+        y: curveData.y,
         marker: {
           color: 'black',
           symbol: 'line-ew-open'
@@ -168,120 +303,89 @@ const getBarData = () => {
   return barData;
 };
 
+
 const getBoxplotData = () => {
-  return state('xaxis_type') === 'Solver' ? getSolverBoxplotData() : getIterationBoxplotData();
-}
-
-const getSolverBoxplotData = () => {
   const boxplotData = [];
 
-  getSolvers().forEach(solver => {
-    boxplotData.push({
-      y: state("yaxis_type") === 'time' ? data(solver).boxplot.by_solver.final_times : data(solver).boxplot.by_solver.final_objective_value,
-      type: 'box',
-      name: solver,
+  getPlotData().data.forEach(plotData => {
+    plotData.x.forEach((label, i) => {
+      boxplotData.push({
+        y: plotData.y[i],
+        name: label,
+        type: 'box',
+        line: {color: plotData.color},
+        fillcolor: plotData.color,
+        boxpoints: false
+      });
     });
   });
 
-  return boxplotData
+  return boxplotData;
+};
+
+
+const getPlotData = () => {
+  let dropdowns = getPlotDropdowns();
+  let dropdown_values = dropdowns.map(dropdown => state()[dropdown]);
+  let data_key = [state().plot_kind, ...dropdown_values].join('_');
+  return window._plots[state().plot_kind][data_key];
 }
 
-const getIterationBoxplotData = () => {
-  const boxplotData = [];
-
-  getSolvers().forEach(solver => {
-
-    // Build x
-    let x = [];
-    const iterations = data().solvers[solver].boxplot.by_iteration.times;
-
-    for (let iteration = 0; iteration < iterations.length; iteration++) {
-      for (let repetition = 0; repetition < iterations[iteration].length; repetition++) {
-        x.push(iteration)
-      }
-    }
-
-    let y = [];
-    let values = state("yaxis_type") === 'time' ? data(solver).boxplot.by_iteration.times : data(solver).boxplot.by_iteration.objective;
-    for (let iteration = 0; iteration < iterations.length; iteration++) {
-      for (let repetition = 0; repetition < iterations[iteration].length; repetition++) {
-        y.push(values[iteration][repetition])
-      }
-    }
-
-    boxplotData.push({
-      y: y,
-      x: x,
-      type: 'box',
-    });
-  });
-
-  return boxplotData
-}
 
 /**
  * Gives the data formatted for plotlyJS scatter chart.
  *
  * @returns {array}
  */
-const getScatterCurves = () => {
+const getScatterData = () => {
   // create a list of object to plot in plotly
   const curves = [];
 
-  // For each solver, add the median curve with proper style and visibility.
-  let xaxisType = state().xaxis_type;
-
-  getSolvers().forEach(solver => {
-    const solverSamplingStrategy = data(solver)['sampling_strategy'];
-
-    // plot only solvers that were stopped using xaxis type
-    // plot all solver if xaxis type is `time`
-    if(xaxisType !== "Time" && solverSamplingStrategy !== xaxisType) {
-      return
+  getPlotData().data.forEach(curveData => {
+    label = curveData.label;
+    y = curveData.y;
+    if ("y_low" in curveData && "y_high" in curveData && state().with_quantiles) {
+      y_low = curveData.y_low;
+      y_high = curveData.y_high;
     }
-
-    const ScatterXaxisProperty = xaxisType === "Time" ? 'x' : 'stop_val';
-
+    else if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
+      x_low = curveData.x_low;
+      x_high = curveData.x_high;
+    }
     curves.push({
       type: 'scatter',
-      name: solver,
+      name: label,
       mode: 'lines+markers',
       line: {
-        color: data(solver).color,
+        color: curveData.color,
       },
       marker: {
-        symbol: data(solver).marker,
+        symbol: curveData.marker % N_SYMBOLS,
         size: 10,
+        color: curveData.color,
       },
-      legendgroup: solver,
-      hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
-      visible: isVisible(solver) ? true : 'legendonly',
-      x: data(solver).scatter[ScatterXaxisProperty],
-      y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
+      legendgroup: label,
+      hovertemplate: label + ' <br> (%{x:.3e},%{y:.3e}) <extra></extra>',
+      visible: isVisible(label) ? true : 'legendonly',
+      x: curveData.x,
+      y: y,
     });
 
-    // skip plotting quantiles if xaxis is not time
-    // as stop_val are predefined and hence deterministic
-    if(xaxisType !== "Time") {
-      return
-    }
 
-    if (state().with_quantiles) {
-      // Add shaded area for each solver, with proper style and visibility.
-
+    if ("y_low" in curveData && "y_high" in curveData && state().with_quantiles) {
       curves.push({
         type: 'scatter',
         mode: 'lines',
         showlegend: false,
         line: {
           width: 0,
-          color: data(solver).color,
+          color: curveData.color,
         },
-        legendgroup: solver,
-        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
-        visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter['q1'],
-        y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
+        legendgroup: label,
+        hovertemplate: '(%{x:.3e},%{y:.3e}) <extra></extra>',
+        visible: isVisible(label) ? true : 'legendonly',
+        x: curveData.x,
+        y: y_low,
       }, {
         type: 'scatter',
         mode: 'lines',
@@ -289,20 +393,49 @@ const getScatterCurves = () => {
         fill: 'tonextx',
         line: {
           width: 0,
-          color: data(solver).color,
+          color: curveData.color,
         },
-        legendgroup: solver,
-        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
-        visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter['q9'],
-        y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
+        legendgroup: label,
+        hovertemplate: '(%{x:.3e},%{y:.3e}) <extra></extra>',
+        visible: isVisible(label) ? true : 'legendonly',
+        x: curveData.x,
+        y: y_high,
+      });
+    }
+    else if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
+      curves.push({
+        type: 'scatter',
+        mode: 'lines',
+        showlegend: false,
+        line: {
+          width: 0,
+          color: curveData.color,
+        },
+        legendgroup: label,
+        hovertemplate: '(%{x:.3e},%{y:.3e}) <extra></extra>',
+        visible: isVisible(label) ? true : 'legendonly',
+        x: x_low,
+        y: y,
+      }, {
+        type: 'scatter',
+        mode: 'lines',
+        showlegend: false,
+        fill: 'tonextx',
+        line: {
+          width: 0,
+          color: curveData.color,
+        },
+        legendgroup: label,
+        hovertemplate: '(%{x:.3e},%{y:.3e}) <extra></extra>',
+        visible: isVisible(label) ? true : 'legendonly',
+        x: x_high,
+        y: y,
       });
     }
   });
 
   return curves;
 };
-
 
 
 /*
@@ -314,19 +447,12 @@ const getScatterCurves = () => {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
-const get_lim_plotly = (lim, ax) =>{
-  if(getScale()[ax + 'axis'] == 'log'){
-    lim = [Math.log10(parseFloat(lim[0])), Math.log10(parseFloat(lim[1]))]
-  };
-  return lim;
-};
-
-const get_lim_config = (lim, ax) => {
-  if(getScale()[ax + 'axis'] == 'log'){
-    lim = [Math.pow(10, lim[0]), Math.pow(10, lim[1])]
-  };
-  return lim;
-};
+const DEFAULT_CONFIG_OPTIONS = [
+  "plot_kind",
+  "hidden_curves",
+  "scale",
+  "with_quantiles",
+];
 
 const setConfig = (config_item) => {
   if (!config_item) {
@@ -352,34 +478,46 @@ const setConfig = (config_item) => {
     // Get the updated state
     let config = window.metadata.plot_configs[config_name];
     let update = {};
-    const lims = ['xlim', 'ylim', 'hidden_solvers']
-    for(let key in config_mapping){
-      if (key in config){
-        const value = config[key];
-        document.getElementById(config_mapping[key]).value = value;
-        if (key === "kind"){
-          key = "plot_kind";
+    // const lims = ['xlim', 'ylim', 'hidden_curves']
+    const lims = ['hidden_curves']
+    let kind = state().plot_kind;
+    if ("plot_kind" in config) {
+      kind = config["plot_kind"];
+    }
+    // Table settings are applied by renderTable, not through the state.
+    tablePendingView = ('table_order' in config || 'table_hidden_columns' in config)
+      ? {order: config.table_order ?? null, hidden: config.table_hidden_columns ?? []}
+      : null;
+    for(let key in config){
+      if (key === 'table_order' || key === 'table_hidden_columns') {
+        continue;
+      }
+      const value = config[key];
+      if (key in config_mapping) {
+        if (config_mapping[key] !== '') {
+          div_key = config_mapping[key];
+          document.getElementById(div_key).value = value;
         }
-        update[key] = value;
       }
-      else if (!lims.includes(key)) {
-        document.getElementById(config_mapping[key]).selectedIndex = 0;
-        update[key] = document.getElementById(config_mapping[key]).value;
+      else {
+        // Custom parameters which should be related to the current kind
+        // and the div prefix is 'change_{kind}_'. Ignore otherwise with
+        // a warning in the console.
+        if (!key.startsWith(kind)) {
+          key = kind + "_" + key;
+        }
+        div_key = "change_" + key;
+        try {
+          document.getElementById(div_key).value = value;
+        } catch (error) {
+          // Element not found, ignore
+          console.warn("Unknown config parameter: '" + key + "'");
+        }
       }
+      update[key] = value;
     }
 
     setState(update);
-
-    let layout = {};
-    for(const ax of ['x', 'y']){
-      let lim = ax + 'lim';
-      if (config.hasOwnProperty(lim) & (config[lim] != null)) {
-        layout[ax +'axis.range'] = get_lim_plotly(config[lim], ax);
-      }
-    }
-
-    // update the plot
-    renderPlot();
   }
 };
 
@@ -393,14 +531,22 @@ const saveView = () => {
 
   // Retrieve the dropdown menu selected values
   let config = {};
-  for(let key in config_mapping) {
-    config[key] = document.getElementById(config_mapping[key]).value;
+  dropdowns = getPlotDropdowns();
+  for(let key of dropdowns) {
+    config[key] = state()[key];
+  }
+  for (let option of DEFAULT_CONFIG_OPTIONS) {
+    config[option] = state()[option];
   }
 
-  // Retrieve the range of the plots.
-  const fig = document.getElementById('unique_plot');
-  config['xlim'] = get_lim_config(fig.layout.xaxis.range, 'x');
-  config['ylim'] = get_lim_config(fig.layout.yaxis.range, 'y');
+  // Persist the table order and hidden columns when viewing a table.
+  if (isChart('table')) {
+    const order = getTableOrder();
+    if (order) {
+      config.table_order = order;
+    }
+    config.table_hidden_columns = [...tableHiddenColumns];
+  }
 
   let noViewAvailableElement = document.getElementById('no_view_available');
 
@@ -463,6 +609,9 @@ const exportConfigs = () => {
       var value = config[key];
       if (key === 'xlim' || key === 'ylim')
         value = "[" + value + "]";
+      else if (value !== null && typeof value === 'object')
+        // Arrays/objects (e.g. table_order, hidden columns): JSON is valid YAML.
+        value = JSON.stringify(value);
       config_yaml += "    " + key + ": " + value + "\n";
     }
   }
@@ -480,76 +629,369 @@ const exportHTML = () => {
   return downloadBlob(blob, location.pathname.split("/").pop());
 };
 
-/*
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * DATA TRANSFORMERS
- *
- * Transformers are used to modify data
- * on the fly.
- *
- * WARNING : If you add a new transformer function,
- * don't forget to register it in the object : window.transformers,
- * at the end of this section.
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
+const exportLatex = (button) => {
+  // Copy the table as displayed by Grid.js to the clipboard as a booktabs
+  // LaTeX tabular, so the output matches the current sorting, search filter,
+  // visible columns and float precision.
+  const columns = Array.from(
+    document.querySelectorAll('#table_container .gridjs-th-content'),
+    elementToLatex);
+  const rows = Array.from(
+    document.querySelectorAll('#table_container .gridjs-table tbody tr'),
+    tr => Array.from(tr.querySelectorAll('td'), elementToLatex));
 
-/**
- * Select the right transformer according to the state.
- * If the requested transformer does not exists,
- * it returns raw data.
- *
- * @param {Object} data
- * @param {String} solver
- * @param {String} axis it could be x, y, q1, q9
- * @returns {array}
- */
-const useTransformer = (data, axis, options) => {
-  try {
-    let transformer = 'transformer_' + axis + '_' + state().plot_kind;
-    return window.transformers[transformer](data, options);
-  } catch(error) {
-    return data;
+  const title = (getPlotData() || {}).title;
+  let latex = "% Table generated with benchopt, needs \\usepackage{booktabs}\n";
+  if (title) {
+    // Caption above the table, kept on a single line.
+    latex += "\\begin{table}[h]\n\\centering\n\\caption{";
+    latex += escapeLatex(title.replace(/<br\s*\/?>/g, ", "));
+    latex += "}\n";
   }
+  latex += '\\begin{tabular}{';
+  latex += 'l'.repeat(columns.length);
+  latex += '}\n\\toprule\n';
+  latex += columns.join(' & ');
+  latex += ' \\\\\n\\midrule\n';
+  latex += rows.map(r => r.join(' & ') + ' \\\\').join('\n');
+  latex += '\n\\bottomrule\n\\end{tabular}';
+  if (title) latex += "\n\\end{table}";
+
+  // Flash feedback on the button label (the trailing span on the desktop
+  // button, the link text itself in the mobile menu).
+  const label = button.querySelector('span:last-child') || button;
+  const original = label.textContent;
+  navigator.clipboard.writeText(latex)
+    .then(() => label.textContent = 'Copied!', () => {
+      // No clipboard access (e.g. file opened on a phone): show the LaTeX in
+      // a text box so it can be copied by hand.
+      let area = document.getElementById("table-export-text");
+      if (!area) {
+        area = document.createElement("textarea");
+        area.id = "table-export-text";
+        area.readOnly = true;
+        area.rows = 10;
+        area.className = "w-full mt-2 p-2 font-mono text-xs border border-gray-300 rounded-md";
+        area.addEventListener('blur', () => area.remove());
+        document.getElementById('table_container').appendChild(area);
+      }
+      area.value = latex;
+      area.focus();
+      area.select();
+      label.textContent = 'Copy below';
+    })
+    .then(() => setTimeout(() => label.textContent = original, 2500));
+  return false;
 };
 
-/**
- * Transform data on the y axis for subotimality curve.
- *
- * @param {Object} data
- * @param {String} solver
- * @returns {array}
- */
-const transformer_y_suboptimality_curve = (y, options) => {
-  // Retrieve c_star value
-  const c_star = options.c_star;
+// svg2pdf lays <tspan>s out on its own and gets them wrong: the exponents of
+// the log ticks end up off the page.
+const flattenText = (svg) => {
+  svg.querySelectorAll('text').forEach(text => {
+    // Text nodes in rendering order, with where each one starts in the string.
+    const runs = [];
+    let index = 0;
+    const walk = node => node.childNodes.forEach(child => {
+      if (child.nodeType === Node.TEXT_NODE) {
+        runs.push({node: child, index: index, parent: node});
+        index += child.length;
+      } else {
+        walk(child);
+      }
+    });
+    walk(text);
 
-  // Compute suboptimality for each data
-  return y.map(value => value - c_star);
+    const spans = runs.map(run => {
+      const content = run.node.data.replace(/−/g, '-')
+        .replace(/​/g, '');
+      if (content.trim() === '') return null;
+
+      const at = text.getStartPositionOfChar(run.index);
+      const style = getComputedStyle(run.parent);
+      const span = svgNode('tspan', {
+        x: at.x, y: at.y, fill: style.fill,
+        'font-family': style.fontFamily, 'font-size': style.fontSize,
+        'font-weight': style.fontWeight, 'font-style': style.fontStyle,
+      });
+      span.textContent = content;
+      return span;
+    });
+
+    // The runs carry their own position now, so the anchoring is already done.
+    text.setAttribute('text-anchor', 'start');
+    text.textContent = '';
+    spans.filter(span => span).forEach(span => text.appendChild(span));
+  });
 };
 
-/**
- * Transform data ont the y axis for relative suboptimality curve.
- *
- * @param {Object} data
- * @param {String} solver
- * @returns {array}
- */
-const transformer_y_relative_suboptimality_curve = (y, options) => {
-  // Retrieve transformer values
-  const c_star = options.c_star;
-  const max_f_0 = options.max_f_0;
+// jsPDF only knows the standard PDF fonts, so the figures would come out in
+// Helvetica instead of the DejaVu Sans they are drawn with.
+const DEJAVU_URL =
+  'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf';
+// Private name for the page copy, so the plots on screen keep their font.
+const EXPORT_FONT = 'DejaVu Sans Export';
+let dejaVuFont = null;
+const loadDejaVu = () => {
+  dejaVuFont = dejaVuFont || fetch(DEJAVU_URL)
+    .then(response => response.blob())
+    .then(blob => Promise.all([
+      // Base64 without walking the 750kB of glyphs one character at a time.
+      new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(blob);
+      }),
+      // Plotly lays the export out with it, or with the browser's fallback
+      // font when DejaVu is not installed, and the PDF text then overflows.
+      blob.arrayBuffer()
+        .then(buffer => new FontFace(EXPORT_FONT, buffer).load())
+        .then(face => document.fonts.add(face)),
+    ]))
+    .then(([base64]) => base64);
+  return dejaVuFont;
+};
+const embedDejaVu = (pdf) => loadDejaVu().then(base64 => {
+  pdf.addFileToVFS('DejaVuSans.ttf', base64);
+  pdf.addFont('DejaVuSans.ttf', EXPORT_FONT, 'normal');
+}).catch(err => console.warn('Falling back to Helvetica:', err));
 
-  // Compute relative suboptimality for each data
-  return y.map(value => (value - c_star) / (max_f_0 - c_star));
+// Shrink the title to fit in the figure width.
+const fitTitle = (layout, width) => {
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = `17px "${EXPORT_FONT}"`;
+  const lines = String((layout.title || {}).text || '')
+    .split(/<br\s*\/?>/).map(line => line.replace(/<[^>]*>/g, ''));
+  const widest = Math.max(...lines.map(line => ctx.measureText(line).width));
+  const size = Math.min(17, Math.floor(17 * (width - 20) / widest));
+  return {...layout.title, font: {...(layout.title || {}).font, size: size}};
 };
 
-/**
- * Store all the transformer functions to be callable
- * by the useTransformer function.
- */
-window.transformers = {
-  transformer_y_suboptimality_curve,
-  transformer_y_relative_suboptimality_curve,
+// Write the PDF with jsPDF + svg2pdf.js.
+const svgToPDF = (svg, filename, width, height) => {
+  // svg2pdf measures text through getBBox, so the SVG has to be rendered:
+  // park it off-screen for the conversion.
+  svg.style.cssText = 'position:fixed;left:-10000px;top:0';
+  document.body.appendChild(svg);
+
+  flattenText(svg);
+
+  // The orientation has to match, jsPDF sorts the format to fit it otherwise.
+  const pdf = new window.jspdf.jsPDF({
+    unit: 'pt', format: [width, height],
+    orientation: width >= height ? 'landscape' : 'portrait',
+    putOnlyUsedFonts: true,  // or every export carries the 750kB of DejaVu
+  });
+  return embedDejaVu(pdf)
+    .then(() => pdf.svg(svg, {width: width, height: height, x: 0, y: 0}))
+    .then(() => pdf.save(filename + '.pdf'))
+    .catch(err => console.error('PDF export failed:', err))
+    .then(() => svg.remove());
+};
+
+const exportFilename = () => [state().plot_kind,
+  ...getPlotDropdowns().map(dropdown => state()[dropdown])].join('_');
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const svgNode = (tag, attrs) => {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const key in attrs) node.setAttribute(key, attrs[key]);
+  return node;
+};
+
+// The legend is plain HTML, so redraw it as an SVG, reading the position of
+// every piece from the live layout: the export then wraps exactly like what
+// is on screen, whatever width the resize handle was dragged to.
+const legendSVG = () => {
+  const all = Array.from(document.querySelectorAll('#plot_legend .curve'),
+                         label => label.parentElement);
+  // Hidden curves are filtered out
+  const hidden = all.filter(
+    item => !isVisible(item.querySelector('.curve').dataset.curve));
+  hidden.forEach(item => { item.style.display = 'none'; });
+  const items = all.filter(item => !hidden.includes(item));
+  const bounds = items.map(item => item.getBoundingClientRect());
+  const left = Math.min(...bounds.map(b => b.left));
+  const top = Math.min(...bounds.map(b => b.top));
+  const width = Math.ceil(Math.max(...bounds.map(b => b.right)) - left);
+  const height = Math.ceil(Math.max(...bounds.map(b => b.bottom)) - top);
+
+  const svg = svgNode('svg', {
+    xmlns: SVG_NS, width: width, height: height,
+    viewBox: `0 0 ${width} ${height}`,
+  });
+
+  // The HTML legend is left-aligned, the exported one is centred: shift each
+  // wrapped row (items sharing a top) by what is left over on its right.
+  const rowShift = bounds.map(box => {
+    const row = bounds.filter(other => Math.abs(other.top - box.top) < 1);
+    return (width - (Math.max(...row.map(b => b.right))
+                     - Math.min(...row.map(b => b.left)))) / 2
+           - (Math.min(...row.map(b => b.left)) - left);
+  });
+
+  items.forEach((item, i) => {
+    const box = bounds[i];
+    const group = svgNode('g', {transform: `translate(${rowShift[i]}, 0)`});
+    const at = el => {
+      const rect = el.getBoundingClientRect();
+      return {x: rect.left - left, y: rect.top - top,
+              w: rect.width, h: rect.height};
+    };
+
+    // The curve line, a top border on screen (see createLegendItem).
+    const hBar = item.querySelector('div[style*="border-top"]');
+    const bar = at(hBar);
+    // The stroke straddles y, the border is drawn below it: shift by half.
+    group.appendChild(svgNode('line', {
+      x1: bar.x, x2: bar.x + bar.w,
+      y1: bar.y + bar.h / 2, y2: bar.y + bar.h / 2,
+      stroke: getComputedStyle(hBar).borderTopColor, 'stroke-width': 2,
+    }));
+
+    // Marker: the path is drawn around (15, 15) of its holder <svg>, so line
+    // that point up with the middle of the box the <svg> actually occupies.
+    const symbol = item.querySelector('svg');
+    const marker = at(symbol);
+    const holder = svgNode('g', {
+      transform: `translate(${marker.x + marker.w / 2 - 15}, `
+                 + `${marker.y + marker.h / 2 - 15})`,
+    });
+    Array.from(symbol.children).forEach(
+      child => holder.appendChild(child.cloneNode(true)));
+    group.appendChild(holder);
+
+    const label = item.querySelector('.curve');
+    const style = getComputedStyle(label);
+    const text = svgNode('text', {
+      x: at(label).x, y: (box.top + box.bottom) / 2 - top,
+      // svg2pdf reads alignment-baseline (or vertical-align) only, it ignores
+      // dominant-baseline: with that one the text comes out half a line high.
+      'alignment-baseline': 'central',
+      'font-family': style.fontFamily, 'font-size': style.fontSize,
+      fill: style.color,
+    });
+    text.textContent = label.dataset.curve;
+    group.appendChild(text);
+
+    svg.appendChild(group);
+  });
+
+  hidden.forEach(item => { item.style.display = 'flex'; });
+  return {svg: svg, width: width, height: height};
+};
+
+// Matplotlib's loc='best', roughly: drop the legend in whichever corner of the
+// axes holds the fewest visible data points.
+const bestLegendCorner = (data, layout) => {
+  const corners = [
+    {x: 0.98, y: 0.98, xanchor: 'right', yanchor: 'top'},
+    {x: 0.02, y: 0.98, xanchor: 'left', yanchor: 'top'},
+    {x: 0.98, y: 0.02, xanchor: 'right', yanchor: 'bottom'},
+    {x: 0.02, y: 0.02, xanchor: 'left', yanchor: 'bottom'},
+  ];
+
+  // Log axes compared in decades, like the plot draws them.
+  const scale = axis => axis.type === 'log' ? Math.log10 : (v => v);
+  const xs = [], ys = [];
+  data.filter(trace => trace.visible === true && trace.x && trace.y)
+    .forEach(trace => {
+      const x = trace.x.map(scale(layout.xaxis));
+      const y = trace.y.map(scale(layout.yaxis));
+      x.forEach((xi, i) => {
+        if (isFinite(xi) && isFinite(y[i])) { xs.push(xi); ys.push(y[i]); }
+      });
+    });
+  if (xs.length === 0) return corners[0];
+
+  const range = values => values.reduce(
+    ([lo, hi], v) => [Math.min(lo, v), Math.max(hi, v)], [Infinity, -Infinity]);
+  const [xmin, xmax] = range(xs);
+  const [ymin, ymax] = range(ys);
+  const norm = (v, lo, hi) => hi > lo ? (v - lo) / (hi - lo) : 0.5;
+
+  const BOX = 0.4;  // share of the axes the legend is assumed to cover
+  const crowding = corner => xs.reduce((count, x, i) => {
+    const u = norm(x, xmin, xmax), v = norm(ys[i], ymin, ymax);
+    const inX = corner.xanchor === 'right' ? u > 1 - BOX : u < BOX;
+    const inY = corner.yanchor === 'top' ? v > 1 - BOX : v < BOX;
+    return count + (inX && inY ? 1 : 0);
+  }, 0);
+
+  return corners.reduce(
+    (best, corner) => crowding(corner) < crowding(best) ? corner : best,
+    corners[0]);
+};
+
+// Dropdown next to the PDF button, listing what the export can contain. The
+// arrow sits inside the button, so its click must not trigger the export.
+const togglePDFMenu = (event) => {
+  event.stopPropagation();
+  const menu = event.currentTarget.closest('.pdf-export-btn')
+    .querySelector('.pdf-menu');
+  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+  return false;
+};
+
+const closePDFMenu = () => {
+  hide(document.querySelectorAll('.pdf-menu'));
+  return false;
+};
+
+document.addEventListener('click', event => {
+  if (!event.target.closest('.pdf-export-btn')) closePDFMenu();
+});
+
+// kind: 'figure', 'legend' or 'both'. Defaults to legend-on-figure, except
+// for charts with no separate legend to add.
+const exportPDF = (kind) => {
+  closePDFMenu();
+  kind = kind || (isChart('scatter') ? 'both' : 'figure');
+  const filename = exportFilename()
+    + {figure: '', legend: '_legend', both: '_with_legend'}[kind];
+
+  if (kind === 'legend') {
+    const legend = legendSVG();
+    svgToPDF(legend.svg, filename, legend.width, legend.height);
+    return false;
+  }
+
+  const plot = getPlotDiv();
+  // Scale small plots (e.g. on a phone) up to matplotlib's default width.
+  const scale = Math.max(1, 460 / (plot.layout.width || plot.clientWidth));
+  const width = scale * (plot.layout.width || plot.clientWidth);
+  const height = scale * (plot.layout.height || plot.clientHeight);
+
+  // Render from a figure object, not the div, so the export changes do not
+  // affect what's on screen. plot.layout, not getLayout(): it carries what is
+  // on screen right now, including the axis ranges and the log dtick.
+  const layout = {...plot.layout};
+  let data = plot.data;
+  if (kind === 'both') {
+    // Drop the hidden curves
+    data = getChartData().filter(trace => trace.visible !== 'legendonly');
+    layout.showlegend = true;
+    layout.legend = {
+      ...bestLegendCorner(data, layout),
+      bgcolor: 'rgba(255, 255, 255, 0.8)',
+      bordercolor: '#cccccc', borderwidth: 1,
+    };
+  }
+
+  loadDejaVu().catch(() => null)
+    .then(() => {
+      layout.font = {...layout.font, family: EXPORT_FONT};
+      layout.title = fitTitle(layout, width);
+      return Plotly.toImage({data: data, layout: layout},
+                            {format: 'svg', width: width, height: height});
+    })
+    .then(dataUrl => svgToPDF(
+      new DOMParser().parseFromString(
+        decodeURIComponent(dataUrl.split(',')[1]), 'image/svg+xml')
+        .documentElement,
+      filename, width, height))
+    .catch(err => console.error('PDF export failed:', err));
+
+  return false;
 };
 
 /*
@@ -564,36 +1006,106 @@ window.transformers = {
  * Render sidebar
  */
 const renderSidebar = () => {
-  renderObjectiveColumnSelector();
   renderScaleSelector();
-  renderXAxisTypeSelector();
-  renderYAxisTypeSelector();
   renderWithQuantilesToggle();
   mapSelectorsToState();
+  renderPlotDropdowns();
+  renderExportButtons();
 }
 
-/**
- * Render Objective Column selector
- */
-const renderObjectiveColumnSelector = () => {
-  if (isChart('boxplot') && state('yaxis_type') === 'time') {
-    hide(document.querySelectorAll("#objective-column-form-group"));
-  } else {
-    show(document.querySelectorAll("#objective-column-form-group"), 'block');
-  }
+// Tables export to LaTeX, everything else to PDF.
+const renderExportButtons = () => {
+  const isTable = isChart('table');
+  const [shown, hidden] = isTable
+    ? ['.latex-export-btn', '.pdf-export-btn']
+    : ['.pdf-export-btn', '.latex-export-btn'];
+  show(document.querySelectorAll(shown));
+  hide(document.querySelectorAll(hidden));
+
+  // Only scatter has a legend outside the figure, so it is the only chart with
+  // something to choose from.
+  (isChart('scatter') ? show : hide)(
+    document.querySelectorAll('.pdf-legend-choice'));
+  const toggle = document.getElementById('pdf-menu-toggle');
+  // Alone, the PDF button rounds on both sides again.
+  toggle.parentElement.classList.toggle('no-menu', !isChart('scatter'));
+  closePDFMenu();
+}
+
+const escapeHTML = (s) => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// SVG "info" icon: unlike a text glyph, it stays out of the LaTeX export.
+const infoIconHTML = (attrs = '') =>
+  `<svg class="param-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"` +
+  ` stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${attrs}>` +
+  `<circle cx="12" cy="12" r="10"></circle>` +
+  `<line x1="12" y1="16" x2="12" y2="12"></line>` +
+  `<line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+const descIconHTML = (text) => infoIconHTML(` data-desc="${escapeHTML(text)}"`);
+
+// Selector icons (`data-desc-state` spans) show the same icon as the legend.
+document.querySelectorAll('span[data-desc-state]').forEach(span => {
+  span.innerHTML = infoIconHTML();
+});
+
+// Tooltip HTML of an icon: its own `data-desc`, or for a selector icon
+// (`data-desc-state`) the `data-desc` of the selected option.
+const descForIcon = (icon) => {
+  if (icon.dataset.desc != null) return icon.dataset.desc;
+  const key = icon.dataset.descState;
+  if (!key) return '';
+  const option = document.querySelector(
+    `#change_${key} option[value="${CSS.escape(String(state()[key]))}"]`
+  );
+  return (option && option.dataset.desc) || '';
 };
+
+/** Show the shared params tooltip. */
+const showDescTooltip = (event, html) => {
+  if (!html) return;
+  const tip = document.getElementById('params-tooltip');
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  _moveParamsTooltip(event);
+};
+
+/** Hide the shared params tooltip. */
+const hideParamsTooltip = () => {
+  document.getElementById('params-tooltip').style.display = 'none';
+};
+
+// Delegated hover for all icons, as Grid.js re-renders cells on sort/search.
+const PARAMS_ICON_SEL = '[data-desc], [data-desc-state]';
+document.addEventListener('mouseover', (e) => {
+  const icon = e.target.closest?.(PARAMS_ICON_SEL);
+  if (icon) showDescTooltip(e, descForIcon(icon));
+});
+document.addEventListener('mouseout', (e) => {
+  if (e.target.closest?.(PARAMS_ICON_SEL)) hideParamsTooltip();
+});
+
+const _moveParamsTooltip = (event) => {
+  const tip = document.getElementById('params-tooltip');
+  if (!tip || tip.style.display !== 'block') return;
+  tip.style.left = (event.clientX + 14) + 'px';
+  tip.style.top  = (event.clientY - tip.offsetHeight - 8) + 'px';
+};
+
+document.addEventListener('mousemove', _moveParamsTooltip);
 
 /**
  * Render Scale selector
  */
 const renderScaleSelector = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot'])) {
-    show(document.querySelectorAll("#scale-form-group"), 'block');
-  } else {
+  if (isChart(['table', 'image'])) {
     hide(document.querySelectorAll("#scale-form-group"));
+  } else {
+    show(document.querySelectorAll("#scale-form-group"), 'block');
   }
 
-  if (isChart('boxplot')) {
+  if (isChart(['boxplot', 'bar_chart'])) {
     hide(document.querySelectorAll(".other_plot_option"));
     show(document.querySelectorAll(".boxplot_option"));
   } else {
@@ -606,78 +1118,38 @@ const renderScaleSelector = () => {
  * Render WithQuantile toggle
  */
 const renderWithQuantilesToggle = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+  if (isChart('scatter') && hasQuantiles()) {
     show(document.querySelectorAll("#change-shades-form-group"), 'flex');
   } else {
     hide(document.querySelectorAll("#change-shades-form-group"));
   }
 };
 
-/**
- * Render xaxis type selector
- */
-const renderXAxisTypeSelector = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot'])) {
-    show(document.querySelectorAll("#xaxis-type-form-group"), 'block');
-  } else {
-    hide(document.querySelectorAll("#xaxis-type-form-group"));
-    return;
-  }
+// True if any curve in the current plot carries quantile bounds.
+const hasQuantiles = () => getPlotData().data.some(
+  c => ("y_low" in c && "y_high" in c) || ("x_low" in c && "x_high" in c)
+);
 
-  // One for desktop and one for mobile
-  xAxisTypeSelectors().forEach(selector => {
-    const optionToHide = isChart('boxplot') ? "Time" : "Solver";
-    hide(xAxisTypeOption(optionToHide));
-
-    const optionToShow = isChart('boxplot') ? "Solver" : "Time";
-    show(xAxisTypeOption(optionToShow));
-
-    if (isChart('boxplot') || isIterationSamplingStrategy()) {
-      show(xAxisTypeOption('Iteration'));
+const renderPlotDropdowns = () => {
+  hide(document.querySelectorAll(`[id$='-custom-params-container']`));
+  show(document.querySelectorAll(`#${state().plot_kind}-custom-params-container`), 'block');
+  // Hide dropdowns with only one option
+  for (let dropdown of document.getElementsByTagName('select')) {
+    // Keep view selectors visible in the config container.
+    if (dropdown.closest('#config_container')) {
+      continue;
     }
-  });
-
-  // X axis type 'Time' does not exist for boxplot,
-  // it only can be one of : 'Solver', 'Iteration',
-  // so we have to change its value with an allowed value.
-  // It's the same thing if we change to curve plot.
-  if (isChart('boxplot') && state().xaxis_type === 'Time') {
-    setState({xaxis_type: 'Solver'});
-  } else if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve']) && state().xaxis_type === 'Solver') {
-    setState({xaxis_type: 'Time'});
+    if (dropdown.options.length <= 1) {
+      hide(dropdown.parentElement.parentElement);
+    }
   }
-};
 
-/**
- * Render yaxis type selector
- */
-const renderYAxisTypeSelector = () => {
-  if (isChart('boxplot')) {
-    show(document.querySelectorAll("#yaxis-type-form-group"), 'block');
-  } else {
-    hide(document.querySelectorAll("#yaxis-type-form-group"));
-  }
-};
-
-const xAxisTypeSelectors = () => {
-  return document.querySelectorAll("#change_xaxis_type, #change_xaxis_type_mobile");
-};
-
-const xAxisTypeOption = (type) => {
-  return document.querySelectorAll(
-      `#change_xaxis_type [value="${type}"], #change_xaxis_type_mobile [value="${type}"]`
-  );
-};
+}
 
 const mapSelectorsToState = () => {
   const currentState = state();
-
-  document.getElementById('dataset_selector').value = currentState.dataset;
-  document.getElementById('objective_selector').value = currentState.objective;
-  document.getElementById('objective_column').value = currentState.objective_column;
   document.getElementById('plot_kind').value = currentState.plot_kind;
-  document.getElementById('change_scaling').value = currentState.scale;
-  document.getElementById('change_xaxis_type').value = currentState.xaxis_type;
+  document.getElementById('change_scale').value = currentState.scale;
   document.getElementById('change_shades').checked = currentState.with_quantiles;
 };
 
@@ -689,25 +1161,44 @@ const mapSelectorsToState = () => {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
-const data = (solver = null) => {
-  return solver ?
-    window._data[state().dataset][state().objective][state().objective_column].solvers[solver]:
-    window._data[state().dataset][state().objective][state().objective_column]
+// Get the data for a given plot state, indexed by curve names.
+const data = (curve = null) => {
+  let curves = getPlotData().data.reduce(
+    (map, obj) => {map[obj.label] = obj; return map}, {}
+  );
+  return curve ? curves[curve]: curves;
 }
 
-const getSolvers = () => Object.keys(data().solvers);
+const getPlotDropdowns = () => {
+  let kind = state().plot_kind;
+  let params = [];
+  Object.keys(state()).forEach(key => {
+    if (key.startsWith(kind)) {
+      params.push(key);
+    }
+  });
+  return params;
+}
+
+const getCurves = () => Object.keys(data());
 
 const isChart = chart => {
   if (typeof chart === 'string' || chart instanceof String) {
     chart = [chart]
   }
 
-  return chart.includes(state().plot_kind);
+  let plot_kind = state().plot_kind;
+  // If the plot kind is not a default one, check the type of the custom plot in the data.
+  if (!["bar_chart", "boxplot", "table", "scatter"].includes(plot_kind)) {
+    let custom_data = getPlotData();
+    plot_kind = custom_data.type;
+  }
+  return chart.includes(plot_kind);
 }
 
-const isVisible = solver => !state().hidden_solvers.includes(solver);
+const isVisible = curve => !state().hidden_curves.includes(curve);
 
-const isSolverAvailable = solver => data(solver).scatter.y.filter(value => !isNaN(value)).length > 0;
+const isSolverAvailable = solver => data(solver) !== null;
 
 const isSmallScreen = () => window.screen.availHeight < 900;
 
@@ -720,7 +1211,7 @@ const isSmallScreen = () => window.screen.availHeight < 900;
 const isAvailable = () => {
   let isNotAvailable = true;
 
-  getSolvers().forEach(solver => {
+  getCurves().forEach(solver => {
     if (isSolverAvailable(solver)) {
       isNotAvailable = false;
     }
@@ -729,14 +1220,25 @@ const isAvailable = () => {
   return !isNotAvailable;
 }
 
+const getMedian = (arr) => {
+  const sorted = [...arr].sort((a, b) => a - b);
+  let median = null;
+  if (sorted.length > 0) {
+    const mid = Math.floor(sorted.length / 2);
+    median = (sorted.length % 2 === 1) ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  return median;
+}
+
 const barDataToArrays = () => {
   const colors = [], texts = [], x = [], y = [];
 
-  getSolvers().forEach(solver => {
-    x.push(solver);
-    y.push(data(solver).bar.y);
-    colors.push(data(solver).bar.text === '' ? data(solver).color : NON_CONVERGENT_COLOR);
-    texts.push(data(solver).bar.text);
+  getPlotData().data.forEach(plotData => {
+    x.push(plotData.label);
+    y.push(getMedian(plotData.y));
+    const plotText = plotData.text || '';
+    colors.push(plotData.color || UNDEFINED_COLOR);
+    texts.push(plotText);
   });
 
   return {x, y, colors, texts}
@@ -753,7 +1255,7 @@ const _getScale = (scale) => {
         xaxis: 'log',
         yaxis: 'log',
       };
-    case 'log': // used for boxplot
+    case 'log': // used for boxplot or barchart
       return {
         xaxis: 'log',
         yaxis: 'log',
@@ -778,15 +1280,140 @@ const _getScale = (scale) => {
   }
 }
 
-const getScatterChartLayout = () => {
-  let xaxisType = state().xaxis_type;
+// Plotly draws 10^n tick labels 25% bigger than the others (formatLog), so a
+// log axis has to ask for less to tick at the same size as a linear one.
+const TICK_SIZE = 12;
+const axisScale = (type) => ({
+  type: type,
+  tickfont: { size: type === 'log' ? TICK_SIZE / 1.25 : TICK_SIZE },
+});
 
+const MPL_AXIS = {
+  showline: true,
+  linecolor: 'black',
+  linewidth: 1,
+  mirror: true,
+  ticks: 'outside',
+  tickcolor: 'black',
+  gridcolor: '#b0b0b0',
+  griddash: 'dot',
+  gridwidth: 1,
+  zeroline: false,
+  automargin: true,
+  exponentformat: 'power',
+  minexponent: 2,
+  tickfont: { size: TICK_SIZE },
+  minor: { ticks: 'outside', ticklen: 4, tickcolor: 'black', showgrid: false },
+};
+const MPL_LAYOUT = {
+  plot_bgcolor: 'white',
+  paper_bgcolor: 'white',
+  font: { family: 'DejaVu Sans, Arial, sans-serif', color: 'black' },
+};
+
+const TITLE_LINE_HEIGHT = 22;  // one title line at the default 17px font
+const TITLE_GAP = 7;           // space left under the title
+
+const axisTitle = (text) => ({ text, standoff: 10, font: { size: 15 } });
+
+// Top margin sized from the title's line count; the title block is centered on
+// half of it, hence the 2x. Left/right/bottom are grown by the axes' automargin.
+const titleLayout = (text) => {
+  const lines = String(text).split(/<br\s*\/?>/).length;
+  return {
+    title: { text },
+    margin: {
+      l: 5, r: 5, b: 5,
+      t: 2 * (TITLE_LINE_HEIGHT * lines + TITLE_GAP) - 30,
+    },
+  };
+};
+
+const getBarChartLayout = () => {
+  let data = getPlotData();
   const layout = {
-    autosize: !isSmallScreen(),
+    autosize: true,
     modebar: {
       orientation: 'v',
     },
-    height: 700,
+    yaxis: {
+      ...MPL_AXIS,
+      ...axisScale(getScale().yaxis),
+      title: axisTitle(data["ylabel"]),
+    },
+    xaxis: {
+      ...MPL_AXIS,
+      tickangle: -60,
+      ticktext: Array(data.data.map(d => d.label)),
+      categoryorder: 'trace',
+      showgrid: false,  // X axis is text: no vertical gridlines
+    },
+    showlegend: false,
+    ...titleLayout(data["title"]),
+    ...MPL_LAYOUT,
+  };
+
+  if (isSmallScreen()) {
+    layout.dragmode = false;
+  }
+
+  // If no data available, plot "Not available"
+  if (!isAvailable()) {
+    layout.annotations = [{
+      xref: 'paper',
+      yref: 'paper',
+      x: 0.5,
+      y: 0.5,
+      text: 'Not available',
+      showlegend: false,
+      showarrow: false,
+      font: {
+        color: 'black',
+        size: 32,
+      }
+    }];
+  }
+  return layout;
+};
+
+const getBoxplotChartLayout = () => {
+  const plot_info = getPlotData()
+  const layout = {
+    autosize: true,
+    modebar: {
+      orientation: 'v',
+    },
+    yaxis: {
+      ...MPL_AXIS,
+      ...axisScale(getScale().yaxis),
+      title: axisTitle(plot_info["ylabel"]),
+    },
+    xaxis: {
+      ...MPL_AXIS,
+      tickangle: (typeof plot_info.data[0].x[0] === "string") ? -60 : 0,
+      showgrid: typeof plot_info.data[0].x[0] !== "string",  // hide vertical gridlines for text X axis
+    },
+    showlegend: false,
+    ...titleLayout(plot_info["title"]),
+    ...MPL_LAYOUT,
+  };
+
+  if (isSmallScreen()) {
+    layout.dragmode = false;
+  }
+
+  return layout;
+};
+
+
+const getScatterChartLayout = () => {
+  let customData = getPlotData();
+
+  const layout = {
+    autosize: true,  // Let Plotly handle sizing; CSS controls aspect ratio and min-height
+    modebar: {
+      orientation: 'v',
+    },
     showlegend: false,
     legend: {
       title: {
@@ -799,27 +1426,21 @@ const getScatterChartLayout = () => {
       x: .5
     },
     xaxis: {
-      type: getScale().xaxis,
-      title: xaxisType === "Time" ? "Time [sec]": xaxisType,
-      tickformat:  ["Time", "Tolerance"].includes(xaxisType) ? '.1e': '',
-      tickangle: -45,
-      gridcolor: '#ffffff',
-      zeroline : false,
+      ...MPL_AXIS,
+      ...axisScale(getScale().xaxis),
+      title: axisTitle(customData.xlabel),
+      tickangle: 0,
     },
     yaxis: {
-      type: getScale().yaxis,
-      title: getYLabel(),
-      tickformat: '.1e',
-      gridcolor: '#ffffff',
-      zeroline : false,
+      ...MPL_AXIS,
+      ...axisScale(getScale().yaxis),
+      title: axisTitle(customData.ylabel),
     },
-    title: `${state().objective}<br />Data: ${state().dataset}`,
-    plot_bgcolor: '#e5ecf6',
+    ...titleLayout(`${customData.title}`),
+    ...MPL_LAYOUT,
   };
 
   if (isSmallScreen()) {
-    layout.width = 900;
-    layout.height = window.screen.availHeight - 200;
     layout.dragmode = false;
   }
 
@@ -841,112 +1462,6 @@ const getScatterChartLayout = () => {
   return layout;
 };
 
-const getBarChartLayout = () => {
-  const layout = {
-    autosize: !isSmallScreen(),
-    modebar: {
-      orientation: 'v',
-    },
-    yaxis: {
-      type: 'log',
-      title: 'Time [sec]',
-      tickformat: '.1e',
-      gridcolor: '#ffffff',
-    },
-    xaxis: {
-      tickangle: -60,
-      ticktext: getSolvers(),
-    },
-    showlegend: false,
-    title: `${state().objective}<br />Data: ${state().dataset}`,
-    plot_bgcolor: '#e5ecf6',
-  };
-
-  if (isSmallScreen()) {
-    layout.width = 900;
-    layout.height = window.screen.availHeight - 200;
-    layout.dragmode = false;
-  }
-
-  if (!isAvailable()) {
-    layout.annotations = [{
-      xref: 'paper',
-      yref: 'paper',
-      x: 0.5,
-      y: 0.5,
-      text: 'Not available',
-      showarrow: false,
-      font: {
-        color: 'black',
-        size: 32,
-      }
-    }];
-  }
-
-  return layout;
-};
-
-const getBoxplotChartLayout = () => {
-  const layout = {
-    autosize: !isSmallScreen(),
-    modebar: {
-      orientation: 'v',
-    },
-    yaxis: {
-      type: getScale().yaxis,
-      title: getYLabel(),
-      tickformat: '.1e',
-      gridcolor: '#ffffff',
-    },
-    xaxis: {
-      tickangle: -60,
-    },
-    showlegend: false,
-    title: `${state().objective}<br />Data: ${state().dataset}`,
-    plot_bgcolor: '#e5ecf6',
-  };
-
-  if (isSmallScreen()) {
-    layout.width = 900;
-    layout.height = window.screen.availHeight - 200;
-    layout.dragmode = false;
-  }
-
-  return layout;
-};
-
-const getYLabel = () => {
-  switch(state('plot_kind')) {
-    case 'objective_curve':
-      return 'F(x)';
-    case 'suboptimality_curve':
-      return 'F(x) - F(x*)';
-    case 'relative_suboptimality_curve':
-      return 'F(x) - F(x*) / F(x0) - F(x*)'
-    case 'bar_chart':
-      return 'Time [sec]';
-    case 'boxplot':
-      return state('yaxis_type') === 'time' ?
-          'Time [sec]'
-          : (state('xaxis_type') === "Solver" ? "Final " : "") + state('objective_column');
-    default:
-      return 'unknown';
-  }
-};
-
-/**
- * Returns true if sampling strategy 'Iteration' value is in data
- *
- * @returns {boolean}
- */
-const isIterationSamplingStrategy = () => {
-  let options = new Set(['Time']);
-  // get solvers run for selected (dataset, objective, objective colum)
-  // and select their unique sampling strategies
-  getSolvers().forEach(solver => options.add(data().solvers[solver].sampling_strategy));
-
-  return options.has('Iteration')
-};
 
 /**
  * Hide an HTML element by applying a none value to its display style property.
@@ -967,7 +1482,7 @@ const hide = HTMLElements => {
  * @param HTMLElements
  * @param style
  */
-const show = (HTMLElements, style = 'initial') => {
+const show = (HTMLElements, style = '') => {
   if (HTMLElements instanceof Element) {
     HTMLElements = [HTMLElements]
   }
@@ -976,59 +1491,534 @@ const show = (HTMLElements, style = 'initial') => {
 };
 
 /*
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * MANAGE HIDDEN SOLVERS
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * MANAGE HIDDEN CURVES
  *
- * Functions to hide/display and memorize solvers which were clicked
- * by user on the legend of the plot.
+ * Functions to hide/display and memorize curves which
+ * were clicked by user on the legend of the plot.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+const getCurveFromEvent = event => {
+  const text = event.currentTarget.querySelector(':scope > .curve');
+  return text ? text.dataset.curve : null;
+};
+
+const purgeHiddenCurves = () => setState({hidden_curves: []});
+
+const hideAllCurvesExcept = curve => {setState({hidden_curves: getCurves().filter(elmt => elmt !== curve)})};
+
+const hideCurve = curve => isVisible(curve) ? setState({hidden_curves: [...state().hidden_curves, curve]}) : null;
+
+const showCurve = curve => setState({hidden_curves: state().hidden_curves.filter(hidden => hidden !== curve)});
+
+/**
+ * Add or remove curve name from the list of hidden curves.
+ *
+ * @param {String} curve
+ * @returns {void}
+ */
+const handleCurveClick = curve => {
+  if (!isVisible(curve)) {
+    showCurve(curve);
+
+    return;
+  }
+
+  hideCurve(curve);
+};
+
+const handleCurveDoubleClick = curve => {
+  // If all curves except one are hidden, so double click should show all curves
+  if (state().hidden_curves.length === getCurves().length - 1) {
+    purgeHiddenCurves();
+
+    return;
+  }
+
+  hideAllCurvesExcept(curve);
+};
+
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * MANAGE IMAGE RENDERING
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-const getSolverFromEvent = event => {
-  const target = event.currentTarget;
 
-  for (let i = 0; i < target.children.length; i++) {
-    if (target.children[i].className === 'solver') {
-      return target.children[i].firstChild.nodeValue;
+const renderImages = () => {
+
+  // Show and purge the container
+  let image_container = document.getElementById('image_container');
+  image_container.innerHTML = '';
+  show(image_container);
+
+  const plotData = getPlotData();
+  if (!plotData || !plotData.data || plotData.data.length === 0) {
+    image_container.innerHTML = '<div>No image data available</div>';
+    return;
+  }
+
+  // Title
+  if (plotData.title) {
+    const titleEl = document.createElement('h2');
+    titleEl.className = 'image-title';
+    titleEl.innerText = plotData.title;
+    image_container.appendChild(titleEl);
+  }
+
+  const ncols = plotData.ncols || Math.min(plotData.data.length, 3);
+  const grid = document.createElement('div');
+  grid.className = 'image-grid';
+  // Columns shrink to fit the page but never exceed 512px.
+  grid.style.gridTemplateColumns = `repeat(${ncols}, minmax(0, 512px))`;
+
+  plotData.data.forEach(imgData => {
+    const cell = document.createElement('figure');
+    cell.className = 'image-cell';
+    grid.appendChild(cell);
+
+    // Empty invisible block for grid alignment
+    if (imgData.image === null) return;
+
+    if (imgData.image === '__incompatible__') {
+      const msg = document.createElement('span');
+      msg.className = 'image-incompatible';
+      msg.innerText = 'Incompatible image';
+      cell.appendChild(msg);
+    } else {
+      const img = document.createElement('img');
+      img.src = imgData.image;
+      img.alt = imgData.label || '';
+      img.title = 'Click to enlarge';
+      img.onclick = () => openImageModal(img, imgData.label);
+      cell.appendChild(img);
+    }
+
+    if (imgData.label) {
+      const labelEl = document.createElement('figcaption');
+      labelEl.innerText = imgData.label;
+      cell.appendChild(labelEl);
+    }
+  });
+
+  image_container.appendChild(grid);
+};
+
+const openImageModal = (img, label) => {
+  const modal = document.getElementById('image-modal');
+  const modalImg = modal.querySelector('img');
+  modalImg.src = img.src;
+  // Upscale to fit the viewport while keeping the aspect ratio
+  modalImg.decode().then(() => {
+    const ratio = modalImg.naturalWidth / modalImg.naturalHeight;
+    modalImg.style.width = `min(90vw, ${80 * ratio}vh)`;
+  });
+  modal.querySelector('figcaption').innerText = label || '';
+  modal.showModal();
+};
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * MANAGE TABLE RENDERING
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+// Global state for precision
+let tableFloatPrecision = 4;
+
+// Grid.js instance for the table plot, keyed by the table identity so that
+// switching to another table rebuilds the grid (and resets its sorting),
+// while re-rendering the same table (e.g. on precision change) keeps the
+// user's current sorting.
+let tableGrid = null;
+let tableGridKey = null;
+
+// Columns of the current table hidden through the column toggles.
+let tableHiddenColumns = new Set();
+
+// Table settings (order + hidden columns) coming from a saved view, applied
+// once by the next renderTable build then cleared. Kept out of window._state
+// so they don't leak onto other tables shown via the dropdowns.
+let tablePendingView = null;
+
+// Order ({column, ascending}) the current table was built with, used as the
+// fallback when Grid.js reports a neutral sort (e.g. right after loading a
+// view), so re-saving the view keeps that order.
+let tableAppliedOrder = null;
+
+const valueToFixed = (value) => {
+  if (typeof value === 'number' && !Number.isInteger(value)) {
+    return value.toFixed(tableFloatPrecision);
+  }
+  return value;
+}
+
+/*
+ * Inline markup for table cells: `**bold**`, `*italic*` and `__underlined__`.
+ * They are rendered as HTML in the report and converted to the matching LaTeX
+ * commands on export. A cell whose text is a single number, e.g. `**1.234**`,
+ * is still handled as a number by the float precision control and the sorting.
+ */
+const CELL_MARKUP = [
+  [/\*\*([^*]+)\*\*/g, 'b'],
+  [/__([^_]+)__/g, 'u'],
+  [/\*([^*]+)\*/g, 'i'],
+];
+const LATEX_COMMANDS = {B: 'textbf', I: 'textit', U: 'underline'};
+
+const escapeHtml = (value) => value.replace(
+  /[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c])
+);
+
+// `\*` and `\_` give a literal marker: hide them behind a placeholder while
+// the markup is converted, then put them back.
+const PLACEHOLDERS = {'*': '\u0000', '_': '\u0001'};
+const LITERALS = {'\u0000': '*', '\u0001': '_'};
+
+// Escape the cell content first: only our own markup produces HTML tags.
+const markupToHtml = (value) => CELL_MARKUP.reduce(
+  (html, [regexp, tag]) => html.replace(regexp, `<${tag}>$1</${tag}>`),
+  escapeHtml(value).replace(/\\([*_])/g, (match, c) => PLACEHOLDERS[c])
+).replace(/[\u0000\u0001]/g, c => LITERALS[c]);
+
+// Cell text without its markup, used to sort and to format a wrapped number.
+const stripMarkup = (value) => CELL_MARKUP.reduce(
+  (text, [regexp]) => text.replace(regexp, '$1'),
+  String(value).replace(/\\([*_])/g, (match, c) => PLACEHOLDERS[c])
+).replace(/[\u0000\u0001]/g, c => LITERALS[c]);
+
+// Value of a cell, unwrapping `{value, description}` cells.
+const cellValue = (cell) =>
+  cell !== null && typeof cell === 'object' ? cell.value : cell;
+
+// Numeric value of a cell, or null if its text is not a single number.
+const cellNumber = (value) => {
+  if (typeof value === 'number') return value;
+  const text = typeof value === 'string' ? stripMarkup(value).trim() : '';
+  return text !== '' && !isNaN(text) ? Number(text) : null;
+};
+
+/**
+ * Render a cell, applying the float precision to numbers, markup or not.
+ */
+const formatCell = (value) => {
+  if (typeof value !== 'string') return valueToFixed(value);
+  const number = cellNumber(value);
+  const text = number === null ? value
+    : value.replace(stripMarkup(value).trim(), valueToFixed(number));
+  return gridjs.html(markupToHtml(text));
+};
+
+// Single pass: escaping in several passes would re-escape the braces of the
+// `\textbackslash{}` replacements.
+const LATEX_ESCAPES = {
+  '\\': '\\textbackslash{}', '~': '\\textasciitilde{}',
+  '^': '\\textasciicircum{}',
+};
+const escapeLatex = (value) => value.replace(
+  /[\\~^&%$#_{}]/g, c => LATEX_ESCAPES[c] || `\\${c}`
+);
+
+// Recurse: Grid.js wraps formatted cells in a <span>, and markup can be
+// nested (`**__text__**`).
+const nodeToLatex = (node) => {
+  if (node.nodeType === Node.TEXT_NODE) return escapeLatex(node.textContent);
+  const content = Array.from(node.childNodes, nodeToLatex).join('');
+  const command = LATEX_COMMANDS[node.nodeName];
+  return command ? `\\${command}{${content}}` : content;
+};
+
+/**
+ * Convert a rendered cell (or header) to LaTeX, keeping its formatting.
+ */
+const elementToLatex = (element) => nodeToLatex(element).trim();
+
+/**
+ * Compare two cell values, handling both numbers and strings.
+ *
+ * The result must be -1/0/1, not a difference: Grid.js combines comparator
+ * results with a bitwise OR, which truncates fractional values to 0 and
+ * would make all close numbers compare as equal.
+ */
+const compareCells = (a, b) => {
+  [a, b] = [cellValue(a), cellValue(b)];
+  const [numA, numB] = [cellNumber(a), cellNumber(b)];
+  if (numA !== null && numB !== null) {
+    return numA > numB ? 1 : numA < numB ? -1 : 0;
+  }
+  return stripMarkup(a).localeCompare(stripMarkup(b));
+}
+
+const sortRows = (plotData, column, ascending) =>
+  [...plotData.data].sort((a, b) => {
+    const cmp = compareCells(a[column], b[column]);
+    return ascending ? cmp : -cmp;
+  });
+
+/**
+ * Sort the rows for the initial display. A saved view `order`
+ * ({column: <name>, ascending: <bool>}) takes precedence; otherwise the
+ * `default_order_column` (a column name or index) and `default_order_ascending`
+ * metadata keys are used, defaulting to the first column ascending. Grid.js
+ * then handles the interactive sorting from this initial order.
+ */
+const orderTableData = (plotData, order) => {
+  let column = 0;
+  const orderColumn = plotData.default_order_column;
+  if (typeof orderColumn === 'string') {
+    const idx = plotData.columns.indexOf(orderColumn);
+    column = idx >= 0 ? idx : 0;
+  } else if (typeof orderColumn === 'number') {
+    column = orderColumn;
+  }
+  let ascending = plotData.default_order_ascending !== false;
+
+  if (order && order.column != null) {
+    const idx = plotData.columns.indexOf(order.column);
+    if (idx >= 0) {
+      column = idx;
+      ascending = order.ascending !== false;
     }
   }
 
-  return null;
-};
-
-const purgeHiddenSolvers = () => setState({hidden_solvers: []});
-
-const hideAllSolversExcept = solver => {setState({hidden_solvers: getSolvers().filter(elmt => elmt !== solver)})};
-
-const hideSolver = solver => isVisible(solver) ? setState({hidden_solvers: [...state().hidden_solvers, solver]}) : null;
-
-const showSolver = solver => setState({hidden_solvers: state().hidden_solvers.filter(hidden => hidden !== solver)});
+  tableAppliedOrder = {column: plotData.columns[column], ascending};
+  return sortRows(plotData, column, ascending);
+}
 
 /**
- * Add or remove solver name from the list of hidden solvers.
- *
- * @param {String} solver
- * @returns {void}
+ * Read the current sort (column name + direction) from the Grid.js header, or
+ * null when no column is sorted. Grid.js tags the active sort button with
+ * `gridjs-sort-asc` / `gridjs-sort-desc`.
  */
-const handleSolverClick = solver => {
-  if (!isVisible(solver)) {
-    showSolver(solver);
+const getTableOrder = () => {
+  for (const th of document.querySelectorAll('#table_container .gridjs-th')) {
+    const btn = th.querySelector('.gridjs-sort');
+    if (!btn) continue;
+    const name = th.querySelector('.gridjs-th-content')?.textContent.trim();
+    if (btn.classList.contains('gridjs-sort-asc')) {
+      return {column: name, ascending: true};
+    }
+    if (btn.classList.contains('gridjs-sort-desc')) {
+      return {column: name, ascending: false};
+    }
+  }
+  // Grid.js reports a neutral sort: fall back to the order the table was built
+  // with (default or restored from a view).
+  return tableAppliedOrder;
+}
 
+function renderTable() {
+
+  let table_container = document.getElementById('table_container');
+  show(table_container);
+
+  const plotData = getPlotData();
+  if (!plotData || !plotData.columns || !plotData.data) {
+    table_container.innerHTML = "<div>No data available</div>";
+    tableGrid = null;
+    tableGridKey = null;
     return;
   }
 
-  hideSolver(solver);
-};
-
-const handleSolverDoubleClick = solver => {
-  // If all solvers except one are hidden, so double click should show all solvers
-  if (state().hidden_solvers.length === getSolvers().length - 1) {
-    purgeHiddenSolvers();
-
+  const dropdownValues = getPlotDropdowns().map(dropdown => state()[dropdown]);
+  const gridKey = [state().plot_kind, ...dropdownValues].join('|');
+  if (tableGrid && tableGridKey === gridKey && !tablePendingView) {
+    // Same table: refresh in place (e.g. after a precision change), keeping
+    // the current sorting. The formatters read the global precision.
+    document.getElementById('table-precision-label').innerText =
+      `Float Precision: ${tableFloatPrecision}`;
+    tableGrid.forceRender();
     return;
   }
 
-  hideAllSolversExcept(solver);
-};
+  // Grid.js fills the table asynchronously: keep the new card at the previous
+  // grid height during a rebuild so the column pills and footer below don't
+  // jump around while the rows load.
+  const prevGrid = table_container.querySelector('.gridjs-container');
+  const prevGridHeight = prevGrid ? prevGrid.offsetHeight : 0;
+
+  table_container.innerHTML = "";
+
+  // Restore the hidden columns / order from a saved view when one is being
+  // loaded, otherwise keep the ones set through the column toggles.
+  const hidden = tablePendingView && Array.isArray(tablePendingView.hidden)
+    ? tablePendingView.hidden : [...tableHiddenColumns];
+  const valid = hidden.filter(c => plotData.columns.includes(c));
+  // Never hide every column.
+  tableHiddenColumns = new Set(
+    valid.length < plotData.columns.length ? valid : []
+  );
+  const orderedData = orderTableData(plotData, tablePendingView && tablePendingView.order);
+  tablePendingView = null;
+
+  // Title. Titles are stored with plotly line breaks (<br />).
+  if (plotData.title) {
+    const titleEl = document.createElement('h2');
+    titleEl.className =
+      'text-xl text-center text-gray-800 mb-6 whitespace-pre-line';
+    titleEl.innerText = plotData.title.replace(/<br\s*\/?>/g, '\n');
+    table_container.appendChild(titleEl);
+  }
+
+  // Grid.js table with sortable columns and a search bar
+  const card = document.createElement("div");
+  card.className = "w-full bg-white overflow-hidden mx-auto";
+
+  // A `{value, description}` cell shows its value with a hover icon.
+  const tableCell = (cell) => {
+    const value = cellValue(cell);
+    const desc = cell !== null && typeof cell === 'object' && cell.description;
+    return desc
+      ? gridjs.html(markupToHtml(String(value)) + descIconHTML(desc))
+      : formatCell(value);
+  };
+
+  // Grid.js has no initial sort option: the rows are already sorted, so set
+  // its sort state directly for the sort arrow to show this order. The
+  // `direction` on the column is needed too, as Grid.js resets the direction
+  // to it when first rendering a sorted column.
+  const sortIndex = plotData.columns.indexOf(tableAppliedOrder.column);
+  const sortDirection = tableAppliedOrder.ascending ? 1 : -1;
+
+  const buildColumns = () => plotData.columns.map((name, i) => ({
+    name,
+    hidden: tableHiddenColumns.has(name),
+    sort: i === sortIndex
+      ? { compare: compareCells, direction: sortDirection }
+      : { compare: compareCells },
+    formatter: tableCell,
+  }));
+
+  tableGrid = new gridjs.Grid({
+    columns: buildColumns(),
+    data: orderedData,
+    sort: true,
+    // Search the value only, not the description HTML.
+    search: { selector: (cell) => String(cellValue(cell)) },
+  });
+  const store = tableGrid.config.store;
+  store.dispatch(s => ({...s, sort: {columns: [
+    {index: sortIndex, direction: sortDirection, compare: compareCells},
+  ]}}));
+  if (prevGridHeight) {
+    card.style.minHeight = `${prevGridHeight}px`;
+    // Grid.js' UMD build never emits 'ready': watch the store status instead.
+    const unsubscribe = store.subscribe(s => {
+      if (s.status === 3) {  // Grid.js Status.Rendered
+        card.style.minHeight = '';
+        unsubscribe();
+      }
+    });
+  }
+  tableGrid.render(card);
+  tableGridKey = gridKey;
+
+  // Pill-shaped toggles to show/hide each column
+  const columnsContainer = document.createElement("div");
+  columnsContainer.className = "flex items-center flex-wrap px-4 pt-4";
+
+  const columnsLabel = document.createElement("span");
+  columnsLabel.innerText = "Columns:";
+  columnsLabel.className = "mr-4 text-sm font-medium text-gray-700";
+  columnsContainer.appendChild(columnsLabel);
+
+  const setPillStyle = (pill, visible, name) => {
+    const base = "inline-flex items-center px-3 py-1 mr-4 mt-1 rounded-full " +
+      "text-sm font-medium cursor-pointer transition-all border ";
+    if (visible) {
+      pill.className = base +
+        "border-transparent bg-blue-600 text-white hover:bg-blue-700";
+      pill.innerText = `✓ ${name}`;
+    } else {
+      pill.className = base +
+        "border-gray-300 bg-white text-gray-500 hover:bg-gray-100";
+      pill.innerText = name;
+    }
+  };
+
+  plotData.columns.forEach(name => {
+    const label = document.createElement("label");
+    const visible = !tableHiddenColumns.has(name);
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = visible;
+    checkbox.className = "sr-only";
+
+    const pill = document.createElement("span");
+    setPillStyle(pill, visible, name);
+    pill.title = "Show/hide column";
+
+    checkbox.onchange = () => {
+      if (checkbox.checked) {
+        tableHiddenColumns.delete(name);
+      } else if (tableHiddenColumns.size === plotData.columns.length - 1) {
+        // Keep at least one column visible
+        checkbox.checked = true;
+        return;
+      } else {
+        tableHiddenColumns.add(name);
+      }
+      // Rebuild the grid from scratch: Grid.js' forceRender keeps the column
+      // widths pinned during the first render
+      tablePendingView = {order: getTableOrder(), hidden: [...tableHiddenColumns]};
+      renderTable();
+    };
+
+    label.appendChild(checkbox);
+    label.appendChild(pill);
+    columnsContainer.appendChild(label);
+  });
+
+  // Footer with Precision Controls & Export
+  const footerWrapper = document.createElement("div");
+  footerWrapper.className = "w-full";
+
+  const footer = document.createElement("div");
+  footer.className = "flex justify-between items-center p-4";
+
+  // Precision Controls (Left)
+  const precisionContainer = document.createElement("div");
+  precisionContainer.className = "flex items-center gap-2 text-sm text-gray-700";
+
+  const createPrecBtn = (text) => {
+    const btn = document.createElement("button");
+    btn.innerText = text;
+    btn.className = "px-3 py-1 border border-gray-300 bg-white rounded cursor-pointer hover:bg-gray-100";
+    return btn;
+  };
+
+  const btnDec = createPrecBtn("-");
+  const btnInc = createPrecBtn("+");
+  const labelPrec = document.createElement("span");
+  labelPrec.id = "table-precision-label";
+  labelPrec.innerText = `Float Precision: ${tableFloatPrecision}`;
+  labelPrec.className = "mx-2 px-4";
+
+  btnDec.onclick = () => {
+    if (tableFloatPrecision > 0) {
+      tableFloatPrecision--;
+      renderTable();
+    }
+  };
+
+  btnInc.onclick = () => {
+    tableFloatPrecision++;
+    renderTable();
+  };
+
+  precisionContainer.appendChild(btnDec);
+  precisionContainer.appendChild(labelPrec);
+  precisionContainer.appendChild(btnInc);
+
+  table_container.appendChild(card);
+
+  footer.appendChild(precisionContainer);
+  footerWrapper.appendChild(columnsContainer);
+  footerWrapper.appendChild(footer);
+  table_container.appendChild(footerWrapper);
+}
+
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1043,53 +2033,47 @@ const handleSolverDoubleClick = solver => {
  * Creates the legend at the bottom of the plot.
  */
 const renderLegend = () => {
-  const legendContainer = document.getElementById('legend_container')
 
-  if (!isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
-    hide(legendContainer);
-    return;
-  } else {
-    show(legendContainer);
-  }
-
+  const container = document.getElementById('legend_container');
   const legend = document.getElementById('plot_legend');
+  show(container);
 
   legend.innerHTML = '';
-  const solversDescription = window.metadata["solvers_description"];
 
-  getSolvers().forEach(solver => {
-    const color = data().solvers[solver].color;
-    const symbolNumber = data().solvers[solver].marker;
-
-    let legendItem = createLegendItem(solver, color, symbolNumber);
-
-    // preserve compatibility with prev version
-    if(solversDescription === null || solversDescription === undefined) {
-      legend.appendChild(legendItem);
-      return;
-    }
-
-    let payload = {
-      description: solversDescription[solver],
-    }
-
+  getCurves().forEach(curve => {
+    const curve_data = data(curve);
     legend.appendChild(
-      createSolverDescription(legendItem, payload)
+      createLegendItem(curve, curve_data.color, curve_data.marker % N_SYMBOLS)
     );
   });
+
+  // Width drag handle (the height follows from how the items wrap). Appended
+  // last since the loop above starts from an empty legend.
+  legend.appendChild(makeResizeHandle(legend, 'x', clampLegendWidth));
+  legend.style.width = legendWidth;
 }
 
+// Width the user dragged the legend to ('' until they do).
+let legendWidth = '';
+
+// The legend never gets wider than the column holding it.
+const clampLegendWidth = (legend) => {
+  const max = legend.parentElement.clientWidth;
+  if (legend.offsetWidth > max) legend.style.width = `${max}px`;
+  legendWidth = legend.style.width;
+};
+
 /**
- * Creates a legend item which contains the solver name,
- * the solver marker as an SVG and an horizontal bar with
- * the solver color.
+ * Creates a legend item which contains the curve name,
+ * the curve marker as an SVG and an horizontal bar with
+ * the curve color.
  *
- * @param {String} solver
+ * @param {String} curve
  * @param {String} color
  * @param {int} symbolNumber
- * @retuns {HTMLElement}
+ * @returns {HTMLElement}
  */
-const createLegendItem = (solver, color, symbolNumber) => {
+const createLegendItem = (curve, color, symbolNumber) => {
   // Create item container
   const item = document.createElement('div');
   item.style.display = 'flex';
@@ -1099,52 +2083,59 @@ const createLegendItem = (solver, color, symbolNumber) => {
   item.style.cursor = 'pointer';
   item.className = 'bg-white py-1 px-4 shadow-sm mt-2 rounded'
 
-  if (!isVisible(solver)) {
+  if (!isVisible(curve)) {
     item.style.opacity = 0.5;
   }
 
-  // Click on a solver in the legend
+  // Click on a curve in the legend
   item.addEventListener('click', event => {
-    solver = getSolverFromEvent(event);
+    curve = getCurveFromEvent(event);
 
-    if (!getSolvers().includes(solver)) {
-      console.error('An invalid solver has been handled during the click event.');
+    if (!getCurves().includes(curve)) {
+      console.error('An invalid curve has been handled during the click event.');
 
       return;
     }
 
     // In javascript we must simulate double click.
-    // So first click is handled and kept in memory (window.clickedSolver)
+    // So first click is handled and kept in memory (window.clickedCurve)
     // during 500ms, if nothing else happen timeout will execute
     // single click function. However, if an other click happen during this
     // 500ms, it clears the timeout and execute the double click function.
-    if (!window.clickedSolver) {
-      window.clickedSolver = solver;
+    if (!window.clickedCurve) {
+      window.clickedCurve = curve;
 
       // Timeout will execute single click function after 500ms
       window.clickedTimeout = setTimeout(() => {
-        window.clickedSolver = null;
+        window.clickedCurve = null;
 
-        handleSolverClick(solver);
+        handleCurveClick(curve);
       }, 500);
-    } else if (window.clickedSolver === solver) {
+    } else if (window.clickedCurve === curve) {
       clearTimeout(window.clickedTimeout);
-      window.clickedSolver = null;
-      handleSolverDoubleClick(solver);
+      window.clickedCurve = null;
+      handleCurveDoubleClick(curve);
     }
   });
 
-  // Create the HTML text node for the solver name in the legend
+  // Create the HTML text node for the curve name in the legend
   const textContainer = document.createElement('div');
   textContainer.style.marginLeft = '0.5rem';
-  textContainer.className = 'solver';
-  textContainer.appendChild(document.createTextNode(solver));
+  textContainer.style.flex = '1';
+  textContainer.className = 'curve';
+  textContainer.setAttribute('data-curve', curve);
+  textContainer.appendChild(document.createTextNode(curve));
 
-  // Create the horizontal bar in the legend to represent the curve
+  const desc = data(curve).description;
+  if (desc) {
+    textContainer.insertAdjacentHTML('beforeend', descIconHTML(desc));
+  }
+
+  // The curve line, drawn as a top border. legendSVG() picks it out by that.
   const hBar = document.createElement('div');
-  hBar.style.height = '2px';
+  hBar.style.height = '0';
   hBar.style.width = '30px';
-  hBar.style.backgroundColor = color;
+  hBar.style.borderTop = `2px solid ${color}`;
   hBar.style.position = 'absolute';
   hBar.style.left = '1em';
   hBar.style.zIndex = 10;
@@ -1157,24 +2148,6 @@ const createLegendItem = (solver, color, symbolNumber) => {
   return item;
 }
 
-
-function createSolverDescription(legendItem, { description }) {
-  if (description === null || description === undefined || description === "")
-    description = "No description provided";
-
-  let descriptionContainer = document.createElement("div");
-  descriptionContainer.setAttribute("class", "solver-description-container")
-
-  descriptionContainer.innerHTML = `
-  <div class="solver-description-content text-sm">
-    <span class="solver-description-body">${description}</span>
-  </div>
-  `;
-
-  descriptionContainer.prepend(legendItem);
-
-  return descriptionContainer;
-}
 
 /**
  * Create the same svg symbol as plotly.
@@ -1227,4 +2200,12 @@ document.getElementById('btn-main-menu').addEventListener('click', () => {
   }
 
   elmt.style.display = 'block';
+});
+
+// Refit the current figure to its container when the window is resized so it
+// keeps the right dimensions. Debounced to avoid refitting on every event.
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => resizeFig(getPlotDiv()), 150);
 });

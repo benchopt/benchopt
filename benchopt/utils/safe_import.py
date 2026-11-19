@@ -27,11 +27,6 @@ class safe_import_context:
         self.record = warnings.catch_warnings(record=True)
 
     def __enter__(self):
-        warnings.warn(
-            "safe_import_context is deprecated in benchopt 1.7. You can now "
-            "directly import all modules as in a regular Python script.",
-            DeprecationWarning
-        )
         # Skip context if necessary to speed up import
         if dynamic_modules.SKIP_IMPORT:
             # See https://stackoverflow.com/questions/12594148/skipping-execution-of-with-block  # noqa

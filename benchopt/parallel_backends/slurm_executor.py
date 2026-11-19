@@ -1,14 +1,14 @@
+import math
 from contextlib import ExitStack
 
 try:
     import submitit
     from submitit.helpers import as_completed
-    from rich import progress
 except ImportError:
     raise ImportError(
         "To run benchopt with the submitit backend, please install "
         "the `submitit` package: `pip install benchopt[submitit]` or "
-        "`pip install submitit rich`."
+        "`pip install submitit`."
     )
 
 
@@ -17,7 +17,7 @@ def get_slurm_executor(benchmark, config, timeout=100):
     # benchopt timeout. This value is a trade-off between helping the
     # scheduler (low slurm_time allow for faster accept) and avoiding
     # killing the job too early.
-    if "slurm_time" not in config:
+    if "slurm_time" not in config and timeout is not None:
         # Timeout is in second in benchopt
         config["slurm_time"] = f"00:{int(1.5 * timeout)}"
 
@@ -27,13 +27,55 @@ def get_slurm_executor(benchmark, config, timeout=100):
     return executor
 
 
-def merge_configs(slurm_config, solver):
-    """Merge the slurm config with solver-specific slurm params."""
-    solver_slurm_params = {
-        **slurm_config,
-        **getattr(solver, "slurm_params", {}),
-    }
-    return solver_slurm_params
+def harmonize_slurm_config(slurm_cfg):
+    """Harmonize SLURM config for handling equivalent key names problem"""
+    slurm_cfg = {k.removeprefix("slurm_"): v for k, v in slurm_cfg.items()}
+    eq_dict = submitit.SlurmExecutor._equivalence_dict()
+    new_slurm_cfg = {}
+    for k, v in slurm_cfg.items():
+        if k in eq_dict:
+            new_slurm_cfg["slurm_" + eq_dict[k]] = v
+        else:
+            new_slurm_cfg["slurm_" + k] = v
+    return new_slurm_cfg
+
+
+def merge_slurm_configs(*slurm_cfgs):
+    """Merge multiple SLURM config dicts in order, with later dicts overriding
+    earlier ones.
+
+    The keys are harmonized before merging.
+    """
+    slurm_cfg = {}
+    for cfg in slurm_cfgs:
+        cfg = harmonize_slurm_config(cfg)
+        slurm_cfg.update(cfg)
+    return slurm_cfg
+
+
+def get_run_slurm_config(run_context):
+    """Return the SLURM config of a run.
+
+    It merges the SLURM keys of the run's parallel config with the
+    ``slurm_params`` of its solver, then its ``slurm_*`` parameters. It is
+    computed in the run context, as a ``slurm_params`` property can use the
+    components of the run.
+    """
+    # Keys of the parallel config that do not configure SLURM.
+    run_keys = ('backend', 'group_by', 'batch_n_jobs')
+    slurm_configs = [{
+        k: v for k, v in run_context.parallel_config.items()
+        if k not in run_keys
+    }]
+    solver = run_context.solver
+    if solver is not None:
+        with run_context:
+            slurm_configs.append(getattr(solver, "slurm_params", {}))
+        slurm_configs.append({
+            k: v for k, v in solver._parameters.items()
+            if k.startswith("slurm_")
+        })
+    return merge_slurm_configs(*slurm_configs)
 
 
 def hashable_pytree(pytree):
@@ -48,42 +90,77 @@ def hashable_pytree(pytree):
         return pytree
 
 
-def run_on_slurm(
-    benchmark, slurm_config, run_one_solver, common_kwargs, all_runs
-):
+def _split_by_slurm_config(batch):
+    """Sub-partition a `group_runs` batch into ``(job_slurm_config, runs)``
+    pairs, one per distinct SLURM config found in the batch.
 
+    A batch shares its `group_by` key, but can still span several solvers
+    with different `slurm_params` (e.g. ``group_by=['dataset']``), so it is
+    never itself the SLURM job unit -- each same-config run of items is.
+    The config of each run is given by `RunContext.run_parallel_config`.
+    """
+    groups = {}
+    for kwargs in batch:
+        job_slurm_config = {
+            k: v for k, v in kwargs['run_context'].run_parallel_config.items()
+            if k != 'backend'
+        }
+
+        cfg = hashable_pytree(job_slurm_config)
+        if cfg not in groups:
+            groups[cfg] = (job_slurm_config, [])
+        groups[cfg][1].append(kwargs)
+    return groups.values()
+
+
+def run_on_slurm(benchmark, run_batch, batches, batch_n_jobs=1):
+    """Submit each pre-grouped batch (see `group_runs`) as SLURM job(s).
+
+    ``batch_n_jobs`` sizes the job wall-time here, with each
+    job running its group in ``ceil(len / batch_n_jobs)`` waves. A batch is
+    further split by SLURM config, since it can span
+    several solvers with different `slurm_params`.
+    """
     executors = {}
     tasks = []
-
     with ExitStack() as stack:
-        for kwargs in all_runs:
-            solver = kwargs.get("solver")
-            solver_slurm_config = merge_configs(slurm_config, solver)
-            executor_config = hashable_pytree(solver_slurm_config)
+        for batch in batches:
+            for job_slurm_config, run_group in _split_by_slurm_config(batch):
+                # A job runs its group in `waves` rounds, so it needs `waves`
+                # times the per-run timeout; different lengths get their own
+                # array.
+                n_workers = batch_n_jobs
+                if n_workers < 0:  # joblib convention: -1 is all the CPUs
+                    n_cpus = job_slurm_config.get("slurm_cpus_per_task", 1)
+                    n_workers = max(1, n_cpus + 1 + n_workers)
+                waves = math.ceil(len(run_group) / n_workers)
+                executor_config = (hashable_pytree(job_slurm_config), waves)
 
-            if executor_config not in executors:
-                executor = get_slurm_executor(
-                    benchmark,
-                    solver_slurm_config,
-                    timeout=common_kwargs["timeout"],
-                )
-                stack.enter_context(executor.batch())
-                executors[executor_config] = executor
+                if executor_config not in executors:
+                    timeout = run_group[0].get("timeout")
+                    if timeout is not None:
+                        timeout *= waves
+                    executor = get_slurm_executor(
+                        benchmark,
+                        job_slurm_config,
+                        timeout=timeout,
+                    )
+                    stack.enter_context(executor.batch())
+                    executors[executor_config] = executor
 
-            future = executors[executor_config].submit(
-                run_one_solver,
-                **common_kwargs,
-                **kwargs,
-            )
-            tasks.append(future)
+                tasks.append(executors[executor_config].submit(
+                    run_batch, run_group,
+                ))
 
-    print(f"First job id: {tasks[0].job_id}")
-
-    for t in progress.track(as_completed(tasks), total=len(tasks)):
+    # Yield results as jobs finish (unordered)
+    for t in as_completed(tasks):
         exc = t.exception()
         if exc is not None:
+            # Cancel remaining tasks and raise error
             for tt in tasks:
                 tt.cancel()
             raise exc
 
-    return [t.result() for t in tasks]
+        # A job returns the list of its batch's results; yield each in turn.
+        for res in t.results()[0]:
+            yield res

@@ -11,6 +11,42 @@ We use benchopt `GitHub repo <https://github.com/benchopt/benchopt/issues>`_ to 
 an issue if you have found a bug or wish to see a feature implemented.
 
 
+.. _contrib_policy:
+
+Contribution policy
+-------------------
+
+The goal of benchopt is not only to build a tool, but also to build a
+community around best practices for benchmarking. Contributing is a way to
+join this community: discussing designs, reviewing each other's work, and
+sharing what makes a benchmark reliable. benchopt is maintained by a small
+team, and every pull request is reviewed by hand. We want contributions from
+people who are interested in the project and who discuss their changes with
+us. Please follow these guidelines:
+
+- **Discuss before coding.** For anything beyond a typo or a small fix,
+  comment on the issue first and say how you plan to tackle it. We can then
+  agree on the design before you spend time on it, and two people do not work
+  on the same issue. Do not hesitate to tell us about the benchmarks you
+  develop with benchopt: knowing your use case helps us understand the issue
+  and find the right design.
+
+- **Good first issues are kept for newcomers.** The code change of an issue
+  labeled ``good first issue`` is often small. We keep these issues as an entry
+  point for people who want to get involved with benchopt, through the
+  discussion and the reviews.
+
+- **Own your changes.** You can use AI tools to help you write code, tests or
+  documentation. You remain the author: you should understand every line of
+  your pull request, be able to explain your choices, and answer the review
+  comments yourself.
+
+- **No automated contributions.** We close pull requests and comments opened
+  in bulk by automated agents, without a person engaging in the discussion.
+
+When in doubt, ask on the issue. We are happy to help you get started.
+
+
 Code contribution
 -----------------
 
@@ -125,50 +161,3 @@ HTML output by typing, in a shell:
     cd doc/
     make html
     firefox _build/html/index.html
-
-
-.. _test_config:
-
-Testing a benchmark
--------------------
-
-To ensure that the benchmark is reproducible and can be run by others, benchopt provides a set of tools to test that the benchmark is properly formatted and that it can be installed and run easily.
-This page describes the various tweaks that can be made to the benchmark tests.
-
-
-Basic philosophy
-~~~~~~~~~~~~~~~~
-
-The test run by ``benchopt test`` will make sure that:
-
-1. All classes can be retrieved easily from the benchmark, even when some dependencies are missing.
-2. The classes which have dependencies can be properly installed in a new environment and can then be imported.
-3. The datasets are compatible with the objective API.
-4. The solvers can all be run for a few number of iterations.
-5. For convex problems, the tests will also check that the solution is optimal for a small enough problem. This test can be deactivated by setting the ``Objective.is_convex`` flag to ``False``.
-
-
-Test for Solver run
-~~~~~~~~~~~~~~~~~~~
-
-To ensure point 4, benchopt needs to load at least one small dataset that is compatible with each solver. This is why each benchmark needs to implement at least a ``Simulated`` dataset, that will be used for testing purposes. However, some solvers require different datasets and objective settings to be able to run. There are two ways to ensure that a solver can find an appropriate configuration:
-
-- In the simulated dataset, one can add the class attribute ``test_parameters``, which stands for a list of parameters that will be tried to test the solver. For each solver, at least one of these configurations should be compatible (not skipped). See benchopt.github.io/how.html#example-of-parametrized-simulated-dataset
-
-- The solvers can also provide a ``test_config`` class attribute, which is a dictionary with optional keys ``dataset, objective``. The value of these keys should be a dictionary of parameters for the classes ``Dataset`` and ``Objective``, that will be compatible with the given ``Solver``.
-
-
-Test configuration
-~~~~~~~~~~~~~~~~~~
-
-In some cases, some tests should be ``skip``, or ``xfail`` for a given benchmark. You can configure this for benchopt using a ``test_config.py`` file at the root of the benchmark. Implementing a function named ``check_TESTNAME`` with the same argument as the original test, you can then call ``pytest.xfail`` or ``pytest.skip`` to mark the test appropriately. For instance, to skip install tests for solver ``XXX``, you can have the following:
-
-.. code:: python
-
-    # test_config.py
-    import pytest
-
-
-    def check_test_solver_install(solver_class):
-        if solver_class.name.lower() == 'xxx':
-            pytest.skip('XXX is not easy to install automatically.')

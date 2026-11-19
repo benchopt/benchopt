@@ -1,6 +1,9 @@
 from ..utils.sys_info import get_cuda_version
 from ..parallel_backends import is_distributed_frontal
 
+# SLURM options that request GPUs, with their `--gpus` short form.
+_SLURM_GPU_KEYS = ('num_gpus', 'gpus', 'gpus_per_node', 'gpus_per_task')
+
 
 def requires_gpu():
     """Helper for solvers that require a GPU to run.
@@ -15,3 +18,45 @@ def requires_gpu():
         return cuda_version.split("cuda_", 1)[1][:4]
     else:
         raise ImportError("Solver needs a nvidia GPU.")
+
+
+def gpu_available(component):
+    """Whether the runs of ``component`` will have a GPU.
+
+    Use it in ``skip`` to check this consistently across backends
+    from the machine running ``benchopt run``. With ``submitit``, a GPU is
+    requested by ``gres`` or a ``gpus*`` option. With ``dask``, workers are
+    assumed to have one.
+
+    Parameters
+    ----------
+    component : benchopt.BaseDataset | benchopt.BaseObjective | \
+            benchopt.BaseSolver
+        The component whose runs are checked, e.g. ``self`` in ``skip``.
+
+    Returns
+    -------
+    available : bool
+        True if the runs of ``component`` will have a GPU.
+    """
+    config = component.get_current('run_parallel_config')
+    if config is None:
+        # run on the current node, use a direct check
+        available = get_cuda_version() is not None
+    elif config['backend'] == 'submitit':
+        # scheduled jobs, check that their SLURM config requests a GPU
+        options = {
+            **config.get('slurm_additional_parameters', {}),
+            **{k.removeprefix('slurm_'): v for k, v in config.items()},
+        }
+        options = {k.replace('-', '_'): v for k, v in options.items()}
+        available = 'gpu' in str(options.get('gres', '')) or any(
+            options.get(k) for k in _SLURM_GPU_KEYS
+        )
+    elif config['backend'] == 'dask':
+        # workers unknown from the front node, assume they have a GPU
+        available = True
+    else:
+        # no rule for this backend, fail instead of guessing
+        raise ValueError(f"Unknown parallel backend {config['backend']!r}.")
+    return available

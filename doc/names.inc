@@ -46,4 +46,18 @@
 
 .. _Johan Larsson: https://jolars.co
 
-.. _Pierre-Louis Barbarant: ihttps://www.linkedin.com/in/plbarbarant/
+.. _Pierre-Louis Barbarant: https://www.linkedin.com/in/plbarbarant/
+
+.. _Geraud Ilinca: https://www.linkedin.com/in/geraud-ilinca
+
+.. _Hippolyte Verninas: https://www.linkedin.com/in/hippolyte-verninas
+
+.. _Damien Lesens: https://damienlesens.github.io/
+
+.. _Bruno Aristimunha: https://bruaristimunha.github.io/
+
+.. _Eduardo Montesuma: https://eddardd.github.io/
+
+.. _Felix Divo: https://felix.divo.link
+
+.. _Mark Santos: https://www.markstudios.com

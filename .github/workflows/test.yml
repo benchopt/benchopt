@@ -50,9 +50,9 @@ jobs:
         shell: ${{ matrix.os == 'windows-latest' && 'cmd /C CALL {0}' || 'bash -l {0}' }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Setup Conda
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           activate-environment: ${{ env.CONDA_ENV }}
           python-version: ${{ matrix.version_python }}
@@ -60,10 +60,6 @@ jobs:
           miniforge-version: latest
 
       - run: conda info
-
-      - name: Install Julia
-        run:
-          ${{ env.BENCHOPT_CONDA_CMD }} install -yq -c https://repo.prefix.dev/julia-forge julia[version=">=1.10.0"]
 
       - name: Install benchopt and its dependencies on POSIX systems
         if: matrix.os != 'windows-latest'
@@ -95,7 +91,7 @@ jobs:
 
       - name: Upload coverage
         if: ${{ matrix.coverage == 'true' }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
@@ -119,8 +115,8 @@ jobs:
       VERSION_PYTHON: ${{ matrix.version_python }}
 
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.VERSION_PYTHON }}
 
@@ -130,14 +126,51 @@ jobs:
       - name: Run benchopt run without conda
         run: benchopt run examples/minimal_benchmark -r 1 -n 10 --no-plot
 
+  test_windows_bash:
+    # Regression test: when the CI step runs under bash, $SHELL is a git-bash
+    # path. benchopt must ignore it and drive conda through `cmd /c` rather than
+    # emitting a broken bash script, so `install`/`test` keep working.
+    name: Test Windows with bash shell
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v4
+        with:
+          activate-environment: 'testcondaenv'
+          python-version: "3.12"
+          # Use miniforge to only get conda-forge as default channel.
+          miniforge-version: latest
+
+      - name: Show the shell benchopt sees
+        run: echo "SHELL=$SHELL"
+
+      - name: Install benchopt and its dependencies
+        run: pip install -e ".[test]"
+
+      - name: Create a conda env for the benchmark under bash
+        # Exercises create_conda_env / `CONDA_CMD env create` on Windows while
+        # $SHELL is a bash path.
+        run: benchopt install examples/minimal_benchmark --env-name bench_win_bash
+
+      - name: Run the benchmark in that env under bash
+        # Exercises `CALL conda activate` via _run_shell_in_conda_env.
+        run: >
+          benchopt run examples/minimal_benchmark
+          --env-name bench_win_bash -r 1 -n 10 --no-plot
+
   test_no_pytest:
     name: Test benchopt test without pytest installed
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Setup Conda
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           activate-environment: 'testcondaenv'
           python-version: 3.12
@@ -163,8 +196,8 @@ jobs:
           - version_python: "3.11"
             version_pip: "latest"
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.version_python }}
       - name: Install specific version of pip
@@ -180,16 +213,18 @@ jobs:
 
   report_test:
     if: ${{ always() }}
-    needs: [test_benchopt, test_no_conda]
+    needs: [test_benchopt, test_no_conda, test_windows_bash]
     runs-on: ubuntu-latest
     env:
       TEST_BENCHOPT: ${{ needs.test_benchopt.result }}
       TEST_NO_CONDA: ${{ needs.test_no_conda.result }}
+      TEST_WINDOWS_BASH: ${{ needs.test_windows_bash.result }}
 
     steps:
       - name: "Gather test results."
         run: |
-          if [[ $TEST_BENCHOPT == 'success' && $TEST_NO_CONDA == 'success' ]]; then
+          if [[ $TEST_BENCHOPT == 'success' && $TEST_NO_CONDA == 'success' \
+                && $TEST_WINDOWS_BASH == 'success' ]]; then
             exit 0;
           else
             exit 1;

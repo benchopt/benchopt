@@ -1,17 +1,14 @@
 .. _user_guide:
 
-
 User guide
 ==========
 
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
 
-    API_ref
-    CLI_ref
-    advanced
-    ml_benchmark
-    performance_curves
-    tweak_datasets
-    distributed_run
+    authoring
+    running
+    testing
+    agent_skills
+    reference

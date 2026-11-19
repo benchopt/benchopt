@@ -1,10 +1,12 @@
 import os
 import re
+import pickle
 import pytest
 from pathlib import Path
 
+from benchopt.benchmark import Benchmark
 from benchopt.cli.main import run
-from benchopt.cli.main import test as _cmd_test
+from benchopt.results import read_results
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
@@ -20,13 +22,15 @@ def test_template_dataset():
             template_dataset = (
                 bench.benchmark_dir / 'datasets' / 'template_dataset.py'
             )
-            _load_class_from_module(
+            template = _load_class_from_module(
                 bench.benchmark_dir, template_dataset, 'Dataset'
             )
+            template.is_installed(raise_on_not_installed=True)
 
         # Make sure that this error is not raised when listing
         # all datasets from the benchmark.
-        bench.get_datasets()
+        all_dataset = bench.get_datasets()
+        assert not any(d.name == template.name for d in all_dataset)
 
 
 def test_ignore_hidden_files(no_debug_log):
@@ -57,14 +61,12 @@ def test_ignore_hidden_files(no_debug_log):
 
 
 def test_benchmark_submodule():
-    solver = """from benchopt import BaseSolver
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
     from benchmark_utils.dummy_submodule.subsubmodule import error_raiser
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "test-solver"
-        def set_objective(self, X, y, lmbd): pass
         def run(self, _): error_raiser()
-        def get_result(): pass
     """
 
     utils = {
@@ -83,16 +85,26 @@ def test_benchmark_submodule():
             ], 'benchopt', standalone_mode=False)
 
 
-def test_benchopt_min_version():
-    objective = """from benchopt import BaseObjective
+def test_benchmark_constructor_noop_on_benchmark_instance():
+    with temp_benchmark() as bench:
+        same_bench = Benchmark(bench)
 
-    class Objective(BaseObjective):
+    assert same_bench is bench
+
+
+def test_benchmark_pickle_roundtrip():
+    with temp_benchmark() as bench:
+        restored_bench = pickle.loads(pickle.dumps(bench))
+
+    assert isinstance(restored_bench, Benchmark)
+
+
+def test_benchopt_min_version():
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
         name = "test"
         min_benchopt_version = "99.9"
-        def set_data(self, X, y): pass
-        def evaluate_result(self, beta): return 1
-        def get_one_result(self): return dict(beta=1)
-        def get_objective(self): return dict(X=None, y=None, lmbd=None)
     """
     run_args = "-d test-dataset -f test-solver -n 1 -r 1 --no-plot".split()
 
@@ -122,15 +134,12 @@ def test_import_error_reporting(error, raise_install_error):
 
     expected_exc = error if raise_install_error else SystemExit
 
-    solver = """from benchopt import BaseSolver
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
 
     import fake_module
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "solver-test"
-        def set_objective(self, X, y): pass
-        def run(self, _): pass
-        def get_result(self): return dict(beta=0)
 
     """
 
@@ -161,15 +170,12 @@ def test_import_error_reporting(error, raise_install_error):
 
 def test_objective_no_cv(no_debug_log):
 
-    no_cv = """from benchopt import BaseObjective
+    no_cv = """from benchopt.utils.temp_benchmark import TempObjective
 
-        class Objective(BaseObjective):
+        class Objective(TempObjective):
             name = "cross_val"
             min_benchopt_version = "0.0.0"
-
-            def set_data(self, X, y): self.X, self.y = X, y
-            def get_one_result(self): return 0
-            def evaluate_result(self, beta): return dict(value=1)
+            X, y = None, None
 
             def get_objective(self):
                 x = self.get_split(self.X, self.y)
@@ -178,52 +184,17 @@ def test_objective_no_cv(no_debug_log):
 
     msg = "To use `Objective.get_split`, Objective must define a cv"
     with temp_benchmark(objective=no_cv) as benchmark:
-        with pytest.raises(ValueError, match=msg):
+        with CaptureCmdOutput(exit=1) as out:
             run([
                 str(benchmark.benchmark_dir),
                 *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'.split()
             ], standalone_mode=False)
-
-
-def test_objective_save_final_results(no_debug_log):
-    save_final = """
-    from benchopt import BaseObjective
-
-    class Objective(BaseObjective):
-        name = "cross_val"
-
-        min_benchopt_version = "0.0.0"
-
-        def set_data(self, X, y): self.X, self.y = X, y
-        def get_one_result(self): return 0
-        def evaluate_result(self, beta): return dict(value=1)
-
-        def save_final_results(self, beta):
-            return "test_value"
-
-        def get_objective(self):
-            return dict(X=self.X, y=self.y, lmbd=1)
-
-    """
-
-    import pandas as pd
-    import pickle
-
-    with temp_benchmark(objective=save_final) as benchmark:
-        with CaptureCmdOutput(delete_result_files=False) as out:
-            run([
-                str(benchmark.benchmark_dir),
-                *('-s test-solver -d test-dataset -n 1 -r 1 --no-plot').split()
-            ],  standalone_mode=False)
-        data = pd.read_parquet(out.result_files[0])
-        with open(data.loc[0, "final_results"], "rb") as final_result_file:
-            final_results = pickle.load(final_result_file)
-    assert final_results == "test_value"
+        out.check_output(msg, repetition=1)
 
 
 def test_objective_cv_splitter(no_debug_log):
 
-    objective = """from benchopt import BaseObjective
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
         import numpy as np
 
         class Splitter():
@@ -235,9 +206,8 @@ def test_objective_cv_splitter(no_debug_log):
 
             def get_n_splits(self, groups): return len(np.unique(groups))
 
-        class Objective(BaseObjective):
+        class Objective(TempObjective):
             name = "cross_val"
-            min_benchopt_version = "0.0.0"
 
             def set_data(self, X, y):
                 self.X, self.y = X, y
@@ -251,19 +221,15 @@ def test_objective_cv_splitter(no_debug_log):
                     self.X, self.y
                 )
                 return dict(X_train=X_train, y_train=y_train)
-
-            def get_one_result(self): return dict(beta=0)
-            def evaluate_result(self, beta): return dict(value=1)
     """
 
-    solver = """from benchopt import BaseSolver
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "test-solver"
         sampling_strategy = 'run_once'
         def set_objective(self, X_train, y_train): pass
         def run(self, n_iter): print("OK")
-        def get_result(self): return dict(beta=1)
     """
 
     dataset = """from benchopt import BaseDataset
@@ -286,8 +252,8 @@ def test_objective_cv_splitter(no_debug_log):
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
-    out.check_output("RUN#0", repetition=1)
-    out.check_output("RUN#1", repetition=1)
+    out.check_output("RUN#0", repetition=3)
+    out.check_output("RUN#1", repetition=2)
     out.check_output("RUN#2", repetition=1)
     out.check_output("RUN#3", repetition=0)
     out.check_output("OK", repetition=3)
@@ -303,7 +269,7 @@ def test_objective_cv_splitter(no_debug_log):
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
-    out.check_output("RUN#0", repetition=1)
+    out.check_output("RUN#0", repetition=2)
     out.check_output("RUN#1", repetition=1)
     out.check_output("RUN#2", repetition=0)
     out.check_output("RUN#3", repetition=0)
@@ -319,9 +285,9 @@ def test_objective_cv_splitter(no_debug_log):
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
-    out.check_output("RUN#0", repetition=2)
-    out.check_output("RUN#1", repetition=2)
-    out.check_output("RUN#2", repetition=1)
+    out.check_output("RUN#0", repetition=7)
+    out.check_output("RUN#1", repetition=5)
+    out.check_output("RUN#2", repetition=3)
     out.check_output("RUN#3", repetition=0)
     out.check_output("OK", repetition=5)
 
@@ -337,25 +303,347 @@ def test_objective_cv_splitter(no_debug_log):
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
-    out.check_output("RUN#0", repetition=2)
-    out.check_output("RUN#1", repetition=1)
-    out.check_output("RUN#2", repetition=1)
+    out.check_output("RUN#0", repetition=5)
+    out.check_output("RUN#1", repetition=3)
+    out.check_output("RUN#2", repetition=2)
     out.check_output("RUN#3", repetition=0)
     out.check_output("OK", repetition=4)
+
+
+def test_dataset_gc_default_config(tmp_path, no_debug_log):
+    # In the default config the dataset is the outermost loop axis, so each
+    # dataset instance (and the data it caches) is released as the run advances
+    # instead of all datasets being pinned at once. Each `get_data` records how
+    # many Dataset instances are alive; only the current one (+ at most one
+    # predecessor awaiting collection) should be, never all of them.
+    log = tmp_path / "alive.log"
+    n_datasets = 5
+    dataset = f"""from benchopt.utils.temp_benchmark import TempDataset
+    import gc, weakref
+
+    class Dataset(TempDataset):
+        name = "big"
+        parameters = {{'k': {list(range(n_datasets))}}}
+        _alive = []
+
+        def get_data(self):
+            Dataset._alive.append(weakref.ref(self))
+            gc.collect()
+            n_alive = sum(r() is not None for r in Dataset._alive)
+            with open(r"{log}", "a") as f:
+                print(n_alive, file=f)
+            return dict(X=None, y=None)
+    """
+    # A few objective/solver parameters exercise the materialized inner axes.
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
+        parameters = {'reg': [0, 1]}
+    """
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        parameters = {'step': [0, 1]}
+        sampling_strategy = 'run_once'
+    """
+
+    with temp_benchmark(
+            objective=objective, solvers=solver, datasets=dataset
+    ) as bench:
+        run([str(bench.benchmark_dir), *"-n 1 -r 1 --no-plot".split()],
+            standalone_mode=False)
+
+    counts = [int(x) for x in log.read_text().split()]
+    assert len(counts) >= n_datasets, counts
+    # Never all datasets resident at once (that would be `n_datasets`).
+    assert max(counts) <= 2, counts
+
+
+def test_group_by_repetition_solver_seed_error(no_debug_log):
+    # Fold-sharing (`group_by` with 'repetition') prepares each fold once and
+    # reuses it across solvers, so the data must be solver-independent. A
+    # `get_seed(use_solver=True)` in `set_data` must fail fast on the front
+    # node with a clear `group_by` message, not a confusing internal error.
+    # No `-r` and a `cv`: the front node loads the data to count the folds.
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+    class Splitter:
+        def get_n_splits(self): return 2
+
+    class Objective(TempObjective):
+        def set_data(self, X, y):
+            self.get_seed(use_solver=True)
+            self.cv = Splitter()
+    """
+    with temp_benchmark(objective=objective) as bench:
+        with pytest.raises(ValueError, match="must not depend on the solver"):
+            run([str(bench.benchmark_dir),
+                 *("-n 1 --no-plot "
+                   "--group-by dataset,objective,repetition").split()],
+                standalone_mode=False)
+
+
+@pytest.mark.parametrize("cv", [False, True])
+@pytest.mark.parametrize("n_reps", [None, 2])
+def test_dispatch_loads_data_only_if_needed(n_reps, cv):
+    # The front node only loads the data when needed to count repetitions,
+    # i.e. without `-r` and when the objective sets a `cv` attribute.
+    from benchopt._generate_runs import generate_run_kwargs
+    from benchopt.utils.terminal_output import TerminalOutput
+
+    dataset = """from benchopt import BaseDataset
+
+    class Dataset(BaseDataset):
+        name = "test-dataset"
+        parameters = {"seed": [0, 1]}
+        def get_data(self):
+            print("GET_DATA")
+            return dict(X=None, y=None)
+    """
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+    class Splitter:
+        def get_n_splits(self): return 3
+
+    class Objective(TempObjective):
+        def set_data(self, X, y):
+            self.cv = Splitter()
+    """
+
+    components = dict(datasets=dataset)
+    if cv:
+        components["objective"] = objective
+    with temp_benchmark(**components) as bench, CaptureCmdOutput() as out:
+        all_kwargs = list(generate_run_kwargs(
+            bench, solvers=bench.check_solver_patterns([]),
+            datasets=bench.check_dataset_patterns(["test-dataset"]),
+            objectives=bench.check_objective_filters(None),
+            n_repetitions=n_reps, terminal=TerminalOutput(n_reps, False),
+        ))
+
+    load = n_reps is None and cv
+    assert len(all_kwargs) == 2 * (n_reps or (3 if cv else 1))
+    out.check_output("GET_DATA", repetition=2 if load else 0)
+
+
+@pytest.mark.parametrize("skip_on", ["parameters", "data"])
+def test_skip_before_dispatch(skip_on):
+    # Skips are checked before dispatching the runs, and only load the data
+    # when they use it, once per dataset.
+    from benchopt._generate_runs import generate_run_kwargs
+    from benchopt.utils.terminal_output import TerminalOutput
+
+    on_data = skip_on == "data"
+    dataset = f"""from benchopt import BaseDataset
+
+    class Dataset(BaseDataset):
+        name = "test-dataset"
+        parameters = {{"n": [1, 2, 3]}}
+        def get_data(self):
+            print("GET_DATA")
+            self.get_seed(use_repetition=True)
+            return dict(X=None, y=None, n=self.n)
+        def skip(self):
+            print("DATASET#SKIP")
+            if {"self.get_data()['n']" if on_data else "self.n"} > 2:
+                return "too many"
+    """
+    objective = f"""from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
+        parameters = {{"max_n": [1, 2]}}
+        def set_data(self, X, y, n): self.n = n
+        def get_objective(self): return dict(X=None, y=None, n=self.n)
+        def skip(self):
+            print("OBJECTIVE#SKIP")
+            dataset = self.dataset_
+            n = {"dataset.get_data()['n']" if on_data else "dataset.n"}
+            if n > self.max_n:
+                return "too large"
+    """
+    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        name = "test-solver"
+        parameters = {{"min_n": [1, 2]}}
+        def skip(self):
+            print("SOLVER#SKIP")
+            objective = self.objective_
+            dataset = self.dataset_
+            n = {"objective.get_objective()['n']" if on_data else "dataset.n"}
+            if n < self.min_n:
+                return "too small"
+    """
+
+    with temp_benchmark(
+        datasets=dataset, objective=objective, solvers=solver
+    ) as bench, CaptureCmdOutput() as out:
+        all_kwargs = list(generate_run_kwargs(
+            bench, solvers=bench.check_solver_patterns(["test-solver"]),
+            datasets=bench.check_dataset_patterns(["test-dataset"]),
+            objectives=bench.check_objective_filters(None),
+            n_repetitions=2, terminal=TerminalOutput(2, False),
+        ))
+
+    # Keep n <= 2, n <= max_n and n >= min_n: 2 runs for each n and rep.
+    assert len(all_kwargs) == 8
+    out.check_output("Reason: too many", repetition=1)
+    # Each skip is called once per combination of its components.
+    out.check_output("DATASET#SKIP", repetition=3)
+    out.check_output("OBJECTIVE#SKIP", repetition=4)
+    out.check_output("SOLVER#SKIP", repetition=6)
+    out.check_output("GET_DATA", repetition=3 if on_data else 0)
+
+
+@pytest.mark.parametrize("component", ["dataset", "objective", "solver"])
+@pytest.mark.parametrize("output", [True, "", 1, "1 / 0"])
+def test_invalid_skip_output(component, output, no_debug_log):
+    # A `skip` returning neither None nor a reason, or failing, is reported as
+    # an error and acts as a skip: its runs are not created, the others run.
+    from benchopt.cli.main import run
+
+    output = output if output == "1 / 0" else repr(output)
+    objective = f"""from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
+        parameters = {{"bad": [True, False]}}
+        def skip(self):
+            if self.bad: return {output}
+    """
+    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        name = "test-solver"
+        sampling_strategy = "run_once"
+        parameters = {{"bad": [True, False]}}
+        def run(self, _): print("Solver#RUN")
+        def skip(self):
+            if self.bad: return {output}
+    """
+    dataset = f"""from benchopt.utils.temp_benchmark import TempDataset
+
+    class Dataset(TempDataset):
+        parameters = {{"bad": [True, False]}}
+        def skip(self):
+            if self.bad: return {output}
+    """
+    components = dict(
+        dataset=dict(datasets=[dataset]), objective=dict(objective=objective),
+        solver=dict(solvers=[solver]),
+    )[component]
+    with temp_benchmark(**components) as bench, CaptureCmdOutput() as out:
+        run([
+            str(bench.benchmark_dir), "-s", "test-solver",
+            "-d", "test-dataset", "--no-plot"
+        ], standalone_mode=False)
+
+    error = (
+        "ZeroDivisionError" if output == "1 / 0" else
+        rf"{component.capitalize()}<[^>]*>\.skip` should return None"
+    )
+    out.check_output(error, repetition=1)
+    status = dict(
+        dataset=r"test-dataset\[bad=True\] error",
+        objective=r"test-objective\[bad=True\] error",
+        solver=r"test-solver\[bad=True\]: error",
+    )[component]
+    out.check_output(status, repetition=1)
+    out.check_output(r"test-solver(\[bad=False\])?: done", repetition=1)
+
+
+def test_objective_save_final_results(no_debug_log):
+    save_final = """
+    from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
+        name = "cross_val"
+
+        min_benchopt_version = "0.0.0"
+
+        def save_final_results(self, beta):
+            return "test_value"
+    """
+
+    with temp_benchmark(objective=save_final) as benchmark:
+        with CaptureCmdOutput(delete_result_files=False) as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset -n 1 -r 1 --no-plot').split()
+            ],  standalone_mode=False)
+        data = read_results(out.result_files[0])
+        # final_results is stored inline in the parquet file; only the last
+        # row of each solver's convergence curve carries a non-null value.
+        final_results = data["final_results"].dropna().iloc[0]
+    assert final_results == "test_value"
+
+
+@pytest.mark.parametrize("sampling_strategy", ['run_once', 'iteration'])
+def test_save_final_results_with_caching(no_debug_log, sampling_strategy):
+    """Non-regression: save_final_results must work when results are cached.
+
+    When get_result() depends on the solver state, calling solver.get_result()
+    after a cache hit (solver not re-run) raises an AttributeError. The fix
+    stores last_result directly from run_one_resolution's return value.
+    For run_once solvers, caching is disabled entirely to avoid the same issue.
+    """
+    save_final = """
+    from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
+        def save_final_results(self, beta):
+            return beta
+    """
+
+    solver_code = f"""
+    from benchopt.utils.temp_benchmark import TempSolver
+    import numpy as np
+
+    class Solver(TempSolver):
+        name = "stateful-solver"
+        sampling_strategy = '{sampling_strategy}'
+
+        def run(self, stop_val):
+            # Store state that get_result() depends on.
+            self.result = np.random.rand(10)
+
+        def get_result(self):
+            # Raises AttributeError if run() was never called in this session.
+            return dict(beta=self.result)
+    """
+
+    common_args = [
+        '-s', 'stateful-solver', '-d', 'test-dataset',
+        '-n', '5', '--no-plot'
+    ]
+
+    with temp_benchmark(objective=save_final, solvers=[solver_code]) as bench:
+        # First run fills the cache.
+        with CaptureCmdOutput():
+            run([str(bench.benchmark_dir), "-r", 2] + common_args,
+                standalone_mode=False)
+
+        # Second run should use cached results but still call
+        # save_final_results correctly (was broken before the fix).
+        with CaptureCmdOutput(delete_result_files=False) as out:
+            run([str(bench.benchmark_dir), "-r", 3] + common_args,
+                standalone_mode=False)
+        data = read_results(out.result_files[0])
+        final_results = data["final_results"].dropna()
+    # save_final_results must have been called and returned a non-null value.
+    assert len(final_results) >= 1
 
 
 @pytest.mark.parametrize("n_iter", [1, 2, 5])
 def test_run_once_iteration(n_iter):
 
-    solver1 = f"""from benchopt import BaseSolver
+    solver1 = f"""from benchopt.utils.temp_benchmark import TempSolver
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = 'solver1'
         sampling_strategy = 'iteration'
 
         def set_objective(self, X, y, lmbd): self.run_once({n_iter})
         def run(self, n_iter): print(f"RUNONCE({{n_iter}})")
-        def get_result(self): return dict(beta=None)
     """
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
@@ -370,9 +658,9 @@ def test_run_once_iteration(n_iter):
 @pytest.mark.parametrize("n_iter", [1, 2, 5])
 def test_run_once_callback(n_iter):
 
-    solver1 = f"""from benchopt import BaseSolver
+    solver1 = f"""from benchopt.utils.temp_benchmark import TempSolver
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = 'solver1'
         sampling_strategy = 'callback'
 
@@ -383,8 +671,6 @@ def test_run_once_callback(n_iter):
             while cb():
                 i += 1
             print(f"RUNONCE({{i}})")
-
-        def get_result(self, **data): return dict(beta=None)
     """
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
@@ -399,7 +685,7 @@ def test_run_once_callback(n_iter):
 
 @pytest.mark.parametrize("test_case", [
     "no_config", "without_data_home_abs", "with_data_home_abs",
-    "without_data_home_rel", "with_data_home_rel"
+    "without_data_home_rel", "with_data_home_rel",
 ])
 @pytest.mark.parametrize("n_jobs", [1, 2])
 def test_paths_config_key(test_case, n_jobs):
@@ -461,19 +747,7 @@ def test_paths_config_key(test_case, n_jobs):
                 return dict(X=None, y=None)
     """
 
-    solver = """
-        from benchopt import BaseSolver
-
-        class Solver(BaseSolver):
-            name = "test-solver"
-            def set_objective(self, X, y, lmbd): pass
-            def run(self, n_iter): pass
-            def get_result(self): return dict(beta=1)
-    """
-
-    with temp_benchmark(
-            datasets=dataset, solvers=solver, config=config
-    ) as bench:
+    with temp_benchmark(datasets=dataset, config=config) as bench:
         with CaptureCmdOutput() as out:
             run(
                 f"{bench.benchmark_dir} -s test-solver -d custom_dataset "
@@ -492,20 +766,18 @@ def test_paths_config_key(test_case, n_jobs):
         out.check_output(re.escape(f"PATH:{expected_path}"), repetition=1)
 
 
-def test_warm_up():
-    solver1 = """from benchopt import BaseSolver
+@pytest.mark.parametrize("n_runs,n_reps", [(1, 3), (2, 2), (5, 1)])
+def test_warm_up(n_runs, n_reps):
+    solver1 = """from benchopt.utils.temp_benchmark import TempSolver
     import numpy as np
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = 'solver1'
         sampling_strategy = 'iteration'
-
-        def set_objective(self, X, y, lmbd): pass
-        def run(self, n_iter): pass
-        def get_result(self, **data): return {'beta': None}
+        parameters = {'param': [0, 1]}
 
         def warm_up(self):
-            print("WARMUP")
+            print(f"WARMUP#{self.param}")
             self.run_once(1)
 
     """
@@ -514,47 +786,44 @@ def test_warm_up():
         with CaptureCmdOutput() as out:
             run(
                 f"{benchmark.benchmark_dir} -s solver1 -d test-dataset "
-                f"-n 0 -r 5 --no-plot".split(),
+                f"-n {n_runs} -r {n_reps} --no-plot".split(),
                 'benchopt', standalone_mode=False)
-
         # Make sure warmup is called exactly once
-        out.check_output("WARMUP", repetition=1)
+        out.check_output("WARMUP#0", repetition=1)
+        out.check_output("WARMUP#1", repetition=1)
 
 
-def test_pre_run_hook():
-    solver1 = """from benchopt import BaseSolver
+@pytest.mark.parametrize("n_runs,n_reps", [(1, 3), (2, 2), (5, 1)])
+def test_pre_run_hook(n_runs, n_reps):
+    solver1 = """from benchopt.utils.temp_benchmark import TempSolver
+    from benchopt.stopping_criterion import NoCriterion
     import numpy as np
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = 'solver1'
-        sampling_strategy = 'iteration'
-
-        def set_objective(self, X, y, lmbd): pass
-        def get_result(self): return {'beta': None}
+        stopping_criterion = NoCriterion(strategy='iteration')
+        parameters = {'param': [0, 1]}
 
         def pre_run_hook(self, n_iter):
+            print(f"PRERUNHOOK({n_iter})#{self.param}")
             self._pre_run_hook_n_iter = n_iter
 
         def run(self, n_iter):
             assert self._pre_run_hook_n_iter == n_iter
 
+        def get_next(self, stop_val): return stop_val + 1
     """
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
         with CaptureCmdOutput() as out:
             run(
                 f"{benchmark.benchmark_dir} -s solver1 -d test-dataset "
-                "-n 0 -r 5 --no-plot".split(),
+                f"-n {n_runs} -r {n_reps} --no-plot".split(),
                 standalone_mode=False
             )
 
-        with CaptureCmdOutput() as out:
-            with pytest.raises(SystemExit, match="False"):
-                _cmd_test(
-                    f"{benchmark.benchmark_dir} -k solver1 --skip-install"
-                    " -v".split(),
-                    standalone_mode=False
+        for id_run in range(n_runs):
+            for p in [0, 1]:
+                out.check_output(
+                    rf"PRERUNHOOK\({id_run}\)#{p}", repetition=n_reps
                 )
-
-        # Make sure warmup is called exactly once
-        out.check_output("3 passed, 1 skipped, 5 deselected", repetition=1)

@@ -5,17 +5,15 @@ from benchopt.utils.temp_benchmark import temp_benchmark
 
 from benchopt.tests.utils import CaptureCmdOutput
 
-SOLVER = """from benchopt import BaseSolver
+SOLVER = """from benchopt.utils.temp_benchmark import TempSolver
     import numpy as np
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = 'solver1'
         sampling_strategy = 'iteration'
         parameters = dict(param1=[None], param2=[None])
 
-        def set_objective(self, X, y, lmbd): pass
         def run(self, n_iter): print(f"RUN({n_iter})")
-        def get_result(self): return {'beta': 1}
 """
 
 CONFIG = """

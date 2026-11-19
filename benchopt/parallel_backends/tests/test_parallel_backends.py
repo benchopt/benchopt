@@ -1,7 +1,11 @@
+import threading
+import time
+
 import pytest
 
 
 from benchopt.cli.main import run
+from benchopt.parallel_backends import check_parallel_config
 from benchopt.utils.temp_benchmark import temp_benchmark
 
 from benchopt.tests.utils import CaptureCmdOutput, patch_import
@@ -15,31 +19,42 @@ def test_missing_backend():
     parallel_config = """
     param1: 1
     """
-    solver1 = """from benchopt import BaseSolver
-    import numpy as np
-
-    class Solver(BaseSolver):
-        name = "solver1"
-        sampling_strategy = "iteration"
-        def set_objective(self, X, y, lmbd): self.n_features = X.shape[1]
-        def run(self, n_iter): pass
-        def get_result(self):
-            return {"beta": np.zeros(self.n_features)}
-    """
 
     with temp_benchmark(
-            solvers=[solver1],
             config={"parallel_config.yml": parallel_config}
     ) as benchmark:
         parallel_config_file = benchmark.benchmark_dir / "parallel_config.yml"
         with CaptureCmdOutput():
             msg = "Could not find `backend` specification "
             with pytest.raises(AssertionError, match=msg):
-                run([
-                    str(benchmark.benchmark_dir),
-                    *"-s solver1 -d test-dataset -n 0 -r 1 --no-plot "
-                    f"--parallel-config {parallel_config_file}".split()
-                ], standalone_mode=False)
+                run(
+                    f"{benchmark.benchmark_dir} -d test-dataset --no-plot "
+                    f"--parallel-config {parallel_config_file} -n 0".split(),
+                    standalone_mode=False
+                )
+
+
+@pytest.mark.parametrize(
+    "yaml_slurm_time, expected_slurm_time",
+    [
+        ("10:00:00", "10:00:00"),
+        ("10:30", "00:10:30"),
+        ("00:10:30", "00:10:30"),
+        ("1-00:30:01", "1-00:30:01"),
+    ],
+)
+def test_check_parallel_config_yaml_slurm_time_parsing(
+    tmp_path, yaml_slurm_time, expected_slurm_time
+):
+    parallel_config_file = tmp_path / "parallel_config.yml"
+    parallel_config_file.write_text(
+        "backend: submitit\n"
+        f"slurm_time: {yaml_slurm_time}\n"
+    )
+
+    cfg = check_parallel_config(parallel_config_file, n_jobs=None)
+
+    assert cfg["slurm_time"] == expected_slurm_time
 
 
 @pytest.mark.parametrize("backend", ["submitit", "dask"])
@@ -62,6 +77,49 @@ def test_backend_not_installed(backend):
                     *"-d test-dataset -n 0 -r 1 --no-plot "
                     f"--parallel-config {parallel_config_file}".split()
                 ], standalone_mode=False)
+
+
+def test_parallel_run_dispatches_lazily():
+    # Make sure we keep the lazy dispatching when possible (loky).
+    from benchopt.parallel_backends import parallel_run
+
+    n_runs = 100
+    # Hard-block the generator's tail after dispatching a few tasks,
+    # so we can check that the first results are yielded before the generator
+    # is fully consumed.
+    block_after = 50
+    release = threading.Event()
+    pulled = 0
+
+    def kwargs_gen():
+        nonlocal pulled
+        for i in range(n_runs):
+            if i == block_after:
+                release.wait(timeout=60)
+            pulled += 1
+            yield dict(i=i)
+
+    # Make sure every run is dispatched, and keep a small sleep so
+    # main thread retrieval kicks in faster than dispatch hanging.
+    def _run(i):
+        time.sleep(0.005)
+        return (i,)
+    _run.check_call_in_cache = lambda **kwargs: False
+
+    results = parallel_run(
+        benchmark=None, run=_run, run_kwargs_generator=kwargs_gen(),
+        # batch_size=1 avoids joblib auto-batching pulling many tasks at once.
+        config=dict(backend="loky", n_jobs=2, batch_size=1),
+    )
+    try:
+        next(results)
+        # A result came out while the generator tail is still blocked, so at
+        # most the unblocked prefix was pulled.
+        assert pulled <= block_after
+    finally:
+        release.set()
+    # Drain the rest so the workers shut down cleanly.
+    assert len(list(results)) == n_runs - 1
 
 
 @pytest.mark.parametrize("backend", ["submitit", "dask"])
@@ -87,7 +145,7 @@ def test_backend_collect(backend):
                     f"{cmd} --collect --parallel-config {parallel_config_file}"
                     .split(), standalone_mode=False
                 )
-    out.check_output("test-solver:", repetition=1)
+            out.check_output("test-solver:", repetition=1)
 
 
 def test_dask_backend():
@@ -98,20 +156,16 @@ def test_dask_backend():
     dask_name: {client_name}
     dask_n_workers: {n_workers}
     """
-    solver1 = """from benchopt import BaseSolver
+    solver1 = """from benchopt.utils.temp_benchmark import TempSolver
     import numpy as np
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "solver1"
-        sampling_strategy = "iteration"
-        def set_objective(self, X, y, lmbd): pass
-        def run(self, n_iter): pass
-        def get_result(self):
+        def run(self, _):
             from distributed import get_client
             client = get_client()
             assert "Client-worker" in client.id, client.id
             print(client.id)
-            return {"beta": 1}
     """
 
     with temp_benchmark(
@@ -127,10 +181,13 @@ def test_dask_backend():
             ], standalone_mode=False)
 
     client = distributed.get_client()
-    workers = client._scheduler_identity.get('workers', {})
-    effective_workers = len(workers)
     assert client_name in client.id
-    assert effective_workers == n_workers
+    # Wait for the workers to register, then query the scheduler through the
+    # public `scheduler_info` (the private `_scheduler_identity` snapshot is
+    # not refreshed and reports no worker on recent distributed versions).
+    client.wait_for_workers(n_workers, timeout=30)
+    workers = client.scheduler_info().get('workers', {})
+    assert len(workers) == n_workers
     client.close()
 
     out.check_output("Distributed run with backend: dask", repetition=1)
@@ -140,19 +197,20 @@ def test_dask_backend():
     out.check_output("Client-worker-", repetition=1)
 
 
-def test_submitit_backend():
+def test_submitit_backend(monkeypatch):
     pytest.importorskip("submitit")
+    # Make as_completed fast, as default is to wait 10 secs between checks
+    monkeypatch.setattr(
+        "submitit.helpers.as_completed.__defaults__", (None, 0.1)
+    )
 
     parallel_config = "backend: submitit"
-    solver1 = """from benchopt import BaseSolver
+    solver1 = """from benchopt.utils.temp_benchmark import TempSolver
     import submitit
     import numpy as np
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "solver1"
-        sampling_strategy = "iteration"
-        def set_objective(self, X, y, lmbd): pass
-        def run(self, n_iter): pass
         def get_result(self):
             # This will fail if not run in a submitit worker
             job_env = submitit.JobEnvironment()
@@ -172,3 +230,99 @@ def test_submitit_backend():
             ], standalone_mode=False)
 
     out.check_output("Distributed run with backend: submitit", repetition=1)
+
+
+def test_submitit_gpu_skip(monkeypatch, no_debug_log):
+    pytest.importorskip("submitit")
+    monkeypatch.setattr(
+        "submitit.helpers.as_completed.__defaults__", (None, 0.1)
+    )
+
+    # `skip` runs on the front node, without GPU: it checks the job config.
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+    from benchopt.helpers.requires_gpu import gpu_available
+
+    class Solver(TempSolver):
+        name = "{name}"
+        slurm_params = {slurm_params}
+        def skip(self):
+            if not gpu_available(self):
+                return "needs a GPU"
+    """
+    solvers = [
+        solver.format(name="gpu-solver", slurm_params={"slurm_gres": "gpu:1"}),
+        solver.format(name="cpu-solver", slurm_params={}),
+    ]
+    with temp_benchmark(
+            solvers=solvers,
+            config={"parallel_config.yml": "backend: submitit"}
+    ) as benchmark:
+        parallel_config_file = benchmark.benchmark_dir / "parallel_config.yml"
+        with CaptureCmdOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *"-d test-dataset -n 0 -r 1 --no-plot "
+                f"--parallel-config {parallel_config_file}".split()
+            ], standalone_mode=False)
+
+    out.check_output(r"gpu-solver: done", repetition=1)
+    out.check_output(r"cpu-solver: skip", repetition=1)
+    out.check_output("Reason: needs a GPU", repetition=1)
+
+
+@pytest.mark.parametrize("config, match", [
+    ({"backend": "submitit", "group_by": "invalid"}, "Unknown"),
+    # 'repetition' present but not nested inside dataset/objective (ordering).
+    (
+        {"backend": "submitit",
+         "group_by": ["repetition", "dataset", "objective"]},
+        "must nest inside",
+    ),
+    ({"backend": "submitit", "batch_n_jobs": 2}, "requires `group_by`"),
+    (
+        {"backend": "loky", "group_by": "dataset", "batch_n_jobs": 2},
+        "only supported with the `submitit`",
+    ),
+    (
+        {"backend": "dask", "group_by": "dataset", "batch_n_jobs": 2},
+        "only supported with the `submitit`",
+    ),
+    (
+        {"backend": "submitit", "group_by": "dataset", "batch_n_jobs": 0},
+        "non-zero integer",
+    ),
+    (
+        {"backend": "submitit", "group_by": "dataset", "batch_n_jobs": True},
+        "non-zero integer",
+    ),
+])
+def test_invalid_parallel_config(config, match):
+    with pytest.raises((AssertionError, ValueError), match=match):
+        check_parallel_config(config, None)
+
+
+def test_group_by_cli_overrides_parallel_config():
+    # CLI `--group-by` (comma-separated) overrides the parallel-config file.
+    cfg = check_parallel_config(
+        {"backend": "loky", "group_by": "solver"}, None,
+        group_by="dataset,objective",
+    )
+    assert cfg["group_by"] == ["dataset", "objective"]
+    # Without a CLI value, the file's `group_by` is kept.
+    cfg = check_parallel_config(
+        {"backend": "loky", "group_by": "solver"}, None,
+    )
+    assert cfg["group_by"] == ["solver"]
+    # CLI `--group-by` works with no parallel-config file at all.
+    cfg = check_parallel_config(None, None, group_by="dataset")
+    assert cfg["group_by"] == ["dataset"]
+
+
+@pytest.mark.parametrize("backend", ["loky", "dask", "submitit"])
+def test_group_by_allowed_on_all_backends(backend):
+    # `group_by`/`batch_n_jobs` reduce per-run overhead (shared in-process
+    # state) on any backend, not just submitit.
+    cfg = check_parallel_config(
+        {"backend": backend, "group_by": "dataset"}, None
+    )
+    assert cfg["group_by"] == ["dataset"]

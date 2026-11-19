@@ -7,139 +7,121 @@ Advanced usage
 This page intends to list some advanced functionality
 to make it easier to use the benchmark.
 
-.. _slurm_run:
+.. _skipping_config:
 
-Running the benchmark on a SLURM cluster
-----------------------------------------
+Skipping a configuration
+------------------------
 
-Benchopt also allows easily running the benchmark in parallel on a SLURM
-cluster. To install the necessary dependencies, please run:
+Some configurations of a benchmark cannot run. A dataset can have incompatible
+parameters, an objective might not apply to some datasets, and a solver might
+not support sparse data or scale to large datasets. Each component can skip
+them by implementing a ``skip(self)`` method, which can use the components
+chosen before it, e.g. ``self.dataset_`` (see :ref:`current_run`):
 
-.. prompt:: bash
+- :func:`~benchopt.BaseDataset.skip` skips all the runs of the dataset.
+- :func:`~benchopt.BaseObjective.skip` can use the dataset, and skips the runs
+  of all solvers.
+- :func:`~benchopt.BaseSolver.skip` can use the objective and the dataset.
 
-    $ pip install benchopt[submitit]
+``skip`` returns the reason to skip, displayed in the output, or ``None`` to
+run. Any other value or a failing ``skip`` is reported as an error, and its
+runs are not created.
 
-    # Or for dev install
-    $ pip install -e .[submitit]
+The skips are checked once per configuration, before launching the runs.
+Checks on the parameters are free. Calling ``dataset.get_data()`` or
+``objective.get_objective()`` loads the data of the first repetition on the
+machine running ``benchopt run``, once per dataset. ``get_seed`` and the
+attributes of the current run can use the component itself and the ones
+chosen before it. Other components are only set when :ref:`group_by <run_grouping>` chooses
+them first, and asking for a component that is not set raises an error.
 
-Note that for some clusters with shared python installation, it is necessary
-to call ``pip install --user`` to install the packages in the user space and
-not in the system one.
+For instance, with an objective parameter ``reg`` and a dataset giving ``X``:
 
-.. XXX - update this to point to the submitit doc if it is created.
+.. code-block::
 
-Using the ``--slurm`` option for ``benchopt run``, one can pass a config file
-used to setup the SLURM jobs. This file is a YAML file that can contain any key
-to be passed to the |update_params|_ method of |SlurmExecutor|_.
-Hereafter is an example of such config file:
-
-.. code-block:: yaml
-
-    slurm_time: 01:00:00        # max runtime 1 hour
-    slurm_gres: gpu:1           # requires 1 GPU per job
-    slurm_additional_parameters:
-      ntasks: 1                 # Number of tasks per job
-      cpus-per-task: 10         # requires 10 CPUs per job
-      qos: QOS_NAME             # Queue used for the jobs
-      distribution: block:block # Distribution on the node's architectures
-      account: ACC@NAME         # Account for the jobs
-    slurm_setup:  # sbatch script commands added before the main job
-      - '#SBATCH -C v100-16g'
-      - module purge
-      - module load cuda/10.1.2 cudnn/7.6.5.32-cuda-10.1 nccl/2.5.6-2-cuda
-
-Using such options, each configuration of ``(dataset, objective, solver)`` with
-unique parameters is launched as a separated job in a job-array on the SLURM
-cluster. Note that by default, no limitation is used on the number of
-simultaneous jobs that are run.
-
-If ``slurm_time`` is not set in the config file, benchopt uses by default
-the value of ``--timeout`` multiplied by ``1.5`` for each job.
-Note that the logs of each benchmark run can be found in ``./benchopt_run/``.
-
-``slurm_array_parallelism`` can be used to limit the number of simultaneous
-jobs that are run. This is useful when the cluster has no limit on the number of
-simultaneous jobs that can be run. By default, this value is not set, leaving it to
-the cluster to adjust this.
-
-As we rely on ``joblib.Memory`` for caching the results, the cache should work
-exactly as if you were running the computation sequentially, as long as you have
-a shared file-system between the nodes used for the computations.
-
-.. _slurm_override:
-
-Overriding the SLURM parameters for one solver
-----------------------------------------------
-
-You can also override the SLURM parameters for a specific solver by
-defining a ``slurm_params`` attribute in the solver class. This allows to
-specify a different SLURM partition, resources, or other parameters that
-are specific to that solver. The parameters defined in the solver class
-will override the global SLURM config defined in the config file:
-
-.. code-block:: python
+    class Dataset(BaseDataset):
+        ...
+        def skip(self):
+            if self.n_features > self.n_samples:
+                return "more features than samples"
 
     class Solver(BaseSolver):
-        """GPU-based solver that needs GPU partition and specific resources."""
-        name = 'GPU-Solver'
+        ...
+        def skip(self):
+            from scipy import sparse
 
-        parameters = {...}
+            if self.objective_.reg == 0:
+                return "solver does not work with reg=0"
 
-        # Override global SLURM config for this solver
-        slurm_params = {
-            'slurm_partition': 'gpu',
-            'slurm_gres': 'gpu:1',
-            'slurm_time': '02:00:00',
-            'slurm_cpus_per_task': 8,
-            'slurm_mem': '16GB',
-        }
+            # Loads the data on the node running `benchopt run`.
+            if sparse.issparse(self.dataset_.get_data()["X"]):
+                return "solver does not support sparse data X."
 
-        requirements = ['torch']
+As ``skip`` runs on the machine running ``benchopt run``, a check on the
+hardware should look at the machine that will run the solver. For a GPU,
+:func:`~benchopt.helpers.requires_gpu.gpu_available` checks the local
+machine, or with the :ref:`submitit backend <slurm_backend>`, that the
+solver's jobs request a GPU. For other checks,
+``self.run_parallel_config_`` gives the config of the workers
+that run the solver.
 
-        def set_objective(self, X, y):
-            ...
+.. code-block::
 
-The parameters defined in the ``slurm_params`` should be compatible with
-the `submitit` library, as they are passed to the `submitit.AutoExecutor`
-class. For more information on the available parameters, please refer to
-the `submitit documentation <https://github.com/facebookincubator/submitit>`_.
-Note that in this case, the jobs with different SLURM parameters will be
-launched as one job array per configuration.
+    from benchopt.helpers.requires_gpu import gpu_available
 
-.. _skipping_solver:
+    class Solver(BaseSolver):
+        ...
+        def skip(self):
+            if not gpu_available(self):
+                return "solver needs a GPU"
 
-Skipping a solver for a given problem
--------------------------------------
+.. note::
 
-Some solvers might not be able to run with all the datasets present
-in a benchmark. This is typically the case when some datasets are
-represented using sparse data or for datasets that are too large.
+    In older versions, ``skip`` received the data as keyword arguments,
+    e.g. ``Solver.skip(self, X, y, reg)`` with the output of
+    ``Objective.get_objective``, and ``Objective.skip(self, X, y)`` with the
+    output of ``Dataset.get_data``. It returned a ``(skip, reason)`` tuple.
+    Both still work, with a ``FutureWarning``, and are checked before
+    launching the runs, but the old signature always loads the data. They will
+    be removed in benchopt 1.12.
 
-In these cases, a solver can be skipped at runtime, depending on the
-characteristic of the objective. In order to define for which cases
-a solver should be skip, the user needs to implement a method
-:func:`~benchopt.BaseSolver.skip` in the solver class that will take
-the input as the :func:`~benchopt.BaseSolver.set_objective` method.
-This method should return a boolean value that evaluates to ``True``
-if the solver should be skipped, and a string giving the reason of
-why the solver is skipped, for display purposes. For instance,
-for a solver where the objective is set with keys `X, y, reg`,
-we get
+.. _current_run:
+
+Accessing the components of the current run
+-------------------------------------------
+
+Each run combines a dataset, an objective, a solver and a repetition. In the
+methods that benchopt calls on a component, e.g. ``skip``, ``get_data``,
+``set_objective`` or a ``slurm_params`` property, the attributes ending with
+``_`` describe the current run:
+
+- ``self.dataset_``, ``self.objective_``, ``self.solver_``: the components of
+  the run.
+- ``self.repetition_``: the index of the repetition. ``skip`` is checked for
+  the first repetition.
+- ``self.parallel_config_``: the parallel config given to ``benchopt run``,
+  with ``--parallel-config``. It can be used in ``slurm_params``.
+- ``self.run_parallel_config_``: the parallel config of the workers that run it,
+  or ``None`` when the runs are on the local machine. With the
+  :ref:`submitit backend <slurm_backend>`, it is the SLURM config of the jobs,
+  merged with the ``slurm_params`` of the solver. It cannot be used in
+  ``slurm_params``, which it depends on.
+
+A component is only available once it is chosen. The dataset is chosen
+first, then the objective and the solver, unless
+:ref:`group_by <run_grouping>` changes this order. Asking for a component that
+is not chosen yet, e.g. the solver in ``Dataset.skip`` or during
+``benchopt prepare``, raises an error. Outside of the methods that benchopt
+calls, these attributes raise an error too. They are set by benchopt, and
+setting them in a component raises a warning.
 
 .. code-block::
 
     class Solver(BaseSolver):
         ...
-        def skip(self, X, y, reg):
-            from scipy import sparse
-
-            if sparse.issparse(X):
-                return True, "solver does not support sparse data X."
-
-            if reg == 0:
-                return True, "solver does not work with reg=0"
-
-            return False, None
+        def set_objective(self, X, y):
+            # Adapt the solver to the dataset of the run.
+            self.batch_size = min(256, self.dataset_.n_samples)
 
 .. _extra_objectives:
 
@@ -246,44 +228,36 @@ callback (default to 1).
             self.run_once()  # For sampling_strategy == 'callback'
 
 
-.. _run_benchmark_with_py_script:
+.. _data_memory:
 
-Run a benchmark using a Python script
--------------------------------------
+Data loading and memory
+-----------------------
 
-Another way to run a benchmark is via a Python script.
-Typical use-cases of that are
+Consecutive runs in a process reuse the same component instances. Benchopt
+skips the calls whose result is already there: ``Dataset.get_data`` is not
+called again for the same dataset, and ``Objective.set_data`` is not called
+again for the same dataset and objective, unless their seed changes with the
+repetition. ``Solver.set_objective`` and ``Solver.run`` are called for every
+run. The solver instance keeps its attributes between consecutive runs, so a
+solver can skip costly steps it already did, such as loading model weights.
+Benchopt does not do this for the solver. Its code must check whether the
+attribute is already set, for instance in ``set_objective``.
 
-- Automating the run of several benchmarks
-- Using ``vscode`` debugger where the python script serves as an entry point to benchopt internals
+Once a run uses another component, the previous instance is released: it goes
+back to its state after creation, so its data can be freed. The state of an
+objective depends on its dataset, and the state of a solver on its objective
+and dataset. Each process thus keeps at most one state per component, and
+loads each dataset once per block of consecutive runs using it.
 
-The following script illustrates running the :ref:`benchmark Lasso <run_with_config_file>`.
-It assumes that the python script is located at the same level as the benchmark folder.
+The order of the runs therefore decides what is reused. By default, the runs
+are ordered by dataset, then objective, then solver, so each dataset is loaded
+once and ``set_data`` is called once per objective. With ``--group-by`` (see
+:ref:`run_grouping`), the listed axes come first. For instance,
+``--group-by solver`` runs each solver on all datasets in a row, keeping the
+same solver instance, but reloads each dataset for every solver.
 
-.. code-block:: python
-
-    from benchopt import run_benchmark
-
-
-    # run benchmark
-    run_benchmark(
-        benchmark_path='.',
-        solver_names=[
-            "skglm",
-            "celer",
-            "python-pgd[use_acceleration=True]",
-        ],
-        dataset_names=[
-            "leukemia",
-            "simulated[n_samples=100,n_features=20]"
-        ],
-    )
-
-.. note::
-
-    Learn more about the different parameters supported by ``run_benchmark``
-    function on :ref:`API references <API_ref>`.
-
+Attributes stored on an instance during a run do not survive a release. The
+warmup described above is kept, so it runs once per solver and process.
 
 
 .. |update_params| replace:: ``update_parameters``

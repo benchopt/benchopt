@@ -27,7 +27,7 @@ class Objective(BaseObjective):
 """
 
 
-def test_r_solver(test_env_name):
+def test_r_solver(test_env_name, no_debug_log):
     solver = """
     from benchopt import BaseSolver
     from benchopt.helpers.r_lang import import_func_from_r_file, converter_ctx
@@ -66,27 +66,36 @@ def test_r_solver(test_env_name):
         objective=OBJECTIVE,
         datasets=DATASET,
         solvers={"r_solver.py": solver, "r_solver.R": r_solver}
-    ) as bench, CaptureCmdOutput() as out:
-        install(
-            [str(bench.benchmark_dir), '--env-name', test_env_name],
-            'benchopt', standalone_mode=False
-        )
+    ) as bench:
+        with CaptureCmdOutput() as out:
+            install(
+                [str(bench.benchmark_dir), '--env-name', test_env_name],
+                'benchopt', standalone_mode=False
+            )
+        out.check_output("r_solver:", repetition=1)
         solver = bench.get_solvers()[0]
         solver.is_installed(
             env_name=test_env_name, raise_on_not_installed=True
         )
-        with pytest.raises(SystemExit, match="False"):
+        with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir), '-s', 'r_solver', '-n', '1', '-r', 1,
                 '-d', 'simulated', '--no-plot', '--env-name', test_env_name
             ], 'benchopt', standalone_mode=False)
 
-    out.check_output("r_solver:", repetition=6)
+        out.check_output("r_solver:", repetition=3)
 
 
-def test_julia_solver(test_env_name):
+@pytest.mark.timeout(300)
+def test_julia_solver(test_env_name, no_debug_log):
     if sys.platform.startswith("win"):
         pytest.skip("Julia's PyCall library fail to install on Windows")
+    # XXX: it is now failing for an unknown reason but
+    # pyjulia has been deprecated, will be removed when
+    # issue #887 is resolved.
+    if sys.platform.startswith("darwin"):
+        pytest.skip("Julia's PyCall library fail to install on macOS")
+    pytest.xfail("Julia's PyCall lib is failing everywhere")
 
     solver = """
     from benchopt.helpers.julia import JuliaSolver
@@ -98,7 +107,7 @@ def test_julia_solver(test_env_name):
     class Solver(JuliaSolver):
         name = 'julia_solver'
         requirements = [
-            'https://repo.prefix.dev/julia-forge::julia', 'pip::julia'
+            'julia', 'pip::julia'
         ]
 
         def set_objective(self, X):
@@ -124,21 +133,24 @@ def test_julia_solver(test_env_name):
         objective=OBJECTIVE,
         datasets=DATASET,
         solvers={"julia.py": solver, "julia.jl": julia_solver},
-    ) as bench, CaptureCmdOutput() as out:
-        install(
-            [str(bench.benchmark_dir), '--env-name', test_env_name],
-            'benchopt', standalone_mode=False
-        )
+    ) as bench:
+
+        with CaptureCmdOutput() as out:
+            install(
+                [str(bench.benchmark_dir), '--env-name', test_env_name],
+                'benchopt', standalone_mode=False
+            )
+        out.check_output("julia_solver:", repetition=1)
         solver = bench.get_solvers()[0]
         solver.is_installed(
             env_name=test_env_name, raise_on_not_installed=True
         )
 
-        with pytest.raises(SystemExit, match="False"):
+        with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir), '-s', 'julia_solver', '-n', '1',
-                '-r', 1, '-d', 'simulated', '--no-plot',
+                '-r', 1, '-d', 'simulated', '--no-plot', '--timeout', '500',
                 '--env-name', test_env_name
             ], 'benchopt', standalone_mode=False)
 
-    out.check_output("julia_solver:", repetition=6)
+        out.check_output("julia_solver:", repetition=3)

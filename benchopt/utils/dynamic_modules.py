@@ -2,15 +2,23 @@
 """
 import ast
 import sys
+import inspect
 import hashlib
 import warnings
 import importlib
+import traceback
 from pathlib import Path
+from contextlib import contextmanager
 
-from joblib.externals import cloudpickle
+try:
+    # compat with older joblib version prior to 1.6
+    from joblib.externals import cloudpickle
+except ImportError:
+    import cloudpickle
 
-from .dependencies_mixin import DependenciesMixin
 from .safe_import import safe_import_context
+from .class_property import classproperty
+from .parametrized_name_mixin import ComponentMeta
 
 SKIP_IMPORT = False
 
@@ -28,20 +36,105 @@ def _unskip_import():
     SKIP_IMPORT = False
 
 
-def _get_module_from_file(module_filename, benchmark_dir=None):
+@contextmanager
+def skip_import_ctx(skip=True):
+    """Context manager: parse class metadata from AST instead of importing."""
+    if skip:
+        skip_import()
+    try:
+        yield
+    finally:
+        _unskip_import()
+
+
+class FailedImport(ComponentMeta):
+    """MetaClass for fake classes mimicking components that cannot be imported.
+
+    This class should be used as a metaclass so that the class type can be
+    checked and to have an informative representation.
+    """
+    def __repr__(cls):
+        base_cls_name = cls._base_class_name
+        return (
+            f"<FailedImport: {base_cls_name}({cls.name})|| Exc: [{cls._exc}]>"
+        )
+
+
+class _FailedImportMixin:
+    """Shared ``is_installed`` for classes representing a failed import.
+
+    Must come first in the MRO of classes using it, so it takes precedence
+    over any ``is_installed`` defined on the wrapped/base class. Relies on
+    ``_exc`` and ``_tb_to_print`` being set by the class using this mixin,
+    and on ``_module_filename`` and ``_benchmark_dir``, set by
+    ``_load_class_from_module`` once the class is built.
+    """
+
+    _error_displayed = False
+
+    @classmethod
+    def is_installed(cls, env_name=None, raise_on_not_installed=False,
+                     quiet=False, reload=False, **kwargs):
+        if env_name is not None:
+            return super().is_installed(
+                env_name=env_name,
+                raise_on_not_installed=raise_on_not_installed,
+                **kwargs
+            )
+        if reload:
+            # Checking after an install step. Invalidate the import caches
+            # first, to make package installed since the interpreter
+            # started visible.
+            importlib.invalidate_caches()
+            reloaded = _load_class_from_module(
+                cls._benchmark_dir, cls._module_filename,
+                cls._base_class_name
+            )
+            return reloaded.is_installed(
+                raise_on_not_installed=raise_on_not_installed,
+                quiet=quiet
+            )
+        if not SKIP_IMPORT:
+            if raise_on_not_installed:
+                raise cls._exc
+            if not cls._error_displayed and not quiet:
+                print(
+                    f"Failed to import {cls._base_class_name} from "
+                    f"{cls._module_filename}. Please fix the following "
+                    f"error to use this file with benchopt:\n"
+                    f"{cls._tb_to_print}"
+                )
+                cls._error_displayed = True
+        return False
+
+
+def _get_module_from_file(module_filename, benchmark_dir, subpkg=None):
     """Load a module from the name of the file"""
-    module_filename = Path(module_filename)
-    if benchmark_dir is not None:
+    module_filename = Path(module_filename).resolve()
+    bench_root = Path(benchmark_dir).resolve()
+    try:
         # Use a package name derived from the benchmark root folder.
-        module_filename = module_filename.resolve()
-        benchmark_dir = Path(benchmark_dir).resolve().parent
-        package_name = module_filename.relative_to(benchmark_dir)
+        package_name = module_filename.relative_to(bench_root.parent)
         package_name = package_name.with_suffix('').parts
-    else:
-        package_name = module_filename.with_suffix('').parts[-3:]
+    except ValueError:
+        # File selected from outside the benchmark tree (e.g. `-s
+        # /path/to/solver.py`): attach it to the benchmark's semantic
+        # module (benchmark.solvers.xxx / benchmark.datasets.xxx) so it
+        # shares the same namespace as in-repo components.
+        parts = (bench_root.name, subpkg, module_filename.stem)
+        package_name = tuple(p for p in parts if p is not None)
     if package_name[-1] == '__init__':
         package_name = package_name[:-1]
     package_name = '.'.join(['benchopt_benchmarks', *package_name])
+
+    # Guard against a stem collision with a different file already loaded under
+    # the same semantic name (e.g. an external solver whose filename matches an
+    # in-repo one): disambiguate with a short hash of the file path.
+    cached = sys.modules.get(package_name, None)
+    cached_file = getattr(cached, "__file__", None)
+    if cached_file and Path(cached_file).resolve() != module_filename:
+        suffix = hashlib.md5(str(module_filename).encode()).hexdigest()[:8]
+        package_name = f"{package_name}_{suffix}"
 
     module = sys.modules.get(package_name, None)
     if module is None:
@@ -82,47 +175,45 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
     module_filename = Path(module_filename)
     try:
         assert not SKIP_IMPORT  # go directly to except to skip import
-        module = _get_module_from_file(module_filename, benchmark_dir)
+        module = _get_module_from_file(
+            module_filename, benchmark_dir, subpkg=f"{class_name.lower()}s"
+        )
         klass = getattr(module, class_name)
         klass._import_ctx = _get_import_context(module)
+        if klass._import_ctx.failed_import:
+            # The module failed to import, but was protected with
+            # safe_import_context. It can have dynamic attributes not
+            # parsable with ast, so build the FailedImport class directly
+            # from klass to keep them. Also evict the module so the next
+            # load re-executes it.
+            sys.modules.pop(module.__name__, None)
+            exc_type, value, tb = klass._import_ctx.import_error
+            tb_to_print = ''.join(
+                traceback.format_exception(exc_type, value, tb, chain=False)
+            )
+
+            class klass(_FailedImportMixin, klass, metaclass=FailedImport):
+                "Object for the class list that raises error if used."
+
+                _exc = value.with_traceback(tb)
+                _tb_to_print = tb_to_print
     except Exception as e:
-        import traceback
         tb_to_print = traceback.format_exc(chain=False)
 
         # avoid circular import
-        from .parametrized_name_mixin import ParametrizedNameMixin
         from ..base import BaseSolver, BaseDataset, BaseObjective
+        from ..plotting.base import BasePlot
         base_cls = dict(
-            Solver=BaseSolver, Dataset=BaseDataset, Objective=BaseObjective
+            Solver=BaseSolver, Dataset=BaseDataset,
+            Objective=BaseObjective, Plot=BasePlot
         )[class_name]
 
-        class FailedImport(base_cls, ParametrizedNameMixin, DependenciesMixin):
+        class klass(_FailedImportMixin, base_cls, metaclass=FailedImport):
             "Object for the class list that raises error if used."
 
-            _set_cls_attr_from_ast(module_filename, class_name, locals())
-            exc = e
-
-            @classmethod
-            def is_installed(cls, env_name=None, raise_on_not_installed=False,
-                             **kwargs):
-                if env_name is not None:
-                    return super().is_installed(
-                        env_name=env_name,
-                        raise_on_not_installed=raise_on_not_installed,
-                        **kwargs
-                    )
-                if not SKIP_IMPORT:
-                    if raise_on_not_installed:
-                        raise cls.exc
-                    print(
-                        f"Failed to import {class_name} from "
-                        f"{module_filename}. Please fix the following "
-                        "error to use this file with benchopt:\n"
-                        f"{tb_to_print}"
-                    )
-                return False
-
-        klass = FailedImport
+            _exc = e
+            _tb_to_print = tb_to_print
+            _set_cls_attr_from_ast(module_filename, base_cls, locals())
 
     # Store the info to easily reload the class and check it is installed
     klass._module_filename = module_filename.resolve()
@@ -195,13 +286,21 @@ def _reconstruct_class(
     return _load_class_from_module(benchmark_dir, module_filename, class_name)
 
 
-def _set_cls_attr_from_ast(module_file, cls_name, ctx):
-    module = ast.parse(module_file.read_text())
+def _set_cls_attr_from_ast(module_file, base_cls, ctx):
+    module = ast.parse(module_file.read_text(encoding="utf-8"))
+    name = f"{module_file.stem}"
+    cls_name = base_cls._base_class_name
 
     cls_list = [node for node in module.body if isinstance(node, ast.ClassDef)
                 and node.name == cls_name]
     if not cls_list:
-        raise ValueError(f"Could not find {cls_name} in module {module_file}.")
+        _exc = ValueError(
+            f"Could not find {cls_name} in module {module_file}."
+        )
+        _exc.__cause__ = ctx['_exc']
+        ctx['_exc'] = _exc
+        ctx['name'] = name
+        return
     cls = cls_list[0]
 
     known_methods = [
@@ -214,16 +313,49 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
     ]
 
     ctx['_base_class_name'] = cls_name
-    ctx['name'], ctx['install_cmd'], ctx['requirements'] = None, "conda", []
+    ctx.update({
+        p.name: p.object for p in inspect.classify_class_attrs(base_cls)
+        if p.kind == 'data' and not p.name.startswith('_')
+        and p.name not in ['name', 'install_cmd_']
+    })
+
+    ctx['name'] = None
     for node in cls.body:
         if isinstance(node, ast.Assign):
             for target in node.targets:
-                if target.id == "requirements":
-                    ctx['requirements'] = ast.literal_eval(node.value)
-                elif target.id == "name":
-                    ctx['name'] = ast.literal_eval(node.value)
-                elif target.id == "install_cmd":
-                    ctx['install_cmd'] = ast.literal_eval(node.value)
+                if target.id in ctx:
+                    try:
+                        ctx[target.id] = ast.literal_eval(node.value)
+                    except Exception:
+                        if target.id == "name":
+                            _exc = AttributeError(
+                                f"Could not evaluate the name of the class "
+                                f"{cls_name} in module {module_file}.\n"
+                                f"The name should be a string literal."
+                            )
+                            _exc.__cause__ = ctx['_exc']
+                            ctx['_exc'] = _exc
+                            ctx['name'] = name
+                        else:
+                            msg = (
+                                f"Could not evaluate statically '{target.id}' "
+                                f"of the class {cls_name} in {module_file}.\n"
+                                "By default, this should be a string literal. "
+                                "If dynamic evaluation is necessary, use "
+                                "`safe_import_context`."
+                            )
+
+                            def raise_err(self, msg=msg):
+                                raise AttributeError(msg)
+                            ctx[target.id] = classproperty(raise_err)
         if isinstance(node, ast.FunctionDef):
             if node.name in known_methods:
                 ctx[node.name] = lambda *args, **kwargs: None
+
+    if ctx['name'] is None:
+        warnings.warn(
+            f"The class {cls_name} in module {module_file} has no name "
+            "attribute. Using the module filename as a fallback.",
+            UserWarning
+        )
+        ctx['name'] = name
