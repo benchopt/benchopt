@@ -238,6 +238,47 @@ def test_run_on_slurm(mocked_submitit, dummy_slurm_config):
         )
 
 
+def test_run_on_slurm_cancels_jobs(monkeypatch):
+    from contextlib import nullcontext
+    from unittest.mock import MagicMock
+    from benchopt.parallel_backends import slurm_executor
+
+    executor = MagicMock()
+    executor.batch.return_value = nullcontext()
+    monkeypatch.setattr(slurm_executor, "get_slurm_executor",
+                        lambda *args, **kwargs: executor)
+
+    def interrupted(tasks):
+        raise KeyboardInterrupt
+
+    # An interrupted run, e.g. from `benchopt monitor`, cancels its jobs.
+    monkeypatch.setattr(slurm_executor, "as_completed", interrupted)
+    cancelled = []
+    monkeypatch.setattr(slurm_executor, "cancel_jobs", cancelled.extend)
+    results = slurm_executor.run_on_slurm(None, {}, None, [[{}], [{}]])
+    with pytest.raises(KeyboardInterrupt):
+        next(results)
+    assert len(cancelled) == 2
+
+
+def test_cancel_jobs(monkeypatch):
+    from unittest.mock import MagicMock
+    from benchopt.parallel_backends import slurm_executor
+
+    calls = []
+    monkeypatch.setattr(slurm_executor.subprocess, "call", calls.append)
+
+    def job(job_id, command="scancel"):
+        return MagicMock(job_id=job_id, _cancel_command=command)
+
+    jobs = [job("12_0"), job("12_1"), job("7_0"), job("9"), job("42", None)]
+    slurm_executor.cancel_jobs(jobs)
+    # A single `scancel` for all the arrays, whatever their number of jobs.
+    assert calls == [["scancel", "12", "7", "9"]]
+    # The jobs not handled by `scancel` are cancelled one by one.
+    assert [j.cancel.called for j in jobs] == [False] * 4 + [True]
+
+
 def test_split_by_slurm_config():
     # A `group_runs` batch shares its `group_by` key but can still span
     # several solvers with different `slurm_params`; `_split_by_slurm_config`
@@ -293,3 +334,43 @@ def test_run_on_slurm_grouped(mocked_submitit, batch_n_jobs, waves):
     # closure); `batch_n_jobs` is validated via the wall-time `waves` below.
     assert sub["func"].__name__ == "_run_batch"
     assert sub["config"]["time"] == f"00:{int(1.5 * waves * timeout)}"
+
+
+@pytest.mark.parametrize("batch_n_jobs", [1, 2])
+def test_run_on_slurm_running_probe(monkeypatch, batch_n_jobs):
+    from collections import Counter
+    from contextlib import nullcontext
+    from unittest.mock import MagicMock
+    from benchopt.parallel_backends import slurm_executor
+
+    executor = MagicMock()
+    executor.batch.return_value = nullcontext()
+    executor.submit.return_value.state = "RUNNING"
+    monkeypatch.setattr(slurm_executor, "get_slurm_executor",
+                        lambda *args, **kwargs: executor)
+    monkeypatch.setattr(slurm_executor, "as_completed", lambda tasks: [])
+
+    # A job grouped by dataset runs its solvers in waves of `batch_n_jobs`:
+    # only its next runs not reported done are shown as running.
+    terminal = MagicMock()
+    keys = {d: [(d, "o", s) for s in "abc"] for d in "DE"}
+    terminal.in_flight = Counter(k for d in keys for k in keys[d])
+    batches = [
+        [{"terminal": terminal, "meta": dict(
+            dataset_name=d, objective_name=o, solver_name=s
+        )} for d, o, s in keys[d]]
+        for d in keys
+    ]
+    list(slurm_executor.run_on_slurm(
+        None, {}, None, batches, batch_n_jobs=batch_n_jobs
+    ))
+    probe = terminal.set_running_probe.call_args[0][0]
+    assert probe() == [*keys["D"][:batch_n_jobs], *keys["E"][:batch_n_jobs]]
+
+    # The first run of `D` is reported done by its worker.
+    del terminal.in_flight[keys["D"][0]]
+    assert probe() == [
+        *keys["D"][1:1 + batch_n_jobs], *keys["E"][:batch_n_jobs]
+    ]
+    # The job states are cached, with a single `sacct` call for all jobs.
+    executor.submit.return_value.watcher.update.assert_called_once()

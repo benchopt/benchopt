@@ -122,6 +122,33 @@ def test_parallel_run_dispatches_lazily():
     assert len(list(results)) == n_runs - 1
 
 
+def test_parallel_run_shows_cached_runs_at_once():
+    # The cached runs are shown as found, not with the next result of the
+    # backend, which can be a whole SLURM job away.
+    from unittest.mock import MagicMock
+    from benchopt.parallel_backends import parallel_run
+
+    terminal = MagicMock()
+    meta = dict(dataset_name="d", objective_name="o", solver_name="s")
+
+    def _run(i, **kwargs):
+        if i == 1:
+            terminal.show_result.assert_called_once_with(
+                ("d", "o", "s"), "done", "", cached=True
+            )
+        return [], ("d", "o", "s"), "done", ""
+    _run.check_call_in_cache = lambda i, **kwargs: i == 0
+
+    results = parallel_run(
+        benchmark=None, run=_run,
+        run_kwargs_generator=(
+            dict(i=i, terminal=terminal, meta=meta) for i in range(2)
+        ),
+        config=dict(backend="loky", n_jobs=1),
+    )
+    assert [r[-1] for r in results] == [True, False]
+
+
 @pytest.mark.parametrize("backend", ["submitit", "dask"])
 def test_backend_collect(backend):
     config = f"""

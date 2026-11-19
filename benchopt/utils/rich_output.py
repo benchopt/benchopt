@@ -1,0 +1,1006 @@
+"Live progress display for `benchopt run`, based on `rich`."
+import os
+import sys
+import json
+import signal
+import traceback
+import _thread
+import threading
+from time import time
+from pathlib import Path
+from collections import Counter, defaultdict
+from itertools import islice
+from contextlib import contextmanager
+
+from .terminal_output import STATUS, TerminalOutput
+
+
+# Guides for the result tree. The last child of a node is unknown while the
+# results stream in, so every entry uses a "more to come" branch.
+GUIDE = "[dim]\u2502   [/]"
+BRANCH = "[dim]\u251c\u2500\u2500 [/]"
+
+# The state of the run is dumped in a snapshot for `benchopt monitor`, at most
+# every second on progress and every `HEARTBEAT` seconds otherwise. A run whose
+# snapshot is not updated for `STALE_AFTER` seconds is considered dead.
+HEARTBEAT = 10
+STALE_AFTER = 60
+# ponytail: fixed retention, make it a config option if anyone asks.
+MAX_SNAPSHOTS = 20
+
+# (style, glyph) for each benchopt status. The human readable label is
+# reused from `STATUS` in terminal_output.
+RICH_STATUS = {
+    'error': ("red", "✗"),
+    'diverged': ("red", "✗"),
+    'not installed': ("red", "✗"),
+    'interrupted': ("yellow", "!"),
+    'not run yet': ("yellow", "·"),
+    'skip': ("yellow", "»"),
+    'timeout': ("yellow", "✓"),
+    'max_runs': ("yellow", "✓"),
+    'done': ("green", "✓"),
+}
+
+
+def _is_cached(status, cached):
+    """Whether a result was loaded from the cache instead of being run.
+
+    A run that was skipped has no cached result to speak of, so it is
+    reported as a skip.
+    """
+    from ..runner import SUCCESS_STATUS
+    return cached and status in SUCCESS_STATUS
+
+
+def _guides(level):
+    """Tree guides leading to a node at `level`, as in the running section."""
+    return GUIDE * (level - 1) + BRANCH if level else ""
+
+
+def _ellipsis(name, width):
+    """Shorten `name` to `width` characters, marking the cut."""
+    return name if len(name) <= width else name[:max(width - 3, 0)] + "..."
+
+
+def _line(markup):
+    """A single display line, cropped rather than wrapped.
+
+    Keeping the live display at a fixed number of lines is what makes it
+    survive a terminal resize, as `rich` erases the previous frame based on
+    the number of lines it printed.
+    """
+    from rich.text import Text
+    text = Text.from_markup(markup, overflow="ellipsis")
+    text.no_wrap = True
+    return text
+
+
+def _crop(lines, n, top=None, hint=""):
+    """Keep `n` lines from line `top`, or the last ones if None, reporting
+    how many are left out above and below on extra lines.
+
+    Return the lines and the index of the first one kept, None if they reach
+    the last line, so that the new lines are followed.
+    """
+    if len(lines) <= n:
+        return lines, None
+    last = len(lines) - max(0, n - 1)
+    top = last if top is None else min(top, last)
+    size = n - (top > 0)
+    if top + size < len(lines):
+        size -= 1
+    size = max(0, size)
+    kept = lines[top:top + size]
+    if top > 0:
+        kept.insert(0, f"[dim]+{top} more{hint}[/]")
+    if top + size < len(lines):
+        kept.append(f"[dim]+{len(lines) - top - size} more below[/]")
+    return kept, None if top >= last else top
+
+
+# Keys scrolling the results, on POSIX and Windows: (direction, unit).
+SCROLL_KEYS = {
+    '\x1b[A': (-1, 'line'), '\xe0H': (-1, 'line'), '\x00H': (-1, 'line'),
+    '\x1b[B': (1, 'line'), '\xe0P': (1, 'line'), '\x00P': (1, 'line'),
+    '\x1b[5~': (-1, 'page'), '\xe0I': (-1, 'page'), '\x00I': (-1, 'page'),
+    '\x1b[6~': (1, 'page'), '\xe0Q': (1, 'page'), '\x00Q': (1, 'page'),
+    '\x1b[H': (-1, 'end'), '\x1b[1~': (-1, 'end'), '\xe0G': (-1, 'end'),
+    '\x1b[F': (1, 'end'), '\x1b[4~': (1, 'end'), '\xe0O': (1, 'end'),
+}
+SCROLL_HINT = " · ↑/↓ PgUp/PgDn to scroll"
+
+
+class _ErrorLine(str):
+    "Result line of a failed run, with its `name` and `traceback`."
+
+
+def _rule(title):
+    """Section separator in the live display."""
+    from rich.rule import Rule
+    return Rule(f"[bold]{title}[/]", style="dim")
+
+
+def _output_lines(files):
+    """One line per output file, its name aligned before its path."""
+    from rich.markup import escape
+    width = max(map(len, files), default=0)
+    return [f"[bold]{name:{width}}[/]  [cyan]{escape(str(path))}[/]"
+            for name, path in files.items()]
+
+
+def get_runs_dir():
+    "Folder holding the snapshots of the runs, read by `benchopt monitor`."
+    from ..config import get_setting
+    return Path(os.path.expandvars(get_setting('runs_dir'))).expanduser()
+
+
+def read_jsonl(path, offset=0):
+    """Lines of the JSON lines file `path` written past `offset`, and the
+    offset to read from next time, so that following it only reads the new
+    lines. Unreadable lines are skipped."""
+    try:
+        with open(path, "rb") as f:
+            f.seek(offset)
+            data = f.read()
+    except OSError:
+        return [], offset
+    # The last line can be partly written: leave it for the next read.
+    data = data[:data.rfind(b"\n") + 1]
+    lines = []
+    for line in data.splitlines():
+        try:
+            lines.append(json.loads(line))
+        except ValueError:
+            # ponytail: appends from several nodes on NFS can clobber each
+            # other, losing the line. Use one file per job if that bites.
+            pass
+    return lines, offset + len(data)
+
+
+@contextmanager
+def _redirect_fds(log_file, mode="w"):
+    """Send fd 1 and 2 to `log_file`, yielding a file on the original stdout.
+
+    The redirection is done at the file descriptor level rather than with
+    `contextlib.redirect_stdout` so that worker processes, which inherit the
+    file descriptors, also write to the log instead of on top of the display.
+    """
+    sys.stdout.flush()
+    sys.stderr.flush()
+    tty = os.fdopen(os.dup(1), "w", encoding="utf-8", errors="replace")
+    saved_out, saved_err = os.dup(1), os.dup(2)
+    log = open(log_file, mode)
+    os.dup2(log.fileno(), 1)
+    os.dup2(log.fileno(), 2)
+    try:
+        yield tty
+    finally:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os.dup2(saved_out, 1)
+        os.dup2(saved_err, 2)
+        os.close(saved_out)
+        os.close(saved_err)
+        log.close()
+        tty.close()
+
+
+class RichOutput(TerminalOutput):
+    """Live display of the benchmark progress, in the main process.
+
+    The `terminal` object is pickled to the workers, which cannot share the
+    live display. The pickled copy sets `_worker` and falls back to the plain
+    `TerminalOutput` behavior, writing to the redirected stdout, i.e. the log
+    file.
+
+    Without `display`, e.g. when the output is not a terminal, the main
+    process prints the plain output too, but still tracks the state of the
+    run so that `benchopt monitor` can display it.
+    """
+
+    def __init__(self, n_repetitions=None, show_progress=None, n_jobs=1,
+                 display=True):
+        super().__init__(n_repetitions, show_progress)
+        self._worker = False
+        self.display = display
+        self.log_file = None
+        self.n_jobs = n_jobs
+
+        self.counts = Counter()
+        # Number of dispatched runs that are not finished yet per key, in
+        # dispatch order. Only the first `n_jobs` of them are actually
+        # running, the others are waiting for a free worker.
+        self.in_flight = Counter()
+        self.n_configs = None
+        # Set by a backend that knows which runs are actually running.
+        self._probe = None
+        # The display is rendered and dumped from other threads: the state
+        # they read is only changed while holding this lock.
+        self._lock = threading.RLock()
+        # Result tree: dataset -> objective -> lines of its finished runs,
+        # in the order they first appeared.
+        self._tree = {}
+        self._labels = {}
+        self.n_dispatched = 0
+        self.n_finished = 0
+        self._all_dispatched = False
+
+        self.console = None
+        self._tty_fd = None
+        self._width = None
+        self._live = None
+        self._progress = None
+        self._task = None
+        # First result line shown, None to follow the last ones, and the
+        # number of result lines and of the ones shown, at the last render.
+        self._top, self._window = None, (0, 0)
+        # Whether the keys scroll the results, to tell it on the display.
+        self._scrollable = False
+        # Index of the failed run highlighted by `benchopt monitor`, if any.
+        self._selected = None
+        # Line added below the counters, used by `benchopt monitor`.
+        self._footer = None
+        # Outputs of a run that is over, shown by `benchopt monitor` in place
+        # of the runs in flight.
+        self._outputs = None
+
+        self._meta = {}
+        self._snapshot_file = None
+        # Finished results, appended as they come: they never change, so
+        # they are kept out of the snapshot that is rewritten every second.
+        self._results_file = None
+        # The workers append a `done` line to the results file when a run
+        # finishes, read here before the backend returns its result: e.g. a
+        # SLURM job only returns once all of its runs are over.
+        self._results_path, self._results_offset = None, 0
+        # Records counted minus results counted, per run key: a run is
+        # reported by both, and only the first one is shown.
+        self._balance = Counter()
+        self._dump_time = 0
+        self._dump_lock = threading.Lock()
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        for k in ['console', '_tty_fd', '_live', '_progress', '_task',
+                  '_probe', '_lock', '_snapshot_file', '_dump_lock',
+                  '_results_file']:
+            state[k] = None
+        state['_worker'] = True
+        state['display'] = False
+        # With the display, the progress of the workers would only clutter
+        # the log. Without it, they print it as the plain output does.
+        state['show_progress'] = self.show_progress and not self.display
+        return state
+
+    # Display life cycle ####################################################
+
+    @contextmanager
+    def live(self, log_file=None, benchmark=None):
+        if self.display:
+            self.log_file = log_file
+        self._start_snapshot(log_file, benchmark)
+
+        # Keep the snapshot fresh, and the scheduler probed, while no run
+        # finishes: `benchopt monitor` tells a long run from a dead one. It
+        # also asks to kill the run by creating a file next to the snapshot.
+        stop = threading.Event()
+
+        def heartbeat():
+            while not stop.wait(1):
+                kill = self._snapshot_file and (
+                    self._snapshot_file.with_suffix(".kill")
+                )
+                if kill and kill.exists():
+                    kill.unlink(missing_ok=True)
+                    if sys.platform == 'win32':
+                        # os.kill would terminate the process at once.
+                        _thread.interrupt_main()
+                    else:
+                        # Unlike `interrupt_main`, the signal stops the main
+                        # thread waiting in a system call.
+                        os.kill(os.getpid(), signal.SIGINT)
+                self._read_done()
+                if time() - self._dump_time > HEARTBEAT:
+                    self._dump()
+
+        threading.Thread(target=heartbeat, daemon=True).start()
+        finished = 'error'
+        try:
+            if self.display:
+                with self._live_display(log_file):
+                    yield
+            else:
+                yield
+            finished = 'done'
+        except KeyboardInterrupt:
+            finished = 'interrupted'
+            raise
+        except Exception:
+            # The run crashed: keep why, for `benchopt monitor`.
+            self._meta['traceback'] = traceback.format_exc()
+            raise
+        finally:
+            stop.set()
+            self._meta['finished'] = finished
+            self._dump()
+            if self._results_file is not None:
+                # Closing line, so that the results alone tell how it ended.
+                try:
+                    self._results_file.write(
+                        json.dumps(dict(finished=finished)) + "\n"
+                    )
+                except Exception:
+                    pass
+                self._results_file.close()
+                self._results_file = None
+
+    def _make_progress(self, started=None, stopped=None, mark=None):
+        """Progress bar of the runs, timed from `started` if given.
+
+        A `mark`, e.g. telling how the run ended, replaces the spinner.
+        """
+        from rich.progress import (
+            BarColumn, MofNCompleteColumn, Progress, SpinnerColumn,
+            TextColumn, TimeElapsedColumn
+        )
+        # Wall clock time, so that `benchopt monitor` can time the bar from
+        # the start of the run, in another process.
+        self._progress = Progress(
+            SpinnerColumn() if mark is None else TextColumn(mark),
+            TextColumn("[bold]Runs"), BarColumn(),
+            MofNCompleteColumn(), TimeElapsedColumn(),
+            console=self.console, get_time=time,
+        )
+        self._task = self._progress.add_task("runs", total=None)
+        task = self._progress.tasks[0]
+        if started is not None:
+            task.start_time = started
+        task.stop_time = stopped
+
+    @contextmanager
+    def _live_display(self, log_file):
+        from rich.console import Console
+        from rich.live import Live
+
+        try:
+            with _redirect_fds(log_file) as tty:
+                self._tty_fd = tty.fileno()
+                self.console = Console(file=tty, highlight=False)
+                self._make_progress()
+                try:
+                    # The display runs on the alternate screen, so that the
+                    # terminal redraws it on a resize and the output of the
+                    # run is left untouched. `redirect_stdout` would re-print
+                    # the main process output on the console: everything goes
+                    # to the log instead.
+                    with Live(get_renderable=self._render,
+                              console=self.console, screen=True,
+                              refresh_per_second=8, redirect_stdout=False,
+                              redirect_stderr=False) as live, self._keys():
+                        self._live = live
+                        yield
+                finally:
+                    self._live = None
+                    # The alternate screen is gone: print the results, that
+                    # were only visible in the display, on the terminal.
+                    self._print_results()
+        finally:
+            # The file descriptors are restored: keep a console on the real
+            # stdout so that trailing output, e.g. an interrupted status,
+            # stays in the same style.
+            self.console = Console(highlight=False)
+
+    @contextmanager
+    def _keys(self):
+        """Scroll the results with the keys pressed, read in a thread."""
+        # A run in the background, e.g. with `&`, would be stopped when
+        # setting up the terminal.
+        try:
+            foreground = sys.stdin.isatty() and (
+                sys.platform == 'win32'
+                or os.tcgetpgrp(sys.stdin.fileno()) == os.getpgrp()
+            )
+        except OSError:
+            foreground = False  # Not the controlling terminal.
+        if not foreground:
+            yield
+            return
+        from .monitor import _read_key
+
+        stop = threading.Event()
+
+        def read_keys(read):
+            while not stop.is_set():
+                key = read(0.2)
+                if key is not None:
+                    self.scroll(key)
+
+        with _read_key() as read:
+            thread = threading.Thread(target=read_keys, args=(read,),
+                                      daemon=True)
+            thread.start()
+            self._scrollable = True
+            try:
+                yield
+            finally:
+                self._scrollable = False
+                stop.set()
+                thread.join()
+
+    @contextmanager
+    def step(self, label):
+        """Run a post-run step under a spinner, its output going to the log."""
+        if not self.display or self.log_file is None:
+            yield
+            return
+
+        from rich.console import Console
+        from rich.live import Live
+        from rich.spinner import Spinner
+
+        with _redirect_fds(self.log_file, mode="a") as tty:
+            console = Console(file=tty, highlight=False)
+            # `console.status` would capture stdout and print it on the
+            # console: the output of the step goes to the log instead.
+            with Live(Spinner("dots", f"[bold]{label}[/]"), console=console,
+                      refresh_per_second=8, redirect_stdout=False,
+                      redirect_stderr=False, transient=True):
+                yield
+            console.print(f"[green]\u2713[/] {label}")
+
+    def show_outputs(self, **files):
+        """Report where the outputs of the run are available."""
+        files = {k: v for k, v in files.items() if v is not None}
+        if self.log_file is None:
+            # Without the display, the output went to stdout, not to a log.
+            files.pop('log', None)
+        if not self._worker:
+            with self._lock:
+                self._meta['outputs'] = {k: str(v) for k, v in files.items()}
+            self._dump()
+        if not self.display or self.console is None or not files:
+            return
+        self.console.print(_rule("Outputs"))
+        for line in _output_lines(files):
+            self.console.print(line)
+
+    def _render(self):
+        with self._lock:
+            return self._render_locked()
+
+    def _render_locked(self):
+        from rich.console import Group
+
+        # `rich` looks up the size on fd 0, 1 and 2, which are redirected, so
+        # read it on the terminal itself to follow a resize.
+        try:
+            # A pseudo-terminal can report 0, which would render nothing.
+            size = os.get_terminal_size(self._tty_fd)
+            if size.columns and size.lines:
+                self.console.size = size
+                if size.columns != self._width:
+                    # The frames are drawn from the top of the screen: on a
+                    # resize, wipe what is left of the previous ones. The
+                    # first frame is skipped, as the alternate screen is not
+                    # up yet and clearing scrolls the terminal.
+                    first, self._width = self._width is None, size.columns
+                    if not first:
+                        self.console.clear()
+        except (OSError, TypeError):
+            pass
+
+        totals = [_rule("Total")]
+        if self._progress is not None:
+            totals.append(self._progress)
+        totals.append(_line(self._counters()))
+        if self._footer is not None:
+            totals.append(_line(self._footer))
+
+        # The screen does not scroll, so the sections share what is left
+        # once the two titles and the totals, which always fit, are placed.
+        # The results are all printed on the terminal once the run is over.
+        results = list(self._lines())
+        free = max(0, self.console.height - len(totals) - 2)
+        # The runs in flight get half of the space when the results fill it.
+        # With a scheduler, thousands of runs can be in flight, so the lines
+        # that do not fit are not built at all.
+        if self._outputs is None:
+            running = self._running_lines(
+                max(free - len(results), free // 2)
+            )
+            middle = [_rule("Running"), *map(_line, running)]
+        else:
+            # The run is over: nothing runs, show where its outputs are.
+            outputs = list(map(_line, _output_lines(self._outputs)))
+            middle = [_rule("Outputs"), *outputs] if outputs else []
+        n = free + 1 - len(middle)
+        errors = [i for i, line in enumerate(results)
+                  if isinstance(line, _ErrorLine)]
+        if self._selected is not None and errors:
+            i = errors[self._selected % len(errors)]
+            results[i] = f"[reverse]{results[i]}[/]"
+            # Scroll to the selected run, in the middle of the screen.
+            self._top = max(0, i - n // 2)
+        hint = SCROLL_HINT if self._scrollable else ""
+        shown, self._top = _crop(results, n, self._top, hint)
+        self._window = (len(results), n)
+        results = shown
+
+        return Group(_rule("Results"), *map(_line, results), *middle, *totals)
+
+    def scroll(self, key):
+        """Scroll the results for `key`. Return False if it does not."""
+        if key not in SCROLL_KEYS:
+            return False
+        direction, unit = SCROLL_KEYS[key]
+        with self._lock:
+            total, n = self._window
+            last = max(0, total - max(0, n - 1))
+            top = last if self._top is None else self._top
+            step = dict(line=1, page=max(1, n - 2), end=total)[unit]
+            self._top = max(0, top + direction * step)
+            if self._top >= last:
+                self._top = None
+        if self._live is not None:
+            self._live.refresh()
+        return True
+
+    def _running_lines(self, max_lines=None):
+        """One line per dataset, objective and solver of the runs in flight."""
+        from rich.markup import escape
+        from rich.text import Text
+
+        running = Counter(self._running_keys())
+        if not running:
+            return ["[dim]waiting for runs...[/]"]
+
+        # Group the runs by dataset and objective, as their names are long
+        # and shared by several solvers.
+        lines, seen, n_shown = [], set(), 0
+        for key, n in sorted(running.items()):
+            # A run adds up to 3 lines, plus the one counting the hidden
+            # ones: stop early rather than let `_crop` miscount them.
+            if max_lines is not None and len(lines) + 4 > max_lines:
+                break
+            n_shown += n
+            data, obj, solver = key
+            for level, node in enumerate([(data,), (data, obj)]):
+                if node not in seen:
+                    seen.add(node)
+                    lines.append(
+                        f"{_guides(level)}[bold]{escape(node[-1])}[/]"
+                    )
+            reps = f"{n} reps" if n > 1 else "1 rep"
+            suffix = (f" \u2014 [magenta]{reps}[/] running "
+                      f"({self.rep[key]}/{self.n_repetitions} done)")
+            # A solver with many parameters would push the counters out of
+            # the line, so it is the name that gets cropped instead.
+            width = self.console.width - 8 - len(Text.from_markup(suffix))
+            lines.append(
+                f"{_guides(2)}[cyan]{escape(_ellipsis(solver, width))}[/]"
+                f"{suffix}"
+            )
+
+        n_hidden = self.n_dispatched - self.n_finished - n_shown
+        if n_hidden > 0:
+            # The hidden runs are queued ones, plus the ones left out above.
+            label = "queued" if n_shown == sum(running.values()) else "more"
+            lines.append(f"[dim]+{n_hidden} {label}[/]")
+        return lines
+
+    def _running_keys(self):
+        """The runs holding a worker, as told by the backend or guessed."""
+        with self._lock:
+            # Called on each refresh: the probe caches what is costly.
+            if self._probe is not None:
+                try:
+                    return list(self._probe())
+                except Exception:
+                    # The display is never worth taking the run down for.
+                    self._probe = None
+
+            # Without a probe, the runs are dispatched in order, so the
+            # oldest unfinished ones are the ones actually holding a worker.
+            return list(islice(self.in_flight.elements(), self.n_jobs))
+
+    def _lines(self):
+        """The whole result tree, as one markup line per node."""
+        from rich.markup import escape
+
+        for data, objectives in self._tree.items():
+            yield from self._labels.get(
+                (data,), [f"[bold]{escape(data)}[/]"]
+            )
+            for obj, lines in objectives.items():
+                yield from self._labels.get(
+                    (data, obj), [f"{_guides(1)}[bold]{escape(obj)}[/]"]
+                )
+                yield from lines
+
+    def _print_results(self):
+        """Print the whole result tree, once the display is over."""
+        self.console.print(_rule("Results"))
+        for markup in self._lines():
+            self._print(markup)
+        self._print(self._counters())
+
+    def _print(self, markup):
+        """Print one result line, wrapped under the name of the run."""
+        from rich.text import Text
+
+        text = Text.from_markup(markup)
+        # Long names, e.g. a solver with many parameters, have to wrap: keep
+        # the tree readable by indenting past the guides and the status glyph.
+        plain = text.plain
+        level = (len(plain) - len(plain.lstrip("│├─ "))) // 4
+        indent = min(4 * level + 2, max(self.console.width - 8, 0))
+        lines = text[indent:].wrap(self.console, self.console.width - indent)
+        # The wrapped lines carry on the guides of the nodes above them.
+        pad = Text.from_markup(GUIDE * level + "  ")
+        self.console.print(Text("\n").join(
+            [text[:indent] + line for line in lines[:1]]
+            + [pad + line for line in lines[1:]]
+        ))
+
+    def _total(self):
+        """Number of runs to display in the progress bar.
+
+        `n_configs` is only an upper bound, as some runs are skipped, so
+        fall back on the exact count once everything has been dispatched.
+        """
+        if self._all_dispatched or self.n_configs is None:
+            return self.n_dispatched
+        return max(self.n_configs * (self.n_repetitions or 1),
+                   self.n_dispatched)
+
+    def _counters(self):
+        done = sum(self.counts[s] for s in ['done', 'timeout', 'max_runs'])
+        errors = sum(
+            self.counts[s] for s in ['error', 'diverged', 'not installed']
+        )
+        # The runs not started, e.g. queued on SLURM, so that the counts
+        # add up to the total of the progress bar.
+        running = len(self._running_keys())
+        pending = max(0, self._total() - self.n_finished - running)
+        return (
+            f"[bold]running {running}[/] · [dim]pending {pending}[/] · "
+            f"[green]done {done}[/] · [cyan]cached "
+            f"{self.counts['cached']}[/] · [yellow]skip "
+            f"{self.counts['skip']}[/] · [red]error {errors}[/]"
+        )
+
+    # TerminalOutput interface ##############################################
+
+    def show_interrupted(self):
+        # Nothing to report: the interrupted runs produced no result, and
+        # they are already accounted for in the progress bar.
+        if not self.display:
+            super().show_interrupted()
+
+    def start_run(self, meta):
+        if self._worker:
+            return
+        key = (
+            meta['dataset_name'], meta['objective_name'], meta['solver_name']
+        )
+        with self._lock:
+            self.in_flight[key] += 1
+            self.n_dispatched += 1
+        self._refresh()
+
+    def set_n_configs(self, n_configs):
+        self.n_configs = n_configs
+        self._refresh()
+
+    def all_dispatched(self):
+        self._all_dispatched = True
+        self._refresh()
+
+    def set_running_probe(self, probe):
+        """Register a callable listing the runs that are actually running.
+
+        A scheduler, e.g. SLURM, knows which of the dispatched runs left the
+        queue. Without a probe, the oldest dispatched ones are assumed to be
+        the running ones.
+        """
+        if not self._worker:
+            self._probe = probe
+
+    def set(self, **kwargs):
+        if self._worker:
+            return super().set(**kwargs)
+        with self._lock:
+            super().set(**kwargs)
+
+    def run_finished(self, key, status, reason=None):
+        if not self._worker or self._results_path is None:
+            return
+        try:
+            # ponytail: one `open` per run, cheap next to the run itself.
+            with open(self._results_path, "a") as f:
+                f.write(json.dumps(dict(done=[*key, status, reason])) + "\n")
+        except Exception:
+            pass  # The display is never worth taking the run down for.
+
+    def _read_done(self):
+        "Show the runs that the workers reported as done."
+        if self._results_path is None:
+            return
+        lines, self._results_offset = read_jsonl(
+            self._results_path, self._results_offset
+        )
+        for line in lines:
+            if isinstance(line, dict) and 'done' in line:
+                *key, status, reason = line['done']
+                self.show_result(tuple(key), status, reason, record=True)
+
+    def show_result(self, key, status, reason=None, cached=False,
+                    record=False):
+        if self._worker:
+            return super().show_result(key, status, reason, cached)
+
+        with self._lock:
+            if not cached:
+                # A run done by a worker is reported by its `done` record and
+                # by its result: only show the first one.
+                first = self._balance[key] >= 0 if record else (
+                    self._balance[key] <= 0
+                )
+                self._balance[key] += 1 if record else -1
+                if not first:
+                    return
+            # The records are read in another thread: restore the current
+            # names, e.g. set by the run generator before showing a skip.
+            saved = dict(dataset=self.dataset, objective=self.objective,
+                         solver=self.solver)
+            super().set(dataset=key[0], objective=key[1], solver=key[2])
+            try:
+                self._update_status(status, reason, cached=cached)
+            finally:
+                super().set(**saved)
+        self._refresh()
+
+    def show_status(self, status, reason=None, dataset=False, objective=False,
+                    cached=False):
+        if self._worker:
+            return super().show_status(status, reason, dataset, objective,
+                                       cached)
+
+        self._update_status(status, reason, dataset, objective, cached)
+        # Outside of the lock, as the refresh renders the display.
+        self._refresh()
+
+    def _update_status(self, status, reason=None, dataset=False,
+                       objective=False, cached=False):
+        with self._lock:
+            if not (dataset or objective):
+                key = (
+                    str(self.dataset), str(self.objective), str(self.solver)
+                )
+                bucket = 'cached' if _is_cached(status, cached) else status
+                self.counts[bucket] += 1
+                # Only the dispatched runs move the progress bar, e.g. not a
+                # solver that is not installed.
+                if self.in_flight[key] > 0:
+                    self.in_flight[key] -= 1
+                    self.n_finished += 1
+                    if self.in_flight[key] == 0:
+                        del self.in_flight[key]
+
+            super().show_status(status, reason, dataset, objective, cached)
+
+    def _emit_status(self, status, reason, dataset, objective, cached):
+        if not self.display:
+            super()._emit_status(status, reason, dataset, objective, cached)
+        if self._worker:
+            return
+
+        level = 0 if dataset else 1 if objective else 2
+        result = [level, str(self.dataset), str(self.objective),
+                  str(self.solver), status, reason and str(reason), cached]
+        self._add_result(*result)
+        if self._results_file is not None:
+            try:
+                self._results_file.write(
+                    json.dumps(result, separators=(',', ':')) + "\n"
+                )
+            except Exception:
+                pass  # The display is never worth taking the run down for.
+
+    def _add_result(self, level, data, obj, solver, status, reason, cached):
+        """Add a result to the tree, at the `level` of the name it is for."""
+        from rich.markup import escape
+
+        if _is_cached(status, cached):
+            style, glyph = RICH_STATUS['done']
+            result = "[green]done[/] [cyan](cached)[/]"
+        else:
+            style, glyph = RICH_STATUS[status]
+            result = f"[{style}]{STATUS[status][0]}[/]"
+            if status in ['error', 'diverged']:
+                result += " [dim](traceback in the log)[/]"
+
+        name = [data, obj, solver][level]
+        lines = [
+            f"{_guides(level)}[{style}]{glyph}[/] {escape(name)} {result}"
+        ]
+        if status == 'error':
+            lines[0] = _ErrorLine(lines[0])
+            lines[0].name = " / ".join([data, obj, solver][:level + 1])
+            lines[0].traceback = reason
+        if status == 'skip' and reason is not None:
+            lines.append(
+                f"{GUIDE * level}[dim]Reason: {escape(reason)}[/]"
+            )
+
+        objectives = self._tree.setdefault(data, {})
+        if level == 0:
+            self._labels[data, ] = lines
+        elif level == 1:
+            objectives.setdefault(obj, [])
+            self._labels[data, obj] = lines
+        else:
+            objectives.setdefault(obj, []).extend(lines)
+
+    def _refresh(self):
+        if self._progress is not None:
+            self._progress.update(
+                self._task, completed=self.n_finished, total=self._total()
+            )
+        if self._live is not None:
+            self._live.refresh()
+        if time() - self._dump_time > 1:
+            self._dump()
+
+    # In the main process, these are subsumed by the live display. In the
+    # workers or without display, they keep printing.
+    def progress(self, progress, key):
+        if not self.display:
+            super().progress(progress, key)
+
+    def debug(self, msg):
+        if not self.display:
+            super().debug(msg)
+
+    def display_dataset(self):
+        if not self.display:
+            super().display_dataset()
+
+    def display_objective(self):
+        if not self.display:
+            super().display_objective()
+
+    # Snapshots for `benchopt monitor` ######################################
+
+    def _start_snapshot(self, log_file, benchmark):
+        """Create the snapshot file of this run, pruning the oldest ones."""
+        if self._worker:
+            return
+        run_name = Path(log_file).stem if log_file else "benchopt_run"
+        self._meta = dict(
+            run_name=run_name, benchmark=benchmark,
+            log_file=str(log_file) if self.log_file else None,
+            started=time(), finished=None,
+        )
+        try:
+            runs_dir = get_runs_dir()
+            runs_dir.mkdir(parents=True, exist_ok=True)
+            snapshots = []
+            for f in runs_dir.glob("*.json"):
+                try:
+                    snapshots.append((f.stat().st_mtime, f))
+                except OSError:
+                    pass  # Pruned by another run in the meantime.
+            # Only prune the runs that are not updated anymore: other runs,
+            # e.g. on other nodes sharing the home folder, may be going on.
+            now = time()
+            old = sorted(
+                (mtime, f) for mtime, f in snapshots
+                if now - mtime > STALE_AFTER
+            )
+            for _, f in old[:max(0, len(snapshots) - MAX_SNAPSHOTS + 1)]:
+                for suffix in [".json", ".jsonl", ".kill"]:
+                    f.with_suffix(suffix).unlink(missing_ok=True)
+            self._snapshot_file = runs_dir / f"{run_name}-{os.getpid()}.json"
+            # Line buffered, so that each result is readable once written,
+            # and in append mode, not to overwrite the lines of the workers.
+            self._results_path = self._snapshot_file.with_suffix(".jsonl")
+            self._results_file = open(self._results_path, "a", buffering=1)
+            self._results_file.truncate(0)
+        except OSError:
+            self._snapshot_file = self._results_file = None
+            self._results_path = None
+        self._dump()
+
+    def _snapshot(self):
+        """State of the run needed by `_render`, but the finished results.
+
+        Its size only depends on the number of runs in flight, so that it is
+        cheap to rewrite every second.
+        """
+        with self._lock:
+            running = self._running_keys()
+            return dict(
+                self._meta, updated=time(), total=self._total(),
+                n_repetitions=self.n_repetitions, n_jobs=self.n_jobs,
+                n_configs=self.n_configs, n_dispatched=self.n_dispatched,
+                n_finished=self.n_finished,
+                all_dispatched=self._all_dispatched, counts=dict(self.counts),
+                running=[[list(k), self.rep[k]] for k in running],
+            )
+
+    def _dump(self):
+        if self._worker or self._snapshot_file is None:
+            return
+        with self._dump_lock:
+            self._dump_time = time()
+            tmp = self._snapshot_file.with_suffix(".tmp")
+            try:
+                tmp.write_text(
+                    json.dumps(self._snapshot(), separators=(',', ':'))
+                )
+                # Atomic, so that `benchopt monitor` never reads half a file.
+                os.replace(tmp, self._snapshot_file)
+            except Exception:
+                # Monitoring is never worth taking the run down for, e.g. on
+                # a full disk. A state changed mid-dump is fixed by the next.
+                pass
+
+    @classmethod
+    def from_snapshot(cls, snapshot, results, console, stopped=None,
+                      progress=None):
+        """Rebuild the display of a run from its snapshot and results.
+
+        `results` are the lines of its results file, and `stopped` the time
+        the run stopped at, if it is over: a mark then replaces the spinner,
+        and its outputs the runs in flight. Passing the `progress` of the
+        previous display keeps its spinner going.
+        """
+        self = cls(snapshot['n_repetitions'], False,
+                   n_jobs=snapshot['n_jobs'])
+        self._meta = snapshot
+        self.log_file = snapshot['log_file']
+        self.console = console
+        self.n_configs = snapshot['n_configs']
+        self.n_dispatched = snapshot['n_dispatched']
+        self.n_finished = snapshot['n_finished']
+        self._all_dispatched = snapshot['all_dispatched']
+        self.counts = Counter(snapshot['counts'])
+        # The runs in flight are counted from the dispatched and finished
+        # ones: the ones running are known, as the run probed the scheduler.
+        running = [tuple(k) for k, _ in snapshot['running']]
+        self._running_keys = lambda: running
+        self.rep = defaultdict(
+            int, {tuple(k): n for k, n in snapshot['running']}
+        )
+        for result in results:
+            self._add_result(*result)
+        if stopped is not None:
+            self._outputs = snapshot.get('outputs', {})
+            mark = {'done': "[green]\u2713[/]",
+                    'interrupted': "[yellow]\u2717[/]",
+                    'error': "[red]\u2717[/]"}
+            self._make_progress(
+                started=snapshot['started'], stopped=stopped,
+                mark=mark.get(snapshot['finished'], "[red]\u2717[/]"),
+            )
+        elif progress is None:
+            self._make_progress(started=snapshot['started'], stopped=stopped)
+        else:
+            self._progress, self._task = progress, progress.task_ids[0]
+            progress.tasks[0].stop_time = stopped
+        self._refresh()
+        return self
+
+
+def make_terminal_output(n_repetitions=None, show_progress=None, pdb=False,
+                         n_jobs=1):
+    """Rich live display if running in an interactive terminal, plain else.
+
+    The state of the run is tracked in both cases, for `benchopt monitor`.
+    """
+    from ..config import get_setting
+    display = not (pdb or get_setting('no_rich') or not sys.stdout.isatty())
+    return RichOutput(n_repetitions, show_progress, n_jobs=n_jobs,
+                      display=display)

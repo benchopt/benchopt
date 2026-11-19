@@ -418,6 +418,25 @@ def run(config_file=None, **kwargs):
 
 
 @main.command(
+    help="Monitor the benchmark runs, in progress or finished. Without RUN, "
+    "pick one of the last runs with the arrow keys. RUN is the start of a "
+    "run name, or `last` for the most recent run.",
+    epilog="This works for runs without a terminal, e.g. on SLURM, and from "
+    "another machine sharing the home folder. See the `runs_dir` config."
+)
+@click.argument('run', required=False, metavar='[RUN]')
+@click.option('--wait', is_flag=True,
+              help="Wait for the run to end, then print its results. Exit "
+              "with code 1 if a solver failed or the run did not end well.")
+@click.option('--errors', is_flag=True,
+              help="Print the traceback of each failed solver run, and the "
+              "counts of the runs, rather than all the results.")
+def monitor(run=None, wait=False, errors=False):
+    from benchopt.utils.monitor import monitor
+    monitor(run, wait, errors)
+
+
+@main.command(
     help="Prepare datasets for a benchmark by running Dataset.prepare().",
     epilog="To install the required packages for a benchmark, "
     "see the command `benchopt install`."
