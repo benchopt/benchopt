@@ -148,18 +148,14 @@ class StoppingCriterion():
                 'The strategy is set both in Solver.sampling_strategy and in '
                 'its criterion, and it does not match. Only set it once.'
             )
-        criterion = self.__class__(
+        kwargs = dict(
             strategy=self.strategy or strategy or default,
             key_to_monitor=self.key_to_monitor, minimize=self.minimize,
             **self.kwargs,
         )
-        criterion.__dict__.update(self._get_next_state())
-        return criterion
-
-    def _get_next_state(self):
-        """The ``get_next`` schedule set on this criterion, if any."""
-        get_next = self.__dict__.get('get_next_stop_val')
-        return {} if get_next is None else {'get_next_stop_val': get_next}
+        return self._reconstruct(
+            kwargs, get_next=self.__dict__.get('get_next_stop_val')
+        )
 
     def init_stop_val(self):
         stop_val = (
@@ -304,8 +300,11 @@ class StoppingCriterion():
             self.terminal.progress(progress, self.run_key)
 
     @classmethod
-    def _reconstruct(cls, kwargs, runner_kwargs):
+    def _reconstruct(cls, kwargs, runner_kwargs=None, get_next=None):
         criterion = cls(**kwargs)
+        # Keep the `get_next` schedule set by the solver or the objective.
+        if get_next is not None:
+            criterion.get_next_stop_val = get_next
         if runner_kwargs:
             return criterion.get_runner_instance(**runner_kwargs)
         return criterion
@@ -322,8 +321,8 @@ class StoppingCriterion():
             )
         else:
             runner_kwargs = None
-        state = self._get_next_state()
-        return self._reconstruct, (kwargs, runner_kwargs), state
+        get_next = self.__dict__.get('get_next_stop_val')
+        return self._reconstruct, (kwargs, runner_kwargs, get_next)
 
     def get_next_stop_val(self, stop_val):
         if self.strategy == "tolerance":
