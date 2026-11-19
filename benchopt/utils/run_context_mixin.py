@@ -3,11 +3,7 @@ import warnings
 
 
 class _CurrentRun:
-    """Attribute giving a component or an information of the current run.
-
-    It is read with ``get_current``, so benchopt code that uses
-    ``get_current`` still works if a component sets the attribute itself.
-    """
+    """Attribute of the current run, read with ``get_current``."""
 
     def __init__(self, doc):
         self.__doc__ = doc
@@ -34,34 +30,15 @@ class _CurrentRun:
 class RunContextMixin:
     """Mixin that provides reproducible seeding and run-artifact helpers.
 
-    Attributes ending with ``_`` describe the current run, as in scikit-learn,
-    where they describe the fitted data. They are only available in the
-    methods that benchopt calls on the component, e.g. ``skip``,
-    ``set_objective`` or a ``slurm_params`` property.
-
-    Attributes
-    ----------
-    dataset_, objective_, solver_ : component
-        Components of the current run. A component chosen after this one,
-        e.g. the solver in ``Objective.skip``, is not available.
-    repetition_ : int
-        Index of the repetition. ``skip`` runs in the first repetition.
-    run_parallel_config_ : dict | None
-        Parallel config of the workers that run this run, None for a local
-        run. With ``submitit``, the SLURM config of the jobs merged with the
-        ``slurm_params`` of the solver. It cannot be used in
-        ``slurm_params``, which it depends on.
+    Attributes ending with ``_`` give the current run, in the methods that
+    benchopt calls. See :ref:`current_run`.
     """
 
     dataset_ = _CurrentRun("Dataset of the current run.")
-    objective_ = _CurrentRun(
-        "Objective of the current run, once it is chosen."
-    )
-    solver_ = _CurrentRun("Solver of the current run, once it is chosen.")
-    repetition_ = _CurrentRun("Index of the repetition of the current run.")
-    run_parallel_config_ = _CurrentRun(
-        "Parallel config of the workers of the current run, None if local."
-    )
+    objective_ = _CurrentRun("Objective of the current run.")
+    solver_ = _CurrentRun("Solver of the current run.")
+    repetition_ = _CurrentRun("Repetition index of the current run.")
+    run_parallel_config_ = _CurrentRun("Workers' parallel config, or None.")
 
     # Set by the runner before any user method is called.
     _run_context = None
@@ -182,40 +159,7 @@ class RunContextMixin:
         )
 
     def get_current(self, name):
-        """Return a component or an information of the current run.
-
-        It gives the attributes ending with ``_``, e.g. ``self.dataset_``.
-        It is available in the methods that benchopt calls on the component,
-        e.g. ``skip``, ``set_objective`` or a ``slurm_params`` property.
-
-        Parameters
-        ----------
-        name : 'dataset' | 'objective' | 'solver' | 'repetition' | \
-                'run_parallel_config'
-            What to return:
-
-            - ``'dataset'``, ``'objective'``, ``'solver'``: the component of
-              the current run.
-            - ``'repetition'``: the index of the repetition. ``skip`` is
-              checked in the context of the first repetition.
-            - ``'run_parallel_config'``: the parallel config of the workers
-              that run it, or None when the runs are on the local machine.
-              With ``submitit``, it is the SLURM config of the jobs, merged
-              with the ``slurm_params`` of the solver if it is chosen. It
-              cannot be used in ``slurm_params``, which it depends on.
-
-        Returns
-        -------
-        value : benchopt.BaseDataset | benchopt.BaseObjective | \
-                benchopt.BaseSolver | int | dict | None
-            The requested component or information.
-
-        Raises
-        ------
-        ValueError
-            If the component is not chosen yet, e.g. the solver in
-            ``Dataset.skip``.
-        """
+        """Return ``name`` of the current run, e.g. ``self.dataset_``."""
         names = (
             'dataset', 'objective', 'solver', 'repetition',
             'run_parallel_config',
