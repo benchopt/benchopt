@@ -138,86 +138,30 @@ def test_key_to_monitor_objective(no_debug_log, criterion_class, strategy):
 
 
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
-def test_solver_strategy(no_debug_log, strategy):
-
-    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
-
-    class Solver(TempSolver):
-        name = "test-solver"
-        sampling_strategy = "{strategy}"
-        def run(self, n_iter):
-            strategy = self.get_current("_sampling_strategy")
-            assert strategy == "{strategy}", strategy
-            if strategy in "iteration":
-                assert n_iter == 0, n_iter
-            elif strategy in "tolerance":
-                assert n_iter == 3e38, n_iter
-            elif strategy in "run_once":
-                assert n_iter == 1, n_iter
-            elif strategy in "callback":
-                assert callable(n_iter)
-                while n_iter(): pass
-    """
-
-    with temp_benchmark(solvers=[solver]) as benchmark:
-        with CaptureCmdOutput():
-            run([str(benchmark.benchmark_dir),
-                *('-s test-solver -d test-dataset --no-plot -n 0').split()],
-                standalone_mode=False)
-
-
-@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
+@pytest.mark.parametrize('setting', ['solver', 'criterion', 'both'])
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
 ])
-def test_stopping_criterion_strategy(no_debug_log, criterion_class, strategy):
+def test_solver_strategy(no_debug_log, criterion_class, setting, strategy):
+    "Check the strategy set in the solver, in its criterion or in both."
 
     if strategy == "run_once":
         criterion_class = SingleRunCriterion
+    criterion = criterion_class.__name__
+    attributes = {
+        'solver': f'sampling_strategy = "{strategy}"',
+        'criterion': f'stopping_criterion = {criterion}('
+                     f'strategy="{strategy}")',
+        'both': f'sampling_strategy = "{strategy}"\n'
+                f'        stopping_criterion = {criterion}()',
+    }[setting]
 
     solver = f"""from benchopt.utils.temp_benchmark import TempSolver
-    from benchopt.stopping_criterion import {criterion_class.__name__}
+    from benchopt.stopping_criterion import {criterion}
 
     class Solver(TempSolver):
         name = "test-solver"
-        stopping_criterion = {criterion_class.__name__}(strategy="{strategy}")
-        def run(self, n_iter):
-            strategy = self.get_current("_sampling_strategy")
-            assert strategy == "{strategy}", strategy
-            if strategy in "iteration":
-                assert n_iter == 0, n_iter
-            elif strategy in "tolerance":
-                assert n_iter == 3e38, n_iter
-            elif strategy in "run_once":
-                assert n_iter == 1, n_iter
-            elif strategy in "callback":
-                assert callable(n_iter)
-                while n_iter(): pass
-    """
-
-    with temp_benchmark(solvers=[solver]) as benchmark:
-        with CaptureCmdOutput():
-            run([str(benchmark.benchmark_dir),
-                *('-s test-solver -d test-dataset --no-plot -n 0').split()],
-                standalone_mode=False)
-
-
-@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
-@pytest.mark.parametrize('criterion_class', [
-    SufficientDescentCriterion, SufficientProgressCriterion
-])
-def test_solver_override_strategy(no_debug_log, criterion_class, strategy):
-
-    if strategy == "run_once":
-        criterion_class = SingleRunCriterion
-
-    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
-    from benchopt.stopping_criterion import {criterion_class.__name__}
-
-    class Solver(TempSolver):
-        name = "test-solver"
-        sampling_strategy = "{strategy}"
-        stopping_criterion = {criterion_class.__name__}()
+        {attributes}
         def run(self, n_iter):
             strategy = self.get_current("_sampling_strategy")
             assert strategy == "{strategy}", strategy
