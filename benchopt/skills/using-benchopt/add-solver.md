@@ -109,6 +109,7 @@ repetition. Add `use_dataset=True` / `use_solver=True` to further differentiate 
 - `pre_run_hook(stop_val)`: untimed per-run setup (e.g. JAX precompilation for
   a given iteration count).
 - `get_next(stop_val)`: override the default logarithmic `stop_val` schedule.
+  Define it on the `Objective` to change it for all solvers.
 
 ## Testing
 

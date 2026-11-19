@@ -163,9 +163,10 @@ class RunContext:
     def _stopping_criterion(self):
         """Stopping criterion of the run, with its sampling strategy set.
 
-        The solver's settings take precedence over the objective's ones,
-        which apply to the whole benchmark. A solver whose strategy is
-        'run_once' runs once, whatever the objective's criterion.
+        The solver's settings, including ``get_next``, take precedence over
+        the objective's ones, which apply to the whole benchmark. A solver
+        whose strategy is 'run_once' runs once, whatever the objective's
+        criterion.
         """
         from ..stopping_criterion import SingleRunCriterion
         from ..stopping_criterion import SufficientProgressCriterion
@@ -180,9 +181,15 @@ class RunContext:
                 getattr(objective, 'stopping_criterion', None)
                 or SufficientProgressCriterion()
             )
-        return criterion._with_strategy(
+        criterion = criterion._with_strategy(
             strategy, default=objective.sampling_strategy or 'iteration'
         )
+        get_next = getattr(solver, 'get_next', None)
+        get_next = get_next or getattr(objective, 'get_next', None)
+        if get_next is not None:
+            assert callable(get_next), "`get_next` must be callable."
+            criterion.get_next_stop_val = get_next
+        return criterion
 
     @property
     def _sampling_strategy(self):

@@ -1,3 +1,5 @@
+import pickle
+
 import pytest
 import numpy as np
 
@@ -295,6 +297,34 @@ def test_criterion_resolution():
                 assert isinstance(criterion, criterion_class)
                 assert criterion.strategy == strategy
         assert objective.stopping_criterion.strategy is None
+
+
+def test_get_next_resolution():
+    # `get_next` comes from the solver, else from the objective, and is kept
+    # in the runner instance, also once pickled.
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
+        name = "test_obj"
+        def get_next(self, stop_val): return stop_val + 2
+    """
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        name = "test-solver"
+        def get_next(self, stop_val): return stop_val + 3
+    """
+
+    with temp_benchmark(objective=objective, solvers=[solver]) as bench:
+        objective = bench.get_benchmark_objective().get_instance()
+        solver = bench.get_solvers()[0].get_instance()
+        for get_next, step in [(solver.get_next, 3), (None, 2)]:
+            solver.get_next = get_next
+            with RunContext(objective=objective, solver=solver):
+                criterion = solver.get_current('_stopping_criterion')
+                criterion = criterion.get_runner_instance(max_runs=10)
+            criterion = pickle.loads(pickle.dumps(criterion))
+            assert criterion.get_next_stop_val(1) == 1 + step
 
 
 def test_global_sampling_strategy(no_debug_log):

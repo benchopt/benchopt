@@ -100,8 +100,7 @@ class StoppingCriterion():
         terminal : TerminalOutput or None
             Object to format string to display the progress of the solver.
         solver : BaseSolver
-            The solver for which this stopping criterion is called. Used to get
-            overridden ``sampling_strategy`` and ``get_next``.
+            The solver for which this stopping criterion is called.
         run_key : tuple
             The key to identify the run in the benchmark results.
 
@@ -117,9 +116,11 @@ class StoppingCriterion():
         if self.kwargs is None:
             raise ValueError(
                 f"{self.__class__.__name__} is a subclass of StoppingCriterion"
-                " but did not called super().__init__(**kwargs) with all its "
-                "parameters in its constructor. See XXX for details on how "
-                "to implement a new StoppingCriterion."
+                " but does not call super().__init__(**kwargs) with all its "
+                "parameters in its constructor. See https://benchopt.github.io"
+                "/stable/user_guide/iterative_solvers.html"
+                "#custom-stopping-criterion for details on how to implement a "
+                "new StoppingCriterion."
             )
 
         stopping_criterion = self._with_strategy()
@@ -134,24 +135,6 @@ class StoppingCriterion():
 
         # Initialize the number of evaluation for iterative tracking
         stopping_criterion.n_eval = 0
-        # Override get_next_stop_val if ``get_next`` is implemented for solver.
-        if hasattr(solver, 'get_next'):
-            if not callable(solver.get_next):
-                raise TypeError(
-                    f"`get_next` of Solver in {solver.__module__} "
-                    "must be callable."
-                )
-
-            try:
-                solver.get_next(1)
-            except TypeError:
-                raise ValueError(
-                    "get_next(1) throw a TypeError. Verify that `get_next` "
-                    "signature is get_next(self, stop_val)"
-                )
-
-            stopping_criterion.get_next_stop_val = solver.get_next
-
         # Store running arguments
         if timeout is not None:
             stopping_criterion._deadline = time.time() + timeout
@@ -168,11 +151,18 @@ class StoppingCriterion():
                 'The strategy is set both in Solver.sampling_strategy and in '
                 'its criterion, and it does not match. Only set it once.'
             )
-        return self.__class__(
+        criterion = self.__class__(
             strategy=self.strategy or strategy or default,
             key_to_monitor=self.key_to_monitor, minimize=self.minimize,
             **self.kwargs,
         )
+        criterion.__dict__.update(self._get_next_state())
+        return criterion
+
+    def _get_next_state(self):
+        """The ``get_next`` schedule set on this criterion, if any."""
+        get_next = self.__dict__.get('get_next_stop_val')
+        return {} if get_next is None else {'get_next_stop_val': get_next}
 
     def init_stop_val(self):
         stop_val = (
@@ -335,7 +325,8 @@ class StoppingCriterion():
             )
         else:
             runner_kwargs = None
-        return self._reconstruct, (kwargs, runner_kwargs)
+        state = self._get_next_state()
+        return self._reconstruct, (kwargs, runner_kwargs), state
 
     def get_next_stop_val(self, stop_val):
         if self.strategy == "tolerance":
