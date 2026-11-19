@@ -76,7 +76,9 @@ class Solver(BaseSolver):
 `NoCriterion` never stops on lack of progress, so the run length is set by
 `--max-runs` / `--timeout` (or by your own `run` loop). If `run` already loops
 over the whole budget in a single call, use `SingleRunCriterion(stop_val=N)`
-instead — it drives exactly `N` callback calls (or one `run(N)`).
+instead — it drives exactly `N` callback calls (or one `run(N)`). A single run
+is recorded as `run_once`, and `SingleRunCriterion` only accepts the
+`run_once` and `callback` strategies (`iteration` is the same as `run_once`).
 
 When *every* solver in the benchmark is fixed-budget (e.g. a DL benchmark where
 all solvers train for N epochs), set `stopping_criterion` **once on the

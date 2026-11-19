@@ -301,14 +301,16 @@ def test_criterion_resolution():
 
 @pytest.mark.parametrize('solver_strategy, objective_strategy, expected', [
     (None, None, 'run_once'),
+    ('iteration', None, 'run_once'),
     ('callback', None, 'callback'),
-    (None, 'iteration', 'iteration'),
+    (None, 'callback', 'callback'),
+    (None, 'tolerance', 'run_once'),
 ])
 def test_single_run_criterion_strategy(
     solver_strategy, objective_strategy, expected
 ):
-    # A SingleRunCriterion without strategy is 'run_once', unless the solver
-    # or the objective sets one.
+    # A SingleRunCriterion is 'run_once', or 'callback' when `run` takes a
+    # callback.
     with temp_benchmark() as bench:
         objective = bench.get_benchmark_objective().get_instance()
         solver = bench.get_solvers()[0].get_instance()
@@ -317,6 +319,10 @@ def test_single_run_criterion_strategy(
         solver.stopping_criterion = SingleRunCriterion(stop_val=3)
         with RunContext(objective=objective, solver=solver):
             assert solver.get_current('_sampling_strategy') == expected
+
+    assert SingleRunCriterion(strategy='iteration').strategy == 'run_once'
+    with pytest.raises(ValueError, match="'tolerance' strategy"):
+        SingleRunCriterion(strategy='tolerance')
 
 
 def test_get_next_resolution():

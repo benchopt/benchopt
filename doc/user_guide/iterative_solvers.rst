@@ -139,7 +139,7 @@ This method takes into account the maximal number of runs given as ``--max-runs`
 The convergence of a solver is determined by the ``StoppingCriterion.check_convergence()`` method, based on the objective curve so far.
 There are four ``StoppingCriterion`` implemented in benchopt:
 
-- ``SingleRunCriterion(stop_val)`` only calls the solver once with the given stop_val. This criterion is designed for methods that converge to a given value, when one aims to benchmark final performance of multiple solvers.
+- ``SingleRunCriterion(stop_val)`` only calls the solver once with the given stop_val. This criterion is designed for methods that converge to a given value, when one aims to benchmark final performance of multiple solvers. Its strategy is ``"run_once"``, or ``"callback"`` for solvers whose ``run`` takes a callback, which is then called ``stop_val`` times. ``"iteration"`` is the same as ``"run_once"``, and ``"tolerance"`` is not supported.
 - ``NoCriterion()`` runs the solver for a fixed number of steps, given by the ``--max-runs`` argument. This criterion deactivate the checks for convergence.
 - ``SufficientDescentCriterion(eps, patience, key_to_monitor, minimize)`` considers that the solver has converged when the relative decrease of the objective was less than a tolerance ``eps`` for more than ``patience`` calls to ``check_convergence``. The ``key_to_monitor`` is the key of the objective dictionary to monitor. By default, it is set to ``value``. The ``minimize`` parameter indicates whether the monitored key should be minimized (``True``, default) or maximized (``False``).
 - ``SufficientProgressCriterion(eps, patience, key_to_monitor, minimize)`` considers that the solver has converged when the objective has not decreased by more than a tolerance ``eps`` for more than ``patience`` calls to ``check_convergence``. The ``key_to_monitor`` is the key of the objective dictionary to monitor. By default, it is set to ``value``. The ``minimize`` parameter indicates whether the monitored key should be minimized (``True``, default) or maximized (``False``).
@@ -167,7 +167,6 @@ They are resolved for each run, as follows:
 
 - A solver's own ``sampling_strategy``, ``stopping_criterion`` or ``get_next`` takes precedence over the objective's.
 - A solver whose strategy is ``"run_once"`` is run once, whatever the objective's criterion.
-- A ``SingleRunCriterion`` without ``strategy`` uses ``"run_once"``, unless the solver or the objective sets a strategy.
 - Without any setting, solvers use ``sampling_strategy = "iteration"`` and ``SufficientProgressCriterion()``.
 
 A solver that sets ``sampling_strategy`` and a ``stopping_criterion`` with another ``strategy`` is reported as an error, and its runs are skipped.

@@ -1,6 +1,7 @@
 import inspect
 import itertools
 
+from .stopping_criterion import SingleRunCriterion
 from .utils.pdb_helpers import exception_handler
 from .utils.parametrized_name_mixin import is_matched
 from .utils.run_context import RunContext, RunContextError
@@ -102,9 +103,13 @@ def _materialize_axes(order, datasets, objectives, solvers):
 
 def _run_meta(benchmark, dataset, objective, solver, rep):
     """Build the per-run ``meta`` dict (feeds display and the cache key)."""
-    # for plotting purposes consider 'callback' as 'iteration'
-    sampling_strategy = solver.get_current('_sampling_strategy')
-    if sampling_strategy == 'callback':
+    # A single run gives one point, also with a callback. Otherwise, for
+    # plotting purposes, consider 'callback' as 'iteration'.
+    criterion = solver.get_current('_stopping_criterion')
+    sampling_strategy = criterion.strategy
+    if isinstance(criterion, SingleRunCriterion):
+        sampling_strategy = 'run_once'
+    elif sampling_strategy == 'callback':
         sampling_strategy = 'iteration'
     return {
         'base_seed': benchmark.seed,

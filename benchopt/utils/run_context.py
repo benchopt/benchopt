@@ -166,7 +166,7 @@ class RunContext:
         The solver's settings, including ``get_next``, take precedence over
         the objective's ones, which apply to the whole benchmark. A solver
         whose strategy is 'run_once' runs once, whatever the objective's
-        criterion, and a SingleRunCriterion without strategy is 'run_once'.
+        criterion.
         """
         from ..stopping_criterion import SingleRunCriterion
         from ..stopping_criterion import SufficientProgressCriterion
@@ -181,11 +181,9 @@ class RunContext:
                 getattr(objective, 'stopping_criterion', None)
                 or SufficientProgressCriterion()
             )
-        default = objective.sampling_strategy or (
-            'run_once' if isinstance(criterion, SingleRunCriterion)
-            else 'iteration'
+        criterion = criterion._with_strategy(
+            strategy, default=objective.sampling_strategy or 'iteration'
         )
-        criterion = criterion._with_strategy(strategy, default=default)
         get_next = getattr(solver, 'get_next', None)
         get_next = get_next or getattr(objective, 'get_next', None)
         if get_next is not None:
