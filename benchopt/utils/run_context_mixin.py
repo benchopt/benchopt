@@ -3,13 +3,10 @@ import warnings
 
 
 class _CurrentRun:
-    """Attribute of the current run, only set while a run context is attached.
-
-    It is read with ``get_current``.
-    """
+    """Attribute of the current run, read with ``get_current``."""
 
     def __init__(self, doc):
-        self.__doc__ = doc
+        self.__doc__ = f"{doc} Only set while a run context is attached."
 
     def __set_name__(self, owner, name):
         self.name = name
@@ -33,8 +30,9 @@ class _CurrentRun:
 class RunContextMixin:
     """Mixin that provides reproducible seeding and run-artifact helpers.
 
-    Attributes ending with ``_`` give the current run, in the methods that
-    benchopt calls. See :ref:`current_run`.
+    Attributes ending with ``_`` give the current run. They are only set
+    while a run context is attached, i.e. in the methods that benchopt calls.
+    See :ref:`current_run`.
     """
 
     dataset_ = _CurrentRun("Dataset of the current run.")
