@@ -393,14 +393,24 @@ class TestParametrizedNameMixin:
         # get_instance saves parameters even when __init__ is overridden.
         dataset = self.dataset.replace(
             "# CUSTOM",
-            "def __init__(self, n, seed): self.n, self.seed = 1, 2"
+            "def __init__(self, n, seed): self.n, self.seed = n, seed"
         )
         with temp_benchmark(datasets=dataset) as bench:
             cls = bench.get_datasets()[0]
             instance = cls.get_instance(n=10000, seed=1)
-        assert instance.n == 1
+        assert instance.n == 10000
         assert instance._parameters == {'n': 10000, 'seed': 1}
         assert repr(instance) == "test-dataset[n=10000,seed=1]"
+
+    def test_get_instance_raises_on_param_set_in_init(self):
+        # A parameter set to another value in __init__ raises an error.
+        dataset = self.dataset.replace(
+            "# CUSTOM", "def __init__(self, n, seed): self.n = 1"
+        )
+        with temp_benchmark(datasets=dataset) as bench:
+            cls = bench.get_datasets()[0]
+            with pytest.raises(ValueError, match="Parameter n set in"):
+                cls.get_instance(n=10000, seed=1)
 
     def test_pickling_preserves_parameters(self):
         # Instances can be pickled by joblib and reconstructed with intact

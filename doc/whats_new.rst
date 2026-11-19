@@ -24,6 +24,10 @@ CLI
 FIX
 ~~~
 
+- A parameter set in ``__init__`` to a value that differs from the one passed
+  to the component now raises an error, instead of silently ignoring the
+  parameter. By `Thomas Moreau`_ (:gh:`840`)
+
 - Datasets, objectives and solvers whose ``__init__`` does not call
   ``super().__init__()`` no longer fail with an ``AttributeError`` on
   ``_used_seed``. By `Thomas Moreau`_ (:gh:`1029`)
