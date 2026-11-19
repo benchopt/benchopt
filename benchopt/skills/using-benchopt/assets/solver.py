@@ -38,7 +38,7 @@ class Solver(BaseSolver):
     def skip(self):
         # Return a reason string to opt out of an incompatible objective, or
         # None to run. Checked before launching: prefer objective parameters.
-        # objective = self.get_current("objective")
+        # e.g. `if self.objective_.reg == 0:` (also `self.dataset_`)
         return None
 
     # Optional: absorb JIT / compilation cost before timed runs.

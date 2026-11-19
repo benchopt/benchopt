@@ -44,9 +44,9 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     - ``skip()``: used to skip some run configs, with incompatible
       parameters, datasets or objectives. It is checked once the dataset and
-      the objective are chosen, and accesses them with ``self.get_current``.
-      It returns the reason to skip, displayed in the CLI output, or None to
-      run.
+      the objective are chosen, and accesses them with ``self.dataset_``
+      and ``self.objective_``. It returns the reason to skip, displayed in
+      the CLI output, or None to run.
 
     - ``get_next(stop_val)``: Return the next iteration where the result will
       be evaluated. This is only necessary when `sampling_strategy` is set to
@@ -224,10 +224,10 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         """Hook to decide if the ``Solver`` is compatible with the objective.
 
         It is called before launching the runs. The objective and the dataset
-        are given by ``self.get_current``. Checks on their parameters
-        (e.g. ``objective.reg``, ``dataset.n_samples``) are free. Calling
-        ``objective.get_objective()`` or ``dataset.get_data()`` loads the data
-        on the machine running ``benchopt run``.
+        are ``self.objective_`` and ``self.dataset_``. Checks on their
+        parameters (e.g. ``objective.reg``, ``dataset.n_samples``) are free.
+        Calling ``objective.get_objective()`` or ``dataset.get_data()`` loads
+        the data on the machine running ``benchopt run``.
 
         Returns
         -------
@@ -533,8 +533,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     - ``skip()``: used to skip some run configs, with incompatible
       parameters or datasets. It is checked once the dataset is chosen, and
-      accesses it with ``self.get_current("dataset")``. It returns the reason
-      to skip, displayed in the CLI output, or None to run.
+      accesses it with ``self.dataset_``. It returns the reason to skip,
+      displayed in the CLI output, or None to run.
 
     - ``get_one_result()``: return one dummy result compatible with
       ``evaluate_result``. Used by ``benchopt test`` to validate metric
@@ -805,10 +805,10 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         """Used to decide if the ``Objective`` is compatible with the data.
 
         It is called before launching the runs, so skipping here removes the
-        runs of all solvers. The dataset is given by
-        ``self.get_current("dataset")``. Checks on its parameters (e.g.
-        ``dataset.n_samples``) are free. Calling ``dataset.get_data()`` loads
-        the data on the machine running ``benchopt run``.
+        runs of all solvers. The dataset is ``self.dataset_``. Checks on its
+        parameters (e.g. ``dataset.n_samples``) are free. Calling
+        ``dataset.get_data()`` loads the data on the machine running
+        ``benchopt run``.
 
         Returns
         -------

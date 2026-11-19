@@ -108,7 +108,7 @@ def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
     run_context : RunContext
         Per-run context (components, seeds, artifact path). Ignored by the
         cache; attached to the components during the run so user methods can
-        call ``get_seed()``, ``get_current()`` and
+        call ``get_seed()``, ``self.dataset_`` and
         ``get_run_output_path()``.
 
     Returns

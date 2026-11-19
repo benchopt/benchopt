@@ -58,10 +58,10 @@ API
   ``(skip, reason)`` tuple are deprecated. See :ref:`skipping_config`.
   By `Thomas Moreau`_ (:gh:`1031`)
 
-- ``skip`` takes no argument for all components. The new
-  ``get_current`` method gives the dataset, objective, solver,
-  repetition or parallel config of the current run in any method benchopt
-  calls, including ``skip`` and a ``slurm_params`` property, and raises if
+- ``skip`` takes no argument for all components. The new attributes
+  ``dataset_``, ``objective_``, ``solver_``, ``repetition_`` and
+  ``run_parallel_config_`` give the current run in any method benchopt
+  calls, including ``skip`` and a ``slurm_params`` property, and raise if
   the component is not chosen yet. See :ref:`current_run`.
   The run context is only attached to the components during these calls.
   By `Thomas Moreau`_ (:gh:`1042`)

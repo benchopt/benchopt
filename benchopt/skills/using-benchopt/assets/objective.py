@@ -42,8 +42,7 @@ class Objective(BaseObjective):
     # launching any run. Better decide on the parameters, which is free:
     # dataset.get_data() works (cached) but loads the data.
     # def skip(self):
-    #     dataset = self.get_current("dataset")
-    #     if dataset.n_samples < dataset.n_features:
+    #     if self.dataset_.n_samples < self.dataset_.n_features:
     #         return "underdetermined system not supported"
 
     # Optional: save artefacts (models, arrays) alongside the parquet.

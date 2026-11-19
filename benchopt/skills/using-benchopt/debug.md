@@ -67,8 +67,8 @@ objective = Objective.get_instance()         # add params if the objective takes
 objective.set_data(**data)                   # same data dict as above
 ```
 
-If `get_data` or `set_data` calls `get_seed`, `get_current` or `get_split`, call
-it inside a run context, as in the solver section below.
+If `get_data` or `set_data` calls `get_seed` or `get_split`, or uses
+`self.dataset_`, call it inside a run context, as in the solver section below.
 
 `evaluate_result(**solver_result)` takes the keys that the benchmark's
 `Solver.get_result()` returns — so the argument names are benchmark-specific
@@ -96,7 +96,7 @@ loop, caching or parallel workers around it:
 Solver = next(s for s in bench.get_solvers() if s.name == "my-solver")
 solver = Solver.get_instance(lr=1e-3)        # apply solver parameters
 
-# The run context gives `get_seed` and `get_current` their run.
+# The run context gives `get_seed` and `self.dataset_` their run.
 from benchopt.utils.run_context import RunContext
 with RunContext(dataset=dataset, objective=objective, solver=solver,
                 repetition=0):
