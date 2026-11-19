@@ -6,14 +6,15 @@ from benchopt.runner import run_benchmark
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.results import read_results
+from benchopt.utils.run_context import RunContext
 
 submitit = pytest.importorskip("submitit")
 
 from submitit.slurm.test_slurm import mocked_slurm  # noqa: E402
 from benchopt.parallel_backends.slurm_executor import (  # noqa: E402
     _split_by_slurm_config,
+    get_run_slurm_config,
     get_slurm_executor,
-    get_solver_slurm_config,
 )
 
 
@@ -133,7 +134,10 @@ def test_merge_configs(dummy_slurm_config):
 
     with mocked_slurm(), temp_benchmark(solvers=solver) as bench:
         solver = bench.get_solvers()[0].get_instance()
-        config_override = get_solver_slurm_config(solver, dummy_slurm_config)
+        run_context = RunContext(
+            parallel_config=dummy_slurm_config, solver=solver
+        )
+        config_override = get_run_slurm_config(run_context)
         executor = get_slurm_executor(bench, config_override)
 
     parameters = executor._executor.parameters

@@ -53,42 +53,29 @@ def merge_slurm_configs(*slurm_cfgs):
     return slurm_cfg
 
 
-def get_solver_slurm_config(solver, slurm_bench_cfg):
-    """Generate and merge SLURM configuration for a solver from static,
-    dynamic, and benchmark configs.
-    """
-    static_solver_cfg = getattr(solver, "slurm_params", {})
-    dyn_solver_cfg = {
-        k: v for k, v in solver._parameters.items() if k.startswith("slurm_")
-    }
-    solver_cfg = merge_slurm_configs(
-        slurm_bench_cfg,
-        static_solver_cfg,
-        dyn_solver_cfg,
-    )
-
-    return solver_cfg
-
-
 def get_run_slurm_config(run_context):
     """Return the SLURM config of a run.
 
-    It merges the SLURM keys of the run's parallel config with the SLURM config
-    of its solver. It is computed in the run context, as a ``slurm_params``
-    property can use the components of the run.
+    It merges the SLURM keys of the run's parallel config with the
+    ``slurm_params`` of its solver, then its ``slurm_*`` parameters. It is
+    computed in the run context, as a ``slurm_params`` property can use the
+    components of the run.
     """
     # Keys of the parallel config that do not configure SLURM.
     run_keys = ('backend', 'group_by', 'batch_n_jobs')
-    slurm_config = {
+    slurm_configs = [{
         k: v for k, v in run_context.parallel_config.items()
         if k not in run_keys
-    }
-    if run_context.solver is not None:
+    }]
+    solver = run_context.solver
+    if solver is not None:
         with run_context:
-            slurm_config = get_solver_slurm_config(
-                run_context.solver, slurm_config
-            )
-    return slurm_config
+            slurm_configs.append(getattr(solver, "slurm_params", {}))
+        slurm_configs.append({
+            k: v for k, v in solver._parameters.items()
+            if k.startswith("slurm_")
+        })
+    return merge_slurm_configs(*slurm_configs)
 
 
 def hashable_pytree(pytree):
