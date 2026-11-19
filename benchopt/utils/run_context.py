@@ -38,11 +38,11 @@ class RunContext:
     key, which already holds the components, the repetition and the seed.
 
     Config fields (set once in ``_run_benchmark``):
-        run_output_base, pdb, parallel_config
+        run_output_base, pdb, parallel_config, base_seed
 
     Per-run fields (filled by ``for_run`` for each dataset × objective ×
     solver × rep):
-        base_seed, dataset, objective, solver, repetition
+        dataset, objective, solver, repetition
 
     ``run_parallel_config`` is derived from them on first use.
     """
@@ -51,11 +51,11 @@ class RunContext:
     pdb: bool = False
     # Parallel config of the benchmark, as given by `--parallel-config`.
     parallel_config: dict | None = field(default=None, repr=False)
+    base_seed: int | str = ""
     # Per-run fields — cloned/updated for each (dataset, obj, solver, rep).
     # A field left as None means the corresponding component is not available
     # in this context (e.g. objective/solver/repetition during prepare) and
     # requesting its seed raises a clear error in get_seed.
-    base_seed: int | str = ""
     # A component can be a placeholder name, e.g. to test a dataset alone.
     dataset: RunContextMixin | str | None = field(default=None, repr=False)
     objective: RunContextMixin | str | None = field(default=None, repr=False)
@@ -106,7 +106,7 @@ class RunContext:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def for_run(self, objective, dataset, solver, repetition, base_seed):
+    def for_run(self, objective, dataset, solver, repetition):
         """Clone the context with the per-run fields.
 
         Enter the returned context (``with ctx:``) to attach it to the
@@ -114,7 +114,7 @@ class RunContext:
         """
         return dc_replace(
             self, objective=objective, dataset=dataset, solver=solver,
-            repetition=repetition, base_seed=base_seed, _previous=[],
+            repetition=repetition, _previous=[],
         )
 
     def _name(self, name):

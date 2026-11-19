@@ -853,7 +853,9 @@ class Benchmark:
         ))
 
         # The parallel config is copied, as `parallel_run` pops its run keys.
-        base_ctx = RunContext(parallel_config=dict(parallel_config or {}))
+        base_ctx = RunContext(
+            parallel_config=dict(parallel_config or {}), base_seed=self.seed
+        )
 
         # Handle not-installed datasets sequentially before parallelising
         n_total = len(all_datasets)
@@ -867,7 +869,7 @@ class Benchmark:
                 # Only the dataset is chosen when preparing it.
                 run_context = base_ctx.for_run(
                     objective=None, dataset=dataset, solver=None,
-                    repetition=None, base_seed=self.seed,
+                    repetition=None,
                 )
                 to_prepare.append(dict(
                     benchmark=self,

@@ -856,8 +856,8 @@ def test_run_context_scope():
     from benchopt.utils.temp_benchmark import TempSolver
 
     solver = TempSolver.get_instance()
-    ctx1 = RunContext().for_run(None, None, solver, 0, 0)
-    ctx2 = RunContext().for_run(None, None, solver, 1, 0)
+    ctx1 = RunContext().for_run(None, None, solver, 0)
+    ctx2 = RunContext().for_run(None, None, solver, 1)
     with ctx1:
         assert solver.get_current("solver") is solver
         assert solver.get_current("repetition") == 0

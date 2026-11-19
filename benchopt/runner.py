@@ -302,6 +302,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         run_output_base=output_path.parent / output_path.stem,
         # Copied, as `parallel_run` pops the run keys from `parallel_config`.
         parallel_config=dict(parallel_config or {}),
+        base_seed=benchmark.seed,
     )
 
     run_one_to_cvg_cached = benchmark.cache(

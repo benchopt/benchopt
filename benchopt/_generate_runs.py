@@ -134,7 +134,6 @@ def _prepare_objective(benchmark, run_context, dataset, objective, solver,
     """
     ctx = run_context.for_run(
         objective=objective, dataset=dataset, solver=solver, repetition=0,
-        base_seed=benchmark.seed,
     )
 
     try:
@@ -183,7 +182,7 @@ def generate_run_kwargs(
     rep_is_level = order[-1] != 'repetition'
     axis_items = _materialize_axes(order, datasets, objectives, solvers)
     terminal.set_levels(order if rep_is_level else order[:-1])
-    base_ctx = run_context or RunContext()
+    base_ctx = run_context or RunContext(base_seed=benchmark.seed)
 
     # Each `skip` is checked once, at the first level where all the
     # components it receives are chosen.
@@ -207,9 +206,7 @@ def generate_run_kwargs(
             a: chosen[a] if a in order[:depth + 1] else None
             for a in CANONICAL_AXES
         }
-        ctx = base_ctx.for_run(
-            **components, repetition=0, base_seed=benchmark.seed
-        )
+        ctx = base_ctx.for_run(**components, repetition=0)
         for level in levels:
             status, reason = 'error', None
             with ctx, exception_handler(terminal, pdb=base_ctx.pdb):
@@ -232,7 +229,7 @@ def generate_run_kwargs(
         # when it starts.
         run_ctx = base_ctx.for_run(
             objective=objective, dataset=dataset, solver=solver,
-            repetition=rep, base_seed=benchmark.seed,
+            repetition=rep,
         )
         return dict(
             benchmark=benchmark, dataset=dataset, objective=objective,

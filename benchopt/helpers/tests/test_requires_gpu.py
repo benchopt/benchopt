@@ -23,7 +23,6 @@ def check_gpu(component, parallel_config):
     """Call `gpu_available` in a run of ``component`` with this config."""
     with RunContext(parallel_config=parallel_config).for_run(
         objective=None, dataset=None, solver=component, repetition=0,
-        base_seed=0,
     ):
         return gpu_available(component)
 
