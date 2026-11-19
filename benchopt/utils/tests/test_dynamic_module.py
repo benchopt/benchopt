@@ -7,6 +7,8 @@ from joblib import Parallel, delayed
 from benchopt.cli.main import run as run_cmd
 from benchopt.cli.main import install as install_cmd
 from benchopt.utils.dynamic_modules import FailedImport
+from benchopt.utils.run_context import RunContext
+from benchopt.stopping_criterion import StoppingCriterion
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.temp_benchmark import DEFAULT_SOLVERS
 
@@ -153,6 +155,28 @@ def test_ast_replacement(params):
         assert "Could not evaluate statically" in str(excinfo.value)
         assert "solver_0.py" in str(excinfo.value)
         assert f"'{component}'" in str(excinfo.value)
+
+
+def test_ast_replacement_inherited_methods():
+    # The methods of a solver that cannot be imported can come from a base
+    # class, unknown to the AST replacement. It must still be possible to
+    # create an instance, e.g. to get its stopping criterion in
+    # `benchopt test`.
+    solver = """
+    from benchopt.utils.temp_benchmark import TempSolver
+    failure
+
+    class Solver(TempSolver):
+        name = 'my-solver'
+    """
+    with temp_benchmark(solvers=solver) as bench:
+        Solver, _ = bench.check_solver_patterns(["my-solver"])[0]
+        assert isinstance(Solver, FailedImport)
+        objective = bench.get_benchmark_objective().get_instance()
+        solver = Solver.__new__(Solver)
+        with RunContext(objective=objective, solver=solver):
+            criterion = solver.get_current('_stopping_criterion')
+        assert isinstance(criterion, StoppingCriterion)
 
 
 @pytest.mark.parametrize("params", [

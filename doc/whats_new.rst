@@ -28,7 +28,7 @@ FIX
   resolved for each run, from the solver then the ``Objective``, instead of
   being copied on the solver class. A ``"run_once"`` solver now always runs
   once, and an inconsistent strategy only fails its solver. See
-  :ref:`global_strategy`. By `Thomas Moreau`_ (:gh:`1045`)
+  :ref:`global_strategy`. By `Thomas Moreau`_ (:gh:`1045`, :gh:`1047`)
 
 - A parameter set in ``__init__`` to a value that differs from the one passed
   to the component now raises an error, instead of silently ignoring the
