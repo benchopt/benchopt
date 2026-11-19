@@ -20,7 +20,7 @@ solver = Solver.get_instance()
 
 # The run context gives `get_seed`, `get_split` and `self.dataset_` their run.
 with RunContext(dataset=dataset, objective=objective, solver=solver,
-                repetition=0):
+                repetition=0, base_seed=0):
     # --- Inspect the data and the objective ---
     data = dataset.get_data()
     print("data keys:", list(data.keys()))

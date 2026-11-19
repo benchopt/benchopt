@@ -34,8 +34,7 @@ class RunContext:
     Holds the components of the run and everything needed to compute
     reproducible seeds, locate the per-run artifact directory, and carry
     runtime flags. It is attached to its components only while benchopt calls
-    their methods, with ``with run_context:``. Excluded from the joblib cache
-    key, which already holds the components, the repetition and the seed.
+    their methods, with ``with run_context:``.
 
     Config fields (set once in ``_run_benchmark``):
         run_output_base, pdb, parallel_config, base_seed

@@ -3,7 +3,10 @@ import warnings
 
 
 class _CurrentRun:
-    """Attribute of the current run, read with ``get_current``."""
+    """Attribute of the current run, only set while a run context is attached.
+
+    It is read with ``get_current``.
+    """
 
     def __init__(self, doc):
         self.__doc__ = doc
@@ -125,8 +128,9 @@ class RunContextMixin:
             warnings.warn(
                 f"`{name}` receives the data as keyword arguments, which is "
                 "deprecated and will be removed in benchopt 1.12. Define "
-                "`skip(self)` instead, and use `self.get_current` to "
-                "access the other components without loading the data.",
+                "`skip(self)` instead, and use `self.dataset_` or "
+                "`self.objective_` to access the other components without "
+                "loading the data.",
                 FutureWarning,
             )
             is_solver = self._base_class_name == 'Solver'

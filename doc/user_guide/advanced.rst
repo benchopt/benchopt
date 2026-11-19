@@ -93,8 +93,7 @@ Accessing the components of the current run
 Each run combines a dataset, an objective, a solver and a repetition. In the
 methods that benchopt calls on a component, e.g. ``skip``, ``get_data``,
 ``set_objective`` or a ``slurm_params`` property, the attributes ending with
-``_`` describe the current run, as in scikit-learn, where they describe the
-fitted data:
+``_`` describe the current run:
 
 - ``self.dataset_``, ``self.objective_``, ``self.solver_``: the components of
   the run.
