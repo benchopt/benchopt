@@ -57,7 +57,7 @@ FIX
 
 - ``benchopt install`` installs the ``requirements`` that a component inherits
   from a base class defined in ``benchmark_utils`` or in its own module, also
-  when the component cannot be imported yet. By `Thomas Moreau`_ (:gh:`XXXX`)
+  when the component cannot be imported yet. By `Thomas Moreau`_ (:gh:`1046`)
 
 API
 ~~~
