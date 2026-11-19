@@ -159,6 +159,36 @@ class RunContext:
             config = dict(backend='submitit', **get_run_slurm_config(self))
         return config
 
+    @cached_property
+    def _stopping_criterion(self):
+        """Stopping criterion of the run, with its sampling strategy set.
+
+        The solver's settings take precedence over the objective's ones,
+        which apply to the whole benchmark. A solver whose strategy is
+        'run_once' runs once, whatever the objective's criterion.
+        """
+        from ..stopping_criterion import SingleRunCriterion
+        from ..stopping_criterion import SufficientProgressCriterion
+        solver = self.get_component('solver')
+        objective = self.get_component('objective')
+        strategy = solver.sampling_strategy
+        criterion = getattr(solver, 'stopping_criterion', None)
+        if criterion is None:
+            strategy = strategy or objective.sampling_strategy
+            criterion = (
+                SingleRunCriterion() if strategy == 'run_once' else
+                getattr(objective, 'stopping_criterion', None)
+                or SufficientProgressCriterion()
+            )
+        return criterion._with_strategy(
+            strategy, default=objective.sampling_strategy or 'iteration'
+        )
+
+    @property
+    def _sampling_strategy(self):
+        """Sampling strategy of the run."""
+        return self._stopping_criterion.strategy
+
     def __enter__(self):
         components = [
             c for c in (self.dataset, self.objective, self.solver)

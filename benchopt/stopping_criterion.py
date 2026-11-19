@@ -122,22 +122,7 @@ class StoppingCriterion():
                 "to implement a new StoppingCriterion."
             )
 
-        if self.strategy is None:
-            if solver is None:
-                self.strategy = 'iteration'
-            else:
-                self.strategy = solver.sampling_strategy or 'iteration'
-        elif solver is not None and solver.sampling_strategy is not None:
-            assert solver.sampling_strategy == self.strategy, (
-                'The strategy is set both in Solver.sampling_strategy and in '
-                'its criterion, and it does not match. Only set it once.'
-            )
-
-        # Create a new instance of the class
-        stopping_criterion = self.__class__(
-            strategy=self.strategy, key_to_monitor=self.key_to_monitor,
-            minimize=self.minimize, **self.kwargs,
-        )
+        stopping_criterion = self._with_strategy()
 
         # Set stopping criterion parameters depending on run parameters
         stopping_criterion.rho = RHO
@@ -175,6 +160,19 @@ class StoppingCriterion():
         stopping_criterion._prev_objective = 1e100
 
         return stopping_criterion
+
+    def _with_strategy(self, strategy=None, default='iteration'):
+        """Copy the criterion, with ``strategy`` if it does not set one."""
+        if None not in (self.strategy, strategy):
+            assert self.strategy == strategy, (
+                'The strategy is set both in Solver.sampling_strategy and in '
+                'its criterion, and it does not match. Only set it once.'
+            )
+        return self.__class__(
+            strategy=self.strategy or strategy or default,
+            key_to_monitor=self.key_to_monitor, minimize=self.minimize,
+            **self.kwargs,
+        )
 
     def init_stop_val(self):
         stop_val = (
@@ -328,7 +326,7 @@ class StoppingCriterion():
     def __reduce__(self):
         kwargs = dict(
             strategy=self.strategy, key_to_monitor=self.key_to_monitor,
-            **self.kwargs
+            minimize=self.minimize, **self.kwargs
         )
         if getattr(self, 'max_runs', None):
             runner_kwargs = dict(
@@ -337,7 +335,7 @@ class StoppingCriterion():
             )
         else:
             runner_kwargs = None
-        return self._reconstruct, (self.__class__, kwargs, runner_kwargs)
+        return self._reconstruct, (kwargs, runner_kwargs)
 
     def get_next_stop_val(self, stop_val):
         if self.strategy == "tolerance":

@@ -82,7 +82,8 @@ When *every* solver in the benchmark is fixed-budget (e.g. a DL benchmark where
 all solvers train for N epochs), set `stopping_criterion` **once on the
 `Objective`** rather than repeating it per solver — like `sampling_strategy`, a
 solver that doesn't define its own inherits the objective's, so this makes the
-no-truncation behavior benchmark-wide. The early-truncation symptom is covered
+no-truncation behavior benchmark-wide. A solver with `sampling_strategy =
+"run_once"` still runs once, whatever the objective's criterion. The early-truncation symptom is covered
 in [debug.md](./debug.md).
 
 ### Controlling randomness

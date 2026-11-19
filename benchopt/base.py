@@ -8,11 +8,9 @@ from traceback import print_exc
 
 from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
-from .stopping_criterion import SufficientProgressCriterion
 
 from .utils.misc import NamedTemporaryFile
 from .utils.terminal_output import colorify, CYAN
-from .utils.class_property import classproperty
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
 from .utils.run_context_mixin import RunContextMixin
@@ -99,38 +97,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     # Warm up once per solver, not once per run.
     _keep_state = ('_warmup_done',)
 
-    @classproperty
-    def _stopping_criterion(cls):
-        if hasattr(cls, 'stopping_criterion'):
-            return cls.stopping_criterion
-        if cls.sampling_strategy == 'run_once':
-            return SingleRunCriterion()
-        return SufficientProgressCriterion(strategy=cls.sampling_strategy)
-
-    @classproperty
-    def _solver_strategy(cls):
-        """Get the effective solver strategy."""
-        return (
-            cls._stopping_criterion.strategy or cls.sampling_strategy
-            or 'iteration'
-        )
-
-    @classmethod
-    def _inherit_stopping_criterion(cls, objective):
-        """Inherit the stopping criterion from an objective if needed."""
-        # If not set, inherit sampling_strategy and stopping_criterion from
-        # objective so defaults can be specified at the benchmark level.
-        #
-        # Set the class attribute so that it can easily be checked in the
-        # benchmark tests, even when the solver is not importable.
-        if cls.sampling_strategy is None:
-            cls.sampling_strategy = objective.sampling_strategy
-        if (
-            not hasattr(cls, 'stopping_criterion') and
-            hasattr(objective, 'stopping_criterion')
-        ):
-            cls.stopping_criterion = objective.stopping_criterion
-
     def _set_objective(self, objective):
         """Set the objective of the solver.
 
@@ -140,10 +106,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             The objective function for the current optimization problem.
 
         """
-        # If not set, inherit sampling_strategy and stopping_criterion from
-        # objective so defaults can be specified at the benchmark level.
-        self._inherit_stopping_criterion(objective)
-
         objective_dict = objective.get_objective()
 
         assert objective_dict is not None, (
@@ -254,11 +216,10 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             the solver on an easy to solve problem.
         """
 
-        if self._solver_strategy == "callback":
-            stopping_criterion = (
-                SingleRunCriterion(stop_val=stop_val)
-                .get_runner_instance(solver=self)
-            )
+        if self.get_current('_sampling_strategy') == "callback":
+            stopping_criterion = SingleRunCriterion(
+                stop_val=stop_val, strategy="callback"
+            ).get_runner_instance(solver=self)
             run_once_cb = _Callback(
                 lambda x: [{'objective_value': 1}],
                 solver=self,

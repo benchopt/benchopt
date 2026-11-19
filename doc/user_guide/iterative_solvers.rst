@@ -159,3 +159,5 @@ Both the sampling strategy and stopping criterion can be set globally for all so
         )
 
 This allows to avoid setting these attributes in each solver when the same strategy and criterion should be used for most solvers.
+A solver can still set its own ``sampling_strategy`` or ``stopping_criterion``, which takes precedence over the objective's.
+A solver whose strategy is ``"run_once"`` is run once, whatever the objective's criterion.

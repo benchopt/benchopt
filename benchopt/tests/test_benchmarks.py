@@ -209,10 +209,11 @@ def test_solver_stopping_criterion(benchmark, solver_class, test_dataset_name):
 
     objective = objective_class.get_instance(**config['objective'])
 
-    # Make sure to inherit the objective if the stopping criterion
-    # is set globally for this benchmark
-    solver_class._inherit_stopping_criterion(objective)
-    stopping_criterion = solver_class._stopping_criterion
+    # The criterion can come from the objective. The solver is not
+    # initialized, as `__init__` can need its requirements.
+    solver = solver_class.__new__(solver_class)
+    with RunContext(objective=objective, solver=solver):
+        stopping_criterion = solver.get_current('_stopping_criterion')
 
     # check that stopping_criterion has the proper type
     assert isinstance(stopping_criterion, StoppingCriterion), (
@@ -295,7 +296,7 @@ def _test_solver_one_objective(solver, objective):
 
     is_convex = getattr(objective, "is_convex", False)
 
-    if solver._solver_strategy in ['iteration', 'callback']:
+    if solver.get_current('_sampling_strategy') in ['iteration', 'callback']:
         stop_val = 5000 if is_convex else 2
     else:
         stop_val = 1e-10 if is_convex else 1e-2
