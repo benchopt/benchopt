@@ -2,8 +2,45 @@ import inspect
 import warnings
 
 
+class _CurrentRun:
+    """Attribute of the current run, read with ``get_current``."""
+
+    def __init__(self, doc):
+        self.__doc__ = f"{doc} Only set while a run context is attached."
+
+    def __set_name__(self, owner, name):
+        self.name = name
+
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        if self.name in obj.__dict__:
+            return obj.__dict__[self.name]
+        return obj.get_current(self.name[:-1])
+
+    def __set__(self, obj, value):
+        warnings.warn(
+            f"`{self.name}` is set by benchopt to describe the current run. "
+            f"Setting it on {obj} hides the run's value from this "
+            "component. Use another name.", UserWarning, stacklevel=2
+        )
+        obj.__dict__[self.name] = value
+
+
 class RunContextMixin:
-    """Mixin that provides reproducible seeding and run-artifact helpers."""
+    """Mixin that provides reproducible seeding and run-artifact helpers.
+
+    Attributes ending with ``_`` give the current run. They are only set
+    while a run context is attached, i.e. in the methods that benchopt calls.
+    See :ref:`current_run`.
+    """
+
+    dataset_ = _CurrentRun("Dataset of the current run.")
+    objective_ = _CurrentRun("Objective of the current run.")
+    solver_ = _CurrentRun("Solver of the current run.")
+    repetition_ = _CurrentRun("Repetition index of the current run.")
+    parallel_config_ = _CurrentRun("Parallel config of the benchmark run.")
+    run_parallel_config_ = _CurrentRun("Workers' parallel config, or None.")
 
     # Set by the runner before any user method is called.
     _run_context = None
@@ -79,40 +116,28 @@ class RunContextMixin:
             **self._seed_params,
         )
 
-    def _skip_reason(self, *args):
-        """Return the reason to skip from ``self.skip(*args)``, or None to run.
-
-        Its expected signature is the one of `skip` in the benchopt base class.
-        The base classes override it to pass their attached components.
-        """
-        from benchopt import BaseObjective
-
+    def _skip_reason(self):
+        """Return the reason to skip from ``self.skip()``, or None to run."""
         name = f"{type(self)!r}.skip"
-        base = next(
-            klass for klass in type(self).__mro__
-            if '_base_class_name' in vars(klass)
-        )
-        signature = inspect.signature(base.skip)
-        legacy = args and tuple(inspect.signature(self.skip).parameters) != (
-            tuple(signature.parameters)[1:]
-        )
+        legacy = len(inspect.signature(self.skip).parameters) > 0
         if not legacy:
-            output = self.skip(*args)
+            output = self.skip()
         else:
             # XXX: remove in benchopt 1.12, with the skip receiving the data.
             warnings.warn(
                 f"`{name}` receives the data as keyword arguments, which is "
                 "deprecated and will be removed in benchopt 1.12. Define "
-                f"`skip{signature}` instead, so the skip can be checked "
-                "without loading the data.",
+                "`skip(self)` instead, and use `self.dataset_` or "
+                "`self.objective_` to access the other components without "
+                "loading the data.",
                 FutureWarning,
             )
-            # It receives the output of the first argument: the objective of a
-            # solver, or the dataset of an objective.
-            upstream = args[0]
+            is_solver = self._base_class_name == 'Solver'
+            upstream = self.get_current(
+                'objective' if is_solver else 'dataset'
+            )
             data = (
-                upstream.get_objective() if isinstance(upstream, BaseObjective)
-                else upstream.get_data()
+                upstream.get_objective() if is_solver else upstream.get_data()
             )
             output = self.skip(**data)
 
@@ -135,6 +160,22 @@ class RunContextMixin:
             f"`{name}` should return None to run, or a non-empty string "
             f"giving the reason to skip. Got {output!r}."
         )
+
+    def get_current(self, name):
+        """Return ``name`` of the current run, e.g. ``self.dataset_``."""
+        names = (
+            'dataset', 'objective', 'solver', 'repetition',
+            'parallel_config', 'run_parallel_config',
+        )
+        if name not in names:
+            raise ValueError(f"name should be one of {names}. Got {name!r}.")
+        if self._run_context is None:
+            raise RuntimeError(
+                f"No run context is attached to {self}. The current run is "
+                "only available in the methods that benchopt calls on it, or "
+                "in a `with RunContext(...)` block."
+            )
+        return self._run_context.get_component(name)
 
     def get_run_output_path(self):
         """Return a directory for saving artifacts from the current run.

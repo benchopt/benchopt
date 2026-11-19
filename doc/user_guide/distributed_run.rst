@@ -198,6 +198,12 @@ priority given to the run-specific parameters. Note that in this case, the jobs
 with different SLURM parameters will be launched as one job array per
 configuration.
 
+The SLURM configuration is computed for each run, in the context of the run.
+``slurm_params`` can thus be a property that uses the run's other components,
+with ``self.dataset_``, and the config given with ``--parallel-config``, with
+``self.parallel_config_``. It should not use ``self.run_parallel_config_``,
+which depends on it.
+
 The solvers' ``skip`` runs on the node running ``benchopt run``, which might
 not have the hardware of the jobs. To skip a solver when its jobs get no GPU,
 use :func:`~benchopt.helpers.requires_gpu.gpu_available` in ``skip``. It

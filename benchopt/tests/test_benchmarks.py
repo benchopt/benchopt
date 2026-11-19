@@ -61,11 +61,11 @@ def test_dataset_get_data(benchmark, dataset_class):
 
     # ensure classes calling `get_seed` work properly. Use placeholder
     # objective/solver names to mimic known dimension at runtime.
-    RunContext().set_run_context(
-        "dummy", dataset, "dummy", repetition=0, base_seed=0
-    )
-
-    data = dataset.get_data()
+    with RunContext(
+        objective="dummy", dataset=dataset, solver="dummy",
+        repetition=0, base_seed=0
+    ):
+        data = dataset.get_data()
     assert isinstance(data, (tuple, dict)), (
         "Output of get_data should be a 2-tuple or a dict."
     )
@@ -88,18 +88,18 @@ def test_benchmark_objective(benchmark, test_dataset_name):
 
     # ensure classes calling `get_seed` work properly. Use a placeholder
     # solver name so all methods can use any seed dimension.
-    RunContext().set_run_context(
-        objective, dataset, "dummy", repetition=0, base_seed=0
-    )
-
-    # get one value for the objective, with the test_dataset
-    objective._set_dataset(dataset)
-    result = objective._get_one_result()
-    if result is None:
-        pytest.skip(
-            "Objective needs to implement get_one_result to be tested."
-        )
-    objective_output = objective(result)
+    with RunContext(
+        objective=objective, dataset=dataset, solver="dummy",
+        repetition=0, base_seed=0
+    ):
+        # get one value for the objective, with the test_dataset
+        objective._load_data()
+        result = objective._get_one_result()
+        if result is None:
+            pytest.skip(
+                "Objective needs to implement get_one_result to be tested."
+            )
+        objective_output = objective(result)
 
     # check that the output has proper type and is not empty
     assert isinstance(objective_output, list), (
@@ -230,16 +230,15 @@ def test_solver_stopping_criterion(benchmark, solver_class, test_dataset_name):
 
         # ensure classes calling `get_seed` work properly.
         dataset = dataset_class.get_instance(**config['dataset'])
-        RunContext().set_run_context(
-            objective, dataset, solver_class.name, repetition=0,
-            base_seed=benchmark.seed
-        )
-
-        objective._set_dataset(dataset)
-        result = objective._get_one_result()
-        if result is None:
-            return
-        objective_output = objective(result)[0]
+        with RunContext(
+            objective=objective, dataset=dataset, solver=solver_class.name,
+            repetition=0, base_seed=benchmark.seed
+        ):
+            objective._load_data()
+            result = objective._get_one_result()
+            if result is None:
+                return
+            objective_output = objective(result)[0]
 
         requested_key = stopping_criterion.key_to_monitor
         available_keys = list(objective_output.keys())
@@ -270,21 +269,20 @@ def test_solver_run(
         dataset = dataset_class.get_instance(**config['dataset'])
         objective = objective_class.get_instance(**config['objective'])
         solver = solver_class.get_instance(**config['solver'])
-        RunContext().set_run_context(
-            objective, dataset, solver, repetition=0, base_seed=benchmark.seed
-        )
-        objective._attach_dataset(dataset)
-        solver._attach_objective(objective)
-        for component in [dataset, objective, solver]:
-            reason = component._skip_reason()
-            if reason is not None:
-                reasons.append(reason)
-                break
-        else:
-            objective._set_dataset(dataset)
-            solver._set_objective(objective)
-            _test_solver_one_objective(solver, objective)
-            return
+        with RunContext(
+            objective=objective, dataset=dataset, solver=solver,
+            repetition=0, base_seed=benchmark.seed
+        ):
+            for component in [dataset, objective, solver]:
+                reason = component._skip_reason()
+                if reason is not None:
+                    reasons.append(reason)
+                    break
+            else:
+                objective._load_data()
+                solver._set_objective(objective)
+                _test_solver_one_objective(solver, objective)
+                return
 
     reasons = sorted(set(reasons))
     if len(reasons) == 1:

@@ -454,8 +454,9 @@ def test_skip_before_dispatch(skip_on):
         parameters = {{"max_n": [1, 2]}}
         def set_data(self, X, y, n): self.n = n
         def get_objective(self): return dict(X=None, y=None, n=self.n)
-        def skip(self, dataset):
+        def skip(self):
             print("OBJECTIVE#SKIP")
+            dataset = self.dataset_
             n = {"dataset.get_data()['n']" if on_data else "dataset.n"}
             if n > self.max_n:
                 return "too large"
@@ -465,8 +466,10 @@ def test_skip_before_dispatch(skip_on):
     class Solver(TempSolver):
         name = "test-solver"
         parameters = {{"min_n": [1, 2]}}
-        def skip(self, objective, dataset):
+        def skip(self):
             print("SOLVER#SKIP")
+            objective = self.objective_
+            dataset = self.dataset_
             n = {"objective.get_objective()['n']" if on_data else "dataset.n"}
             if n < self.min_n:
                 return "too small"
@@ -504,7 +507,7 @@ def test_invalid_skip_output(component, output, no_debug_log):
 
     class Objective(TempObjective):
         parameters = {{"bad": [True, False]}}
-        def skip(self, dataset):
+        def skip(self):
             if self.bad: return {output}
     """
     solver = f"""from benchopt.utils.temp_benchmark import TempSolver
@@ -514,7 +517,7 @@ def test_invalid_skip_output(component, output, no_debug_log):
         sampling_strategy = "run_once"
         parameters = {{"bad": [True, False]}}
         def run(self, _): print("Solver#RUN")
-        def skip(self, objective, dataset):
+        def skip(self):
             if self.bad: return {output}
     """
     dataset = f"""from benchopt.utils.temp_benchmark import TempDataset

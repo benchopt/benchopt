@@ -53,21 +53,29 @@ def merge_slurm_configs(*slurm_cfgs):
     return slurm_cfg
 
 
-def get_solver_slurm_config(solver, slurm_bench_cfg):
-    """Generate and merge SLURM configuration for a solver from static,
-    dynamic, and benchmark configs.
-    """
-    static_solver_cfg = getattr(solver, "slurm_params", {})
-    dyn_solver_cfg = {
-        k: v for k, v in solver._parameters.items() if k.startswith("slurm_")
-    }
-    solver_cfg = merge_slurm_configs(
-        slurm_bench_cfg,
-        static_solver_cfg,
-        dyn_solver_cfg,
-    )
+def get_run_slurm_config(run_context):
+    """Return the SLURM config of a run.
 
-    return solver_cfg
+    It merges the SLURM keys of the run's parallel config with the
+    ``slurm_params`` of its solver, then its ``slurm_*`` parameters. It is
+    computed in the run context, as a ``slurm_params`` property can use the
+    components of the run.
+    """
+    # Keys of the parallel config that do not configure SLURM.
+    run_keys = ('backend', 'group_by', 'batch_n_jobs')
+    slurm_configs = [{
+        k: v for k, v in run_context.parallel_config.items()
+        if k not in run_keys
+    }]
+    solver = run_context.solver
+    if solver is not None:
+        with run_context:
+            slurm_configs.append(getattr(solver, "slurm_params", {}))
+        slurm_configs.append({
+            k: v for k, v in solver._parameters.items()
+            if k.startswith("slurm_")
+        })
+    return merge_slurm_configs(*slurm_configs)
 
 
 def hashable_pytree(pytree):
@@ -82,21 +90,21 @@ def hashable_pytree(pytree):
         return pytree
 
 
-def _split_by_slurm_config(batch, slurm_config):
+def _split_by_slurm_config(batch):
     """Sub-partition a `group_runs` batch into ``(job_slurm_config, runs)``
     pairs, one per distinct SLURM config found in the batch.
 
     A batch shares its `group_by` key, but can still span several solvers
     with different `slurm_params` (e.g. ``group_by=['dataset']``), so it is
     never itself the SLURM job unit -- each same-config run of items is.
+    The config of each run is given by `RunContext.run_parallel_config`.
     """
     groups = {}
     for kwargs in batch:
-        solver = kwargs.get("solver")
-        if solver is not None:
-            job_slurm_config = get_solver_slurm_config(solver, slurm_config)
-        else:
-            job_slurm_config = slurm_config
+        job_slurm_config = {
+            k: v for k, v in kwargs['run_context'].run_parallel_config.items()
+            if k != 'backend'
+        }
 
         cfg = hashable_pytree(job_slurm_config)
         if cfg not in groups:
@@ -105,9 +113,7 @@ def _split_by_slurm_config(batch, slurm_config):
     return groups.values()
 
 
-def run_on_slurm(
-    benchmark, slurm_config, run_batch, batches, batch_n_jobs=1
-):
+def run_on_slurm(benchmark, run_batch, batches, batch_n_jobs=1):
     """Submit each pre-grouped batch (see `group_runs`) as SLURM job(s).
 
     ``batch_n_jobs`` sizes the job wall-time here, with each
@@ -119,9 +125,7 @@ def run_on_slurm(
     tasks = []
     with ExitStack() as stack:
         for batch in batches:
-            for job_slurm_config, run_group in _split_by_slurm_config(
-                batch, slurm_config
-            ):
+            for job_slurm_config, run_group in _split_by_slurm_config(batch):
                 # A job runs its group in `waves` rounds, so it needs `waves`
                 # times the per-run timeout; different lengths get their own
                 # array.

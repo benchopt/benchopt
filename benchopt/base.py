@@ -42,9 +42,11 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     Optionaly, the ``Solver`` can implement the following methods to change its
     behavior:
 
-    - ``skip(self, objective, dataset)``: decide if the solver is compatible
-      with the objective and the dataset of the run. It returns the reason to
-      skip, displayed in the CLI output, or None to run.
+    - ``skip()``: used to skip some run configs, with incompatible
+      parameters, datasets or objectives. It is checked once the dataset and
+      the objective are chosen, and accesses them with ``self.dataset_``
+      and ``self.objective_``. It returns the reason to skip, displayed in
+      the CLI output, or None to run.
 
     - ``get_next(stop_val)``: Return the next iteration where the result will
       be evaluated. This is only necessary when `sampling_strategy` is set to
@@ -113,12 +115,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             or 'iteration'
         )
 
-    def _attach_objective(self, objective):
-        self._objective = objective
-
-    def _skip_reason(self):
-        return super()._skip_reason(self._objective, self._objective._dataset)
-
     @classmethod
     def _inherit_stopping_criterion(cls, objective):
         """Inherit the stopping criterion from an objective if needed."""
@@ -136,7 +132,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             cls.stopping_criterion = objective.stopping_criterion
 
     def _set_objective(self, objective):
-        """Store the objective for hashing/pickling and check its compatibility
+        """Set the objective of the solver.
 
         Parameters
         ----------
@@ -144,8 +140,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             The objective function for the current optimization problem.
 
         """
-        self._attach_objective(objective)
-
         # If not set, inherit sampling_strategy and stopping_criterion from
         # objective so defaults can be specified at the benchmark level.
         self._inherit_stopping_criterion(objective)
@@ -226,20 +220,14 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         """
         ...
 
-    def skip(self, objective, dataset):
+    def skip(self):
         """Hook to decide if the ``Solver`` is compatible with the objective.
 
-        It is called before launching the runs. Checks on the parameters
-        (e.g. ``objective.reg``, ``dataset.n_samples``) are free. Calling
-        ``objective.get_objective()`` or ``dataset.get_data()`` loads the data
-        on the machine running ``benchopt run``.
-
-        Parameters
-        ----------
-        objective : benchopt.BaseObjective
-            The objective of the run.
-        dataset : benchopt.BaseDataset
-            The dataset of the run.
+        It is called before launching the runs. The objective and the dataset
+        are ``self.objective_`` and ``self.dataset_``. Checks on their
+        parameters (e.g. ``objective.reg``, ``dataset.n_samples``) are free.
+        Calling ``objective.get_objective()`` or ``dataset.get_data()`` loads
+        the data on the machine running ``benchopt run``.
 
         Returns
         -------
@@ -329,8 +317,9 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     Optionally, datasets can implement:
 
-    - ``skip()``: decide if the dataset parameters are compatible. It returns
-      the reason to skip, displayed in the CLI output, or None to run.
+    - ``skip()``: used to skip some run configs, with incompatible
+      parameters. It returns the reason to skip, displayed in the CLI output,
+      or None to run.
 
     - ``prepare()``: performs expensive one-time preparation (downloads,
       extraction, preprocessing) that is cached and separated from loading.
@@ -443,24 +432,20 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         ...
 
     @staticmethod
-    def _prepare(dataset, base_seed=0):
+    def _prepare(dataset, base_seed, run_context):
         """Preparation function, to map to prepare or get_data.
 
-        ``base_seed`` is part of the joblib cache key. Note that only
-        use_dataset is known at this point; requesting the objective/solver/
-        repetition seed raises an error.
+        ``base_seed`` is part of the joblib cache key, ``run_context`` is not.
+        Note that only use_dataset is known at this point; requesting the
+        objective/solver/repetition seed raises an error.
         """
-        from .utils.run_context import RunContext
-        RunContext(
-            base_seed=str(base_seed),
-            dataset_name=str(dataset),
-        ).attach(objective=None, dataset=dataset, solver=None)
-        if type(dataset).prepare is not BaseDataset.prepare:
-            dataset.prepare()
-        else:
-            # Backward-compat: fall back to get_data() when prepare() is not
-            # overridden, preserving the old --download behaviour.
-            dataset.get_data()
+        with run_context:
+            if type(dataset).prepare is not BaseDataset.prepare:
+                dataset.prepare()
+            else:
+                # Backward-compat: fall back to get_data() when prepare() is
+                # not overridden, preserving the old --download behaviour.
+                dataset.get_data()
 
 
 def _cached_prepare(benchmark, dataset, force=False):
@@ -470,26 +455,25 @@ def _cached_prepare(benchmark, dataset, force=False):
     from the cache key by listing 'base_seed' in prepare_cache_ignore.
     """
     cache_ignore = getattr(dataset, 'prepare_cache_ignore', ())
-    ignore = (
-        ['base_seed'] if cache_ignore == "all" or 'base_seed' in cache_ignore
-        else None
-    )
+    ignore = ['run_context']
+    if cache_ignore == "all" or 'base_seed' in cache_ignore:
+        ignore.append('base_seed')
     return benchmark.cache(
         BaseDataset._prepare, ignore=ignore, force=force,
     )
 
 
-def _check_prepare_in_cache(benchmark, dataset, force=False):
+def _check_prepare_in_cache(benchmark, dataset, run_context, force=False):
     """Frontal-node cache lookup for a dataset preparation.
 
     `force` is ignored as `parallel_run` already handles it.
     """
     return _cached_prepare(benchmark, dataset).check_call_in_cache(
-        dataset=dataset, base_seed=benchmark.seed
+        dataset=dataset, base_seed=benchmark.seed, run_context=run_context
     )
 
 
-def _prepare_one(benchmark, dataset, force=False):
+def _prepare_one(benchmark, dataset, run_context, force=False):
     """Prepare one dataset instance; used as the unit of work in parallel_run.
 
     Analogous to ``run_one_solver`` in ``runner.py``.
@@ -500,11 +484,13 @@ def _prepare_one(benchmark, dataset, force=False):
     exc = None
     cached_prepare = _cached_prepare(benchmark, dataset, force=force)
     cached = not force and cached_prepare.check_call_in_cache(
-        dataset=dataset, base_seed=benchmark.seed
+        dataset=dataset, base_seed=benchmark.seed, run_context=run_context
     )
     print(f"Preparing {dataset} ...", end=' ', flush=True)
     try:
-        cached_prepare(dataset=dataset, base_seed=benchmark.seed)
+        cached_prepare(
+            dataset=dataset, base_seed=benchmark.seed, run_context=run_context
+        )
         print("done" + (colorify(" (cached)", CYAN) if cached else ""))
     except Exception as e:
         print("FAILED")
@@ -545,9 +531,10 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     Optionally, the `Objective` can implement the following methods to change
     its behavior:
 
-    - ``skip(dataset)``: decide if the objective is compatible with the
-      dataset of the run. It returns the reason to skip, displayed in the CLI
-      output, or None to run.
+    - ``skip()``: used to skip some run configs, with incompatible
+      parameters or datasets. It is checked once the dataset is chosen, and
+      accesses it with ``self.dataset_``. It returns the reason to skip,
+      displayed in the CLI output, or None to run.
 
     - ``get_one_result()``: return one dummy result compatible with
       ``evaluate_result``. Used by ``benchopt test`` to validate metric
@@ -589,12 +576,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     """
     _base_class_name = 'Objective'
 
-    # Set by `_attach_dataset`. `_dataset_ready` tells if `set_data` was
-    # called for it, so the data is loaded at most once.
-    _dataset = None
-    _dataset_ready = False
-    # Set directly by `run_one_to_cvg` for each repetition.
-    _repetition = 0
+    # Dataset whose data was given to `set_data`, to load it at most once.
+    _loaded_dataset = None
 
     # All class attributes that need to be parsed when we cannot import
     # the objective must be listed here. name is a special case as it is
@@ -628,7 +611,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
         @functools.wraps(get_objective)
         def get_objective_with_data(self):
-            if self._dataset is not None:
+            # Outside a run, the data is the one given to `set_data`.
+            if self._run_context is not None:
                 self._load_data()
             return get_objective(self)
         cls.get_objective = get_objective_with_data
@@ -787,27 +771,15 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
                     return True
         return False
 
-    def _attach_dataset(self, dataset):
-        if dataset is not self._dataset:
-            self._dataset, self._dataset_ready = dataset, False
-
-    def _skip_reason(self):
-        return super()._skip_reason(self._dataset)
-
-    def _set_dataset(self, dataset):
-        """Set the data of `dataset`, if not already set."""
-        self._attach_dataset(dataset)
-        # The data is set again if its seed changed, e.g. for a new repetition.
-        if self._seed_changed() or dataset._seed_changed():
-            self._dataset_ready = False
-        self._load_data()
-
     def _load_data(self):
-        """Call `set_data` with the data of the attached dataset."""
-        if self._dataset_ready:
+        """Call `set_data` with the data of the run's dataset, if not set."""
+        dataset = self.get_current('dataset')
+        # The data is set again if its seed changed, e.g. for a new repetition.
+        if (dataset is self._loaded_dataset and not self._seed_changed()
+                and not dataset._seed_changed()):
             return
         assert self.is_installed(raise_on_not_installed=True)
-        data = self._dataset.get_data()
+        data = dataset.get_data()
 
         # Check if parameters are modified by set_data
         parameters = {}
@@ -827,20 +799,16 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
                     "modified by 'set_data'."
                 )
 
-        self._dataset_ready = True
+        self._loaded_dataset = dataset
 
-    def skip(self, dataset):
+    def skip(self):
         """Used to decide if the ``Objective`` is compatible with the data.
 
         It is called before launching the runs, so skipping here removes the
-        runs of all solvers. Checks on the parameters (e.g.
-        ``dataset.n_samples``) are free. Calling ``dataset.get_data()`` loads
-        the data on the machine running ``benchopt run``.
-
-        Parameters
-        ----------
-        dataset : benchopt.BaseDataset
-            The dataset of the run.
+        runs of all solvers. The dataset is ``self.dataset_``. Checks on its
+        parameters (e.g. ``dataset.n_samples``) are free. Calling
+        ``dataset.get_data()`` loads the data on the machine running
+        ``benchopt run``.
 
         Returns
         -------
@@ -919,7 +887,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         cv_fold_generator = repeat()
         # Perform the split with default split function if it is not defined by
         # the user.
-        rep = self._repetition
+        rep = self.get_current('repetition')
         for _ in range(rep + 1):
             cv_fold = next(cv_fold_generator)
 

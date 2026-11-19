@@ -1,6 +1,5 @@
 from ..utils.sys_info import get_cuda_version
 from ..parallel_backends import is_distributed_frontal
-from ..parallel_backends import get_worker_config
 
 # SLURM options that request GPUs, with their `--gpus` short form.
 _SLURM_GPU_KEYS = ('num_gpus', 'gpus', 'gpus_per_node', 'gpus_per_task')
@@ -21,25 +20,26 @@ def requires_gpu():
         raise ImportError("Solver needs a nvidia GPU.")
 
 
-def gpu_available(solver):
-    """Whether the runs of ``solver`` will have a GPU.
+def gpu_available(component):
+    """Whether the runs of ``component`` will have a GPU.
 
-    Use it in ``Solver.skip`` to check this consistently across backends
+    Use it in ``skip`` to check this consistently across backends
     from the machine running ``benchopt run``. With ``submitit``, a GPU is
     requested by ``gres`` or a ``gpus*`` option. With ``dask``, workers are
     assumed to have one.
 
     Parameters
     ----------
-    solver : benchopt.BaseSolver
-        The solver whose runs are checked.
+    component : benchopt.BaseDataset | benchopt.BaseObjective | \
+            benchopt.BaseSolver
+        The component whose runs are checked, e.g. ``self`` in ``skip``.
 
     Returns
     -------
     available : bool
-        True if the runs of ``solver`` will have a GPU.
+        True if the runs of ``component`` will have a GPU.
     """
-    config = get_worker_config(solver)
+    config = component.get_current('run_parallel_config')
     if config is None:
         # run on the current node, use a direct check
         available = get_cuda_version() is not None

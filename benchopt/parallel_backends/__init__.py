@@ -6,43 +6,18 @@ from joblib import Parallel, delayed
 from .._generate_runs import group_runs, _normalize_group_by
 from ..utils.run_context import use_components
 
-# Parallel config of a distributed run, set on its front node.
-_DISTRIBUTED_CONFIG = None
+_DISTRIBUTED_FRONTAL = False
 
 DISTRIBUTED_BACKENDS = ('loky', 'dask', 'submitit')
 
-# Keys of the parallel config that do not configure the backend.
-_RUN_KEYS = ('backend', 'group_by', 'batch_n_jobs')
 
-
-def set_distributed_frontal(config):
-    global _DISTRIBUTED_CONFIG
-    _DISTRIBUTED_CONFIG = config
+def set_distributed_frontal():
+    global _DISTRIBUTED_FRONTAL
+    _DISTRIBUTED_FRONTAL = True
 
 
 def is_distributed_frontal():
-    return _DISTRIBUTED_CONFIG is not None
-
-
-def get_worker_config(solver):
-    """Return the parallel config of the workers that run ``solver``.
-
-    On the front node of a ``dask`` or ``submitit`` run, return the parallel
-    config with its ``backend``. With ``submitit``, it is the SLURM config of
-    the solver's jobs, merged with its ``slurm_params`` and ``slurm_*``
-    parameters. Return None when the runs are on the local machine.
-    """
-    config = _DISTRIBUTED_CONFIG
-    if config is not None and config['backend'] == 'submitit':
-        from .slurm_executor import get_solver_slurm_config
-        slurm_config = {
-            k: v for k, v in config.items() if k not in _RUN_KEYS
-        }
-        config = dict(
-            backend='submitit',
-            **get_solver_slurm_config(solver, slurm_config),
-        )
-    return config
+    return _DISTRIBUTED_FRONTAL
 
 
 def run_batch(run, n_jobs=1):
@@ -92,8 +67,7 @@ def _dispatch(backend, benchmark, run, run_kwargs_iter, config,
     if backend == 'submitit':
         from .slurm_executor import run_on_slurm
         yield from run_on_slurm(
-            benchmark, config, run_one_batch, batches,
-            batch_n_jobs=batch_n_jobs,
+            benchmark, run_one_batch, batches, batch_n_jobs=batch_n_jobs,
         )
     else:
         if backend == 'dask':
@@ -233,10 +207,8 @@ def check_parallel_config(parallel_config_file, n_jobs, group_by=None):
             and not isinstance(batch_n_jobs, bool) and batch_n_jobs != 0
         ), f"`batch_n_jobs` must be a non-zero integer. Got {batch_n_jobs}."
 
-    distributed = backend in ('dask', 'submitit')
-    if distributed:
+    if backend in ('dask', 'submitit'):
         print(f"Distributed run with backend: {backend}")
-    # Copied, as `parallel_run` pops the run keys from `parallel_config`.
-    set_distributed_frontal(dict(parallel_config) if distributed else None)
+        set_distributed_frontal()
 
     return parallel_config

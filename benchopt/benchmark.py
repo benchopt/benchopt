@@ -31,6 +31,7 @@ from .utils.shell_cmd import _run_shell_in_conda_env
 # Get config values
 from .config import RAISE_INSTALL_ERROR
 from .parallel_backends import parallel_run
+from .utils.run_context import RunContext
 
 
 # Global variable to access the benchmark currently running globally
@@ -851,6 +852,11 @@ class Benchmark:
             *datasets, prepare=True
         ))
 
+        # The parallel config is copied, as `parallel_run` pops its run keys.
+        base_ctx = RunContext(
+            parallel_config=dict(parallel_config or {}), base_seed=self.seed
+        )
+
         # Handle not-installed datasets sequentially before parallelising
         n_total = len(all_datasets)
         to_prepare = []
@@ -860,9 +866,15 @@ class Benchmark:
                       "skipping preparation.")
                 n_total -= 1
             else:
+                # Only the dataset is chosen when preparing it.
+                run_context = base_ctx.for_run(
+                    objective=None, dataset=dataset, solver=None,
+                    repetition=None,
+                )
                 to_prepare.append(dict(
                     benchmark=self,
                     dataset=dataset,
+                    run_context=run_context,
                     force=force
                 ))
 

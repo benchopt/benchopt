@@ -17,7 +17,7 @@ def test_skip_api(n_jobs):
             name = "Objective-skip"
             parameters = dict(should_skip=[True, False])
 
-            def skip(self, dataset):
+            def skip(self):
                 if self.should_skip:
                     return "Objective#SKIP"
     """
@@ -30,7 +30,7 @@ def test_skip_api(n_jobs):
         parameters = dict(should_skip=[True, False])
         def run(self, n_iter): print("Solver#RUN")
 
-        def skip(self, objective, dataset):
+        def skip(self):
             if self.should_skip:
                 return "Solver#SKIP"
 
@@ -772,45 +772,124 @@ def test_get_run_output_path_raises_outside_run():
         solver.get_run_output_path()
 
 
-def test_dataset_run_context_in_evaluate_result(no_debug_log, monkeypatch):
-    """Dataset _run_context must be restored in run_one_to_cvg.
-
-    In parallel mode, __getstate__ strips _run_context from the objective's
-    embedded _dataset.  This test simulates that scenario by patching
-    _set_run_context to clear the dataset context after setting it, then
-    verifies that evaluate_result can still call self._dataset.get_seed()
-    because run_one_to_cvg re-attaches the context.
-    """
-    from benchopt.utils.run_context import RunContext
-    original_set_run_context = RunContext.set_run_context
-
-    def strip_dataset_ctx(self, objective, dataset, solver, repetition,
-                          base_seed):
-        ctx = original_set_run_context(
-            self, objective, dataset, solver, repetition, base_seed
-        )
-        # Simulate what __getstate__ does during parallel serialization.
-        dataset._run_context = None
-        return ctx
-
-    monkeypatch.setattr(RunContext, 'set_run_context', strip_dataset_ctx)
-
+@pytest.mark.parametrize('n_jobs', [1, 2])
+def test_current_run_attributes(n_jobs, no_debug_log):
+    # Each method benchopt calls sees the components of its own run, also
+    # on the workers, and the dataset context in `evaluate_result`.
     objective = """from benchopt.utils.temp_benchmark import TempObjective
 
         class Objective(TempObjective):
             name = "test-objective"
             sampling_strategy = "run_once"
+            def skip(self):
+                dataset = self.dataset_
+                print(f"#OBJ-SKIP#{dataset}")
             def evaluate_result(self, beta):
-                seed = self._dataset.get_seed()
-                print(f"#DATASET-SEED-IN-EVAL#{seed}")
+                dataset = self.dataset_
+                solver = self.solver_
+                seed = dataset.get_seed()
+                print(f"#EVAL#{dataset}#{solver}#{seed}")
                 return dict(value=1)
     """
-    with temp_benchmark(objective=objective) as bench:
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            parameters = {"p": [0, 1]}
+            def skip(self):
+                objective = self.objective_
+                dataset = self.dataset_
+                print(f"#SOLVER-SKIP#{objective}#{dataset}#{self}")
+            def set_objective(self, X, y, lmbd):
+                dataset = self.dataset_
+                print(f"#SET-OBJ#{dataset}#{self}")
+    """
+    dataset = """from benchopt.utils.temp_benchmark import TempDataset
+
+        class Dataset(TempDataset):
+            name = "test-dataset"
+            parameters = {"d": [0, 1]}
+    """
+    with temp_benchmark(
+        objective=objective, solvers=[solver], datasets=[dataset]
+    ) as bench:
         with CaptureCmdOutput() as out:
-            run([str(bench.benchmark_dir), "-d", "test-dataset",
+            run([str(bench.benchmark_dir), "-j", str(n_jobs),
                  "--no-plot", "--no-cache"], standalone_mode=False)
 
-    out.check_output("#DATASET-SEED-IN-EVAL#", repetition=1)
+            from joblib.externals.loky import get_reusable_executor
+            get_reusable_executor().shutdown(wait=True)
+
+    for d in [0, 1]:
+        ds = rf"test-dataset\[d={d}\]"
+        out.check_output(f"#OBJ-SKIP#{ds}\n", repetition=1)
+        for p in [0, 1]:
+            s = rf"test-solver\[p={p}\]"
+            out.check_output(
+                f"#SOLVER-SKIP#test-objective#{ds}#{s}\n", repetition=1
+            )
+            out.check_output(f"#SET-OBJ#{ds}#{s}\n", repetition=1)
+            out.check_output(rf"#EVAL#{ds}#{s}#\d+\n", repetition=1)
+
+
+def test_current_run_not_chosen(no_debug_log):
+    # A component not chosen yet is an error, reported as for a failing skip.
+    dataset = """from benchopt.utils.temp_benchmark import TempDataset
+
+        class Dataset(TempDataset):
+            name = "test-dataset"
+            def skip(self):
+                self.solver_
+    """
+    with temp_benchmark(datasets=[dataset]) as bench:
+        with CaptureCmdOutput(exit=1) as out:
+            run([str(bench.benchmark_dir), "--no-plot", "--no-cache"],
+                standalone_mode=False)
+
+    out.check_output("No solver is defined in the current run context")
+
+
+def test_run_context_scope():
+    # The context is attached only inside `with`, and restores the previous
+    # one on exit, so a component never keeps the context of another run.
+    from benchopt.utils.run_context import RunContext
+    from benchopt.utils.temp_benchmark import TempSolver
+
+    solver = TempSolver.get_instance()
+    ctx1 = RunContext().for_run(None, None, solver, 0)
+    ctx2 = RunContext().for_run(None, None, solver, 1)
+    with ctx1:
+        assert solver.solver_ is solver
+        assert solver.repetition_ == 0
+        # A local run has no parallel config.
+        assert solver.parallel_config_ is None
+        assert solver.run_parallel_config_ is None
+        with ctx2:
+            assert solver._run_context is ctx2
+            assert solver.repetition_ == 1
+        assert solver._run_context is ctx1
+    assert solver._run_context is None
+    with pytest.raises(RuntimeError, match="No run context"):
+        solver.solver_
+    with ctx1, pytest.raises(ValueError, match="No dataset"):
+        solver.dataset_
+    with ctx1, pytest.raises(ValueError, match="name should be one of"):
+        solver.get_current("data")
+
+
+def test_set_current_run_attribute():
+    # Setting a run attribute warns, and does not change the run seen by
+    # benchopt, which uses `get_current`.
+    from benchopt.utils.run_context import RunContext
+    from benchopt.utils.temp_benchmark import TempSolver
+
+    solver = TempSolver.get_instance()
+    with pytest.warns(UserWarning, match="`dataset_` is set by benchopt"):
+        solver.dataset_ = "user-value"
+    assert solver.dataset_ == "user-value"
+    with RunContext().for_run(None, "dataset", solver, 0):
+        assert solver.dataset_ == "user-value"
+        assert solver.get_current("dataset") == "dataset"
 
 
 def test_solver_releases_run_data(no_debug_log):

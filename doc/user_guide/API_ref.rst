@@ -40,6 +40,5 @@ Benchopt utils
    datasets.simulated.make_correlated_data
    utils.profile
    helpers.requires_gpu.gpu_available
-   parallel_backends.get_worker_config
    results.result_processing.merge
    results.result_processing.describe_results

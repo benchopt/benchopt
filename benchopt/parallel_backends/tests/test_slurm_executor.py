@@ -6,14 +6,15 @@ from benchopt.runner import run_benchmark
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.results import read_results
+from benchopt.utils.run_context import RunContext
 
 submitit = pytest.importorskip("submitit")
 
 from submitit.slurm.test_slurm import mocked_slurm  # noqa: E402
 from benchopt.parallel_backends.slurm_executor import (  # noqa: E402
     _split_by_slurm_config,
+    get_run_slurm_config,
     get_slurm_executor,
-    get_solver_slurm_config,
 )
 
 
@@ -133,7 +134,10 @@ def test_merge_configs(dummy_slurm_config):
 
     with mocked_slurm(), temp_benchmark(solvers=solver) as bench:
         solver = bench.get_solvers()[0].get_instance()
-        config_override = get_solver_slurm_config(solver, dummy_slurm_config)
+        run_context = RunContext(
+            parallel_config=dummy_slurm_config, solver=solver
+        )
+        config_override = get_run_slurm_config(run_context)
         executor = get_slurm_executor(bench, config_override)
 
     parameters = executor._executor.parameters
@@ -242,21 +246,18 @@ def test_split_by_slurm_config():
     # A `group_runs` batch shares its `group_by` key but can still span
     # several solvers with different `slurm_params`; `_split_by_slurm_config`
     # further partitions it so each distinct SLURM config gets its own job.
-    solver = SimpleNamespace(slurm_params={}, _parameters={})
-    other = SimpleNamespace(slurm_params={"slurm_nodes": 4}, _parameters={})
+    # The SLURM config of each run is given by its run context.
+    config = SimpleNamespace(run_parallel_config={"backend": "submitit"})
+    other = SimpleNamespace(
+        run_parallel_config={"backend": "submitit", "slurm_nodes": 4}
+    )
     batch = [
-        {"meta": {"dataset_name": "d1"}, "solver": solver},
-        {"meta": {"dataset_name": "d1"}, "solver": solver},
-        {"meta": {"dataset_name": "d1"}, "solver": other},
+        {"meta": {"dataset_name": "d1"}, "run_context": config},
+        {"meta": {"dataset_name": "d1"}, "run_context": config},
+        {"meta": {"dataset_name": "d1"}, "run_context": other},
     ]
-    groups = _split_by_slurm_config(batch, {})
+    groups = _split_by_slurm_config(batch)
     assert sorted(len(kw) for _cfg, kw in groups) == [1, 2]
-
-    # `benchopt prepare` passes the dataset directly, and has no solver --
-    # such runs all share the top-level SLURM config.
-    prepare = [{"dataset": "d1"}, {"dataset": "d2"}]
-    (_cfg, runs), = _split_by_slurm_config(prepare, {})
-    assert len(runs) == 2
 
 
 @pytest.mark.parametrize("batch_n_jobs, waves", [(1, 2), (2, 1), (-1, 2)])
@@ -293,3 +294,44 @@ def test_run_on_slurm_grouped(mocked_submitit, batch_n_jobs, waves):
     # closure); `batch_n_jobs` is validated via the wall-time `waves` below.
     assert sub["func"].__name__ == "_run_batch"
     assert sub["config"]["time"] == f"00:{int(1.5 * waves * timeout)}"
+
+
+def test_slurm_params_property(mocked_submitit):
+    # A `slurm_params` property can use the run's dataset and the global
+    # parallel config: each run gets the config of its own components,
+    # computed in the run context.
+    solver = """
+        from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "solver"
+
+            @property
+            def slurm_params(self):
+                assert self.parallel_config_["backend"] == "submitit"
+                return {"slurm_nodes": self.dataset_.n}
+
+            def skip(self):
+                config = self.run_parallel_config_
+                print(f"#NODES#{config['slurm_nodes']}#")
+    """
+    dataset = """
+        from benchopt.utils.temp_benchmark import TempDataset
+
+        class Dataset(TempDataset):
+            name = "test-dataset"
+            parameters = {"n": [1, 2]}
+    """
+    with temp_benchmark(solvers=[solver], datasets=[dataset]) as bench, \
+            mocked_slurm():
+        with CaptureCmdOutput() as out:
+            run_benchmark(
+                bench.benchmark_dir, ["solver"],
+                dataset_names=["test-dataset"], max_runs=0, timeout=None,
+                parallel_config={"backend": "submitit"}, plot_result=False,
+            )
+
+    assert sorted(sub["config"]["nodes"] for sub in mocked_submitit) == [1, 2]
+    # The front node sees the same config in `skip`.
+    out.check_output("#NODES#1#", repetition=1)
+    out.check_output("#NODES#2#", repetition=1)

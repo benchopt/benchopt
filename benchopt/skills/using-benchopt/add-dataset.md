@@ -76,7 +76,8 @@ don't share the same draw.
 
 `skip(self) -> str | None`: return a reason string to skip incompatible
 parameter combinations, or `None`/no return to run; any other value raises.
-It is checked before launching any run.
+It is checked before launching any run, when no objective or solver is chosen
+yet.
 
 `prepare()` — expensive one-time setup (downloads, extraction, heavy
 preprocessing), cached by joblib and triggered only by `benchopt prepare .`

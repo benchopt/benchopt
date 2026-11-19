@@ -41,8 +41,8 @@ class Objective(BaseObjective):
     # Optional: skip incompatible dataset/objective combinations, before
     # launching any run. Better decide on the parameters, which is free:
     # dataset.get_data() works (cached) but loads the data.
-    # def skip(self, dataset):
-    #     if dataset.n_samples < dataset.n_features:
+    # def skip(self):
+    #     if self.dataset_.n_samples < self.dataset_.n_features:
     #         return "underdetermined system not supported"
 
     # Optional: save artefacts (models, arrays) alongside the parquet.

@@ -117,11 +117,16 @@ class Solver(BaseSolver):
 ```
 
 Runs with different SLURM parameters are dispatched as **separate job arrays**.
+The config is computed for each run, in the context of the run, so a
+`slurm_params` property can use `self.dataset_` and the global
+`--parallel-config` as `self.parallel_config_` (but not
+`self.run_parallel_config_`, which depends on it).
 
 `skip` runs on the front node. To skip a GPU solver whose jobs get no GPU, call
 `gpu_available(self)` from `benchopt.helpers.requires_gpu` in `skip`: it reads
-the merged SLURM config of the solver (`gres`, `gpus_per_node`, ...).
-`benchopt.parallel_backends.get_worker_config(solver)` returns that config.
+the merged SLURM config of the run's solver (`gres`, `gpus_per_node`, ...).
+`self.run_parallel_config_` gives that config for more
+advanced skip config.
 
 ## Caching across nodes and machines
 

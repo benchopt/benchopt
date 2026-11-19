@@ -67,6 +67,9 @@ objective = Objective.get_instance()         # add params if the objective takes
 objective.set_data(**data)                   # same data dict as above
 ```
 
+If `get_data` or `set_data` calls `get_seed` or `get_split`, or uses
+`self.dataset_`, call it inside a run context, as in the solver section below.
+
 `evaluate_result(**solver_result)` takes the keys that the benchmark's
 `Solver.get_result()` returns — so the argument names are benchmark-specific
 (commonly `beta=`, or `model=`/`dist=` for model-training benchmarks). Pass a
@@ -79,7 +82,8 @@ print(metrics)                               # dict of objective values
 
 If you only want the parameters a solver would receive, call
 `objective.get_objective()` — that is the dict handed to
-`Solver.set_objective(**...)`.
+`Solver.set_objective(**...)`. In a run context, it first sets the data of the
+context's dataset.
 
 ## Debug a solver
 
@@ -92,15 +96,19 @@ loop, caching or parallel workers around it:
 Solver = next(s for s in bench.get_solvers() if s.name == "my-solver")
 solver = Solver.get_instance(lr=1e-3)        # apply solver parameters
 
-obj_dict = objective.get_objective()         # what the runner passes to the solver
+# The run context gives `get_seed` and `self.dataset_` their run.
+from benchopt.utils.run_context import RunContext
+with RunContext(dataset=dataset, objective=objective, solver=solver,
+                repetition=0):
+    obj_dict = objective.get_objective()     # what the runner passes to the solver
 
-# Optional: solvers can opt out of an objective/dataset combination.
-reason = solver.skip(objective, dataset)    # a reason to skip, or None
-print("runs" if reason is None else f"skipped: {reason}")
+    # Optional: solvers can opt out of an objective/dataset combination.
+    reason = solver.skip()                   # a reason to skip, or None
+    print("runs" if reason is None else f"skipped: {reason}")
 
-solver.set_objective(**obj_dict)             # hand the objective to the solver
-solver.run(10)                               # run to a stopping value (see below)
-result = solver.get_result()                 # dict of quantities to evaluate
+    solver.set_objective(**obj_dict)         # hand the objective to the solver
+    solver.run(10)                           # run to a stopping value
+    result = solver.get_result()             # dict of quantities to evaluate
 ```
 
 The meaning of `run`'s argument depends on `sampling_strategy`

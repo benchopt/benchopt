@@ -245,7 +245,7 @@ def test_submitit_gpu_skip(monkeypatch, no_debug_log):
     class Solver(TempSolver):
         name = "{name}"
         slurm_params = {slurm_params}
-        def skip(self, objective, dataset):
+        def skip(self):
             if not gpu_available(self):
                 return "needs a GPU"
     """
