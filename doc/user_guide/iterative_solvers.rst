@@ -167,6 +167,7 @@ They are resolved for each run, as follows:
 
 - A solver's own ``sampling_strategy``, ``stopping_criterion`` or ``get_next`` takes precedence over the objective's.
 - A solver whose strategy is ``"run_once"`` is run once, whatever the objective's criterion.
+- A ``SingleRunCriterion`` without ``strategy`` uses ``"run_once"``, unless the solver or the objective sets a strategy.
 - Without any setting, solvers use ``sampling_strategy = "iteration"`` and ``SufficientProgressCriterion()``.
 
 A solver that sets ``sampling_strategy`` and a ``stopping_criterion`` with another ``strategy`` is reported as an error, and its runs are skipped.

@@ -299,6 +299,26 @@ def test_criterion_resolution():
         assert objective.stopping_criterion.strategy is None
 
 
+@pytest.mark.parametrize('solver_strategy, objective_strategy, expected', [
+    (None, None, 'run_once'),
+    ('callback', None, 'callback'),
+    (None, 'iteration', 'iteration'),
+])
+def test_single_run_criterion_strategy(
+    solver_strategy, objective_strategy, expected
+):
+    # A SingleRunCriterion without strategy is 'run_once', unless the solver
+    # or the objective sets one.
+    with temp_benchmark() as bench:
+        objective = bench.get_benchmark_objective().get_instance()
+        solver = bench.get_solvers()[0].get_instance()
+        objective.sampling_strategy = objective_strategy
+        solver.sampling_strategy = solver_strategy
+        solver.stopping_criterion = SingleRunCriterion(stop_val=3)
+        with RunContext(objective=objective, solver=solver):
+            assert solver.get_current('_sampling_strategy') == expected
+
+
 def test_get_next_resolution():
     # `get_next` comes from the solver, else from the objective, and is kept
     # in the runner instance, also once pickled.

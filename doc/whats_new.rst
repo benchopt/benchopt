@@ -29,7 +29,9 @@ FIX
   A solver whose strategy is ``"run_once"`` now runs once even when the
   objective sets a stopping criterion, and a solver whose strategy does not
   match its criterion is reported as an error without stopping the other
-  runs. The ``Objective`` can also define ``get_next`` for all solvers.
+  runs. The ``Objective`` can also define ``get_next`` for all solvers. A
+  ``SingleRunCriterion`` without strategy is ``"run_once"``, and the
+  ``sampling_strategy`` column of the results is no longer capitalized.
   By `Thomas Moreau`_ (:gh:`1045`)
 
 - Datasets, objectives and solvers whose ``__init__`` does not call
