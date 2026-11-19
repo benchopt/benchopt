@@ -22,8 +22,8 @@ class ParametrizedNameMixin():
             elif getattr(self, k) != v:
                 v_set = getattr(self, k)
                 raise ValueError(
-                    f"Parameter {k} set in {self} `__init__` to {v_set}, "
-                    f"while the parameter value is {v}."
+                    f"Parameter {k} set in {self} `__init__` to {v_set!r}, "
+                    f"while the parameter value is {v!r}."
                 )
 
     @classmethod
