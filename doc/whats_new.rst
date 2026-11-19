@@ -29,7 +29,7 @@ FIX
   A solver whose strategy is ``"run_once"`` now runs once even when the
   objective sets a stopping criterion, and a solver whose strategy does not
   match its criterion is reported as an error without stopping the other
-  runs. By `Thomas Moreau`_
+  runs. By `Thomas Moreau`_ (:gh:`1045`)
 
 - Datasets, objectives and solvers whose ``__init__`` does not call
   ``super().__init__()`` no longer fail with an ``AttributeError`` on
