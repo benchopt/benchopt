@@ -509,26 +509,22 @@ class SingleRunCriterion(StoppingCriterion):
     """
 
     def __init__(self, stop_val=1, strategy=None, *args, **kwargs):
-        strategy = self._single_run_strategy(strategy)
-        super().__init__(strategy=strategy, stop_val=stop_val)
-        self.stop_val = stop_val
-
-    @staticmethod
-    def _single_run_strategy(strategy):
-        """Map 'iteration' to 'run_once', and reject 'tolerance'."""
         if strategy == 'tolerance':
             raise ValueError(
                 "SingleRunCriterion does not support the 'tolerance' "
                 "strategy. Use 'run_once', with stop_val set to the tolerance."
             )
-        return 'run_once' if strategy == 'iteration' else strategy
+        if strategy == 'iteration':
+            strategy = 'run_once'
+        super().__init__(strategy=strategy, stop_val=stop_val)
+        self.stop_val = stop_val
 
     def _with_strategy(self, strategy=None, default='run_once'):
         # The objective's default only matters for solvers with a callback.
         default = 'callback' if default == 'callback' else 'run_once'
-        return super()._with_strategy(
-            self._single_run_strategy(strategy), default
-        )
+        if strategy == 'iteration':
+            strategy = 'run_once'
+        return super()._with_strategy(strategy, default)
 
     def init_stop_val(self):
         return self.stop_val
