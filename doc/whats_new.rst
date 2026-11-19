@@ -24,17 +24,9 @@ CLI
 FIX
 ~~~
 
-- The sampling strategy and stopping criterion of a solver are resolved for
-  each run, with the solver's settings taking precedence over the objective's.
-  A solver whose strategy is ``"run_once"`` now runs once even when the
-  objective sets a stopping criterion, and a solver whose strategy does not
-  match its criterion is reported as an error without stopping the other
-  runs. The ``Objective`` can also define ``get_next`` for all solvers.
-  ``SingleRunCriterion`` only accepts the ``"run_once"`` and ``"callback"``
-  strategies, with ``"iteration"`` mapped to ``"run_once"``, and its runs are
-  recorded as ``run_once``. The ``sampling_strategy`` column of the results
-  is no longer capitalized.
-  By `Thomas Moreau`_ (:gh:`1045`)
+- A ``"run_once"`` solver now runs once even when the objective sets a
+  stopping criterion, and the ``Objective`` can define ``get_next`` for all
+  solvers. See :ref:`global_strategy`. By `Thomas Moreau`_ (:gh:`1045`)
 
 - A parameter set in ``__init__`` to a value that differs from the one passed
   to the component now raises an error, instead of silently ignoring the
