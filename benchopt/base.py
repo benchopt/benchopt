@@ -43,9 +43,10 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     behavior:
 
     - ``skip()``: used to skip some run configs, with incompatible
-      parameters, datasets or objectives. The other components of the run are
-      accessed with ``self.get_current``. It returns the reason to skip,
-      displayed in the CLI output, or None to run.
+      parameters, datasets or objectives. It is checked once the dataset and
+      the objective are chosen, and accesses them with ``self.get_current``.
+      It returns the reason to skip, displayed in the CLI output, or None to
+      run.
 
     - ``get_next(stop_val)``: Return the next iteration where the result will
       be evaluated. This is only necessary when `sampling_strategy` is set to
@@ -316,8 +317,9 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     Optionally, datasets can implement:
 
-    - ``skip()``: decide if the dataset parameters are compatible. It returns
-      the reason to skip, displayed in the CLI output, or None to run.
+    - ``skip()``: used to skip some run configs, with incompatible
+      parameters. It returns the reason to skip, displayed in the CLI output,
+      or None to run.
 
     - ``prepare()``: performs expensive one-time preparation (downloads,
       extraction, preprocessing) that is cached and separated from loading.
@@ -530,9 +532,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     its behavior:
 
     - ``skip()``: used to skip some run configs, with incompatible
-      parameters or datasets. The dataset of the run is accessed with
-      ``self.get_current("dataset")``. It returns the reason to skip,
-      displayed in the CLI output, or None to run.
+      parameters or datasets. It is checked once the dataset is chosen, and
+      accesses it with ``self.get_current("dataset")``. It returns the reason
+      to skip, displayed in the CLI output, or None to run.
 
     - ``get_one_result()``: return one dummy result compatible with
       ``evaluate_result``. Used by ``benchopt test`` to validate metric
