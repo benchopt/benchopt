@@ -215,6 +215,10 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
             _tb_to_print = tb_to_print
             _set_cls_attr_from_ast(module_filename, base_cls, locals())
 
+        # The methods may be inherited from bases not parsed with ast. The
+        # class is never run, so allow instantiating it, e.g. in tests.
+        klass.__abstractmethods__ = frozenset()
+
     # Store the info to easily reload the class and check it is installed
     klass._module_filename = module_filename.resolve()
     klass._benchmark_dir = benchmark_dir.resolve()
