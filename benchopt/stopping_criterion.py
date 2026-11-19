@@ -86,7 +86,7 @@ class StoppingCriterion():
             self.key_to_monitor_ = None
 
     def get_runner_instance(self, max_runs=1, timeout=None, terminal=None,
-                            solver=None, run_key=None):
+                            run_key=None):
         """Copy the stopping criterion and set the parameters that depends on
         how benchopt runner is called.
 
@@ -99,8 +99,6 @@ class StoppingCriterion():
             The maximum duration in seconds of the solver run.
         terminal : TerminalOutput or None
             Object to format string to display the progress of the solver.
-        solver : BaseSolver
-            The solver for which this stopping criterion is called.
         run_key : tuple
             The key to identify the run in the benchmark results.
 
@@ -130,7 +128,6 @@ class StoppingCriterion():
         stopping_criterion.timeout = timeout
         stopping_criterion.max_runs = max_runs
         stopping_criterion.terminal = terminal
-        stopping_criterion.solver = solver
         stopping_criterion.run_key = run_key
 
         # Initialize the number of evaluation for iterative tracking
@@ -169,7 +166,7 @@ class StoppingCriterion():
             INFINITY if self.strategy == 'tolerance' else 0
         )
 
-        self.debug(f"Calling solver {self.solver} with stop val: {stop_val}")
+        self.debug(f"Calling with stop val: {stop_val}")
         self.progress('initialization')
         return stop_val
 
@@ -321,7 +318,7 @@ class StoppingCriterion():
         if getattr(self, 'max_runs', None):
             runner_kwargs = dict(
                 max_runs=self.max_runs, timeout=self.timeout,
-                terminal=self.terminal, solver=self.solver
+                terminal=self.terminal
             )
         else:
             runner_kwargs = None

@@ -144,7 +144,6 @@ def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
 
         stopping_criterion = (
             solver.get_current('_stopping_criterion').get_runner_instance(
-                solver=solver,
                 max_runs=max_runs,
                 timeout=timeout,
                 terminal=terminal,

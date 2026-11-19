@@ -219,7 +219,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         if self.get_current('_sampling_strategy') == "callback":
             stopping_criterion = SingleRunCriterion(
                 stop_val=stop_val, strategy="callback"
-            ).get_runner_instance(solver=self)
+            ).get_runner_instance()
             run_once_cb = _Callback(
                 lambda x: [{'objective_value': 1}],
                 solver=self,
