@@ -99,6 +99,8 @@ methods that benchopt calls on a component, e.g. ``skip``, ``get_data``,
   the run.
 - ``self.repetition_``: the index of the repetition. ``skip`` is checked for
   the first repetition.
+- ``self.parallel_config_``: the parallel config given to ``benchopt run``,
+  with ``--parallel-config``. It can be used in ``slurm_params``.
 - ``self.run_parallel_config_``: the parallel config of the workers that run it,
   or ``None`` when the runs are on the local machine. With the
   :ref:`submitit backend <slurm_backend>`, it is the SLURM config of the jobs,

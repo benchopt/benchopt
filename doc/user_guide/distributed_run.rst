@@ -200,7 +200,8 @@ configuration.
 
 The SLURM configuration is computed for each run, in the context of the run.
 ``slurm_params`` can thus be a property that uses the run's other components,
-with ``self.dataset_``. It should not use ``self.run_parallel_config_``,
+with ``self.dataset_``, and the config given with ``--parallel-config``, with
+``self.parallel_config_``. It should not use ``self.run_parallel_config_``,
 which depends on it.
 
 The solvers' ``skip`` runs on the node running ``benchopt run``, which might

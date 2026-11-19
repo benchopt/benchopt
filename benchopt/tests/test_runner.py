@@ -862,6 +862,7 @@ def test_run_context_scope():
         assert solver.solver_ is solver
         assert solver.repetition_ == 0
         # A local run has no parallel config.
+        assert solver.parallel_config_ is None
         assert solver.run_parallel_config_ is None
         with ctx2:
             assert solver._run_context is ctx2

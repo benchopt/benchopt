@@ -297,8 +297,9 @@ def test_run_on_slurm_grouped(mocked_submitit, batch_n_jobs, waves):
 
 
 def test_slurm_params_property(mocked_submitit):
-    # A `slurm_params` property can use the run's dataset: each run gets the
-    # config of its own components, computed in the run context.
+    # A `slurm_params` property can use the run's dataset and the global
+    # parallel config: each run gets the config of its own components,
+    # computed in the run context.
     solver = """
         from benchopt.utils.temp_benchmark import TempSolver
 
@@ -307,8 +308,8 @@ def test_slurm_params_property(mocked_submitit):
 
             @property
             def slurm_params(self):
-                dataset = self.dataset_
-                return {"slurm_nodes": dataset.n}
+                assert self.parallel_config_["backend"] == "submitit"
+                return {"slurm_nodes": self.dataset_.n}
 
             def skip(self):
                 config = self.run_parallel_config_

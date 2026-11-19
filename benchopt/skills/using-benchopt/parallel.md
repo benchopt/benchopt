@@ -118,7 +118,8 @@ class Solver(BaseSolver):
 
 Runs with different SLURM parameters are dispatched as **separate job arrays**.
 The config is computed for each run, in the context of the run, so a
-`slurm_params` property can use `self.dataset_` (but not
+`slurm_params` property can use `self.dataset_` and the global
+`--parallel-config` as `self.parallel_config_` (but not
 `self.run_parallel_config_`, which depends on it).
 
 `skip` runs on the front node. To skip a GPU solver whose jobs get no GPU, call

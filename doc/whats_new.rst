@@ -59,8 +59,8 @@ API
   By `Thomas Moreau`_ (:gh:`1031`)
 
 - ``skip`` takes no argument for all components. The new attributes
-  ``dataset_``, ``objective_``, ``solver_``, ``repetition_`` and
-  ``run_parallel_config_`` give the current run in any method benchopt
+  ``dataset_``, ``objective_``, ``solver_``, ``repetition_``,
+  ``parallel_config_`` and ``run_parallel_config_`` give the current run in any method benchopt
   calls, including ``skip`` and a ``slurm_params`` property, and raise if
   the component is not chosen yet. See :ref:`current_run`.
   The run context is only attached to the components during these calls.

@@ -41,6 +41,7 @@ class RunContextMixin:
     objective_ = _CurrentRun("Objective of the current run.")
     solver_ = _CurrentRun("Solver of the current run.")
     repetition_ = _CurrentRun("Repetition index of the current run.")
+    parallel_config_ = _CurrentRun("Parallel config of the benchmark run.")
     run_parallel_config_ = _CurrentRun("Workers' parallel config, or None.")
 
     # Set by the runner before any user method is called.
@@ -166,7 +167,7 @@ class RunContextMixin:
         """Return ``name`` of the current run, e.g. ``self.dataset_``."""
         names = (
             'dataset', 'objective', 'solver', 'repetition',
-            'run_parallel_config',
+            'parallel_config', 'run_parallel_config',
         )
         if name not in names:
             raise ValueError(f"name should be one of {names}. Got {name!r}.")

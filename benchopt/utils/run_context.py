@@ -127,7 +127,7 @@ class RunContext:
         Raise if a component or the repetition is absent from the context.
         """
         value = getattr(self, name)
-        if value is None and name != 'run_parallel_config':
+        if value is None and 'parallel_config' not in name:
             raise RunContextError(
                 name,
                 f"No {name} is defined in the current run context. The "
