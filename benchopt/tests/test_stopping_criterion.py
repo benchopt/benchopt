@@ -1,12 +1,12 @@
+import pickle
+
 import pytest
 import numpy as np
 
 from benchopt.cli.main import run
-from benchopt._generate_runs import generate_run_kwargs
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.run_context import RunContext
 from benchopt.utils.temp_benchmark import temp_benchmark
-from benchopt.utils.terminal_output import TerminalOutput
 
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.stopping_criterion import SingleRunCriterion
@@ -140,93 +140,40 @@ def test_key_to_monitor_objective(no_debug_log, criterion_class, strategy):
 
 
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
-def test_solver_strategy(no_debug_log, strategy):
-
-    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
-
-    class Solver(TempSolver):
-        name = "test-solver"
-        sampling_strategy = "{strategy}"
-        def run(self, n_iter):
-            assert self._solver_strategy == "{strategy}", self._solver_strategy
-            if self._solver_strategy in "iteration":
-                assert n_iter == 0, n_iter
-            elif self._solver_strategy in "tolerance":
-                assert n_iter == 3e38, n_iter
-            elif self._solver_strategy in "run_once":
-                assert n_iter == 1, n_iter
-            elif self._solver_strategy in "callback":
-                assert callable(n_iter)
-                while n_iter(): pass
-    """
-
-    with temp_benchmark(solvers=[solver]) as benchmark:
-        with CaptureCmdOutput():
-            run([str(benchmark.benchmark_dir),
-                *('-s test-solver -d test-dataset --no-plot -n 0').split()],
-                standalone_mode=False)
-
-
-@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
+@pytest.mark.parametrize('setting', ['solver', 'criterion', 'both'])
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
 ])
-def test_stopping_criterion_strategy(no_debug_log, criterion_class, strategy):
+def test_solver_strategy(no_debug_log, criterion_class, setting, strategy):
+    "Check the strategy set in the solver, in its criterion or in both."
 
     if strategy == "run_once":
         criterion_class = SingleRunCriterion
+    criterion = criterion_class.__name__
+    attributes = {
+        'solver': f'sampling_strategy = "{strategy}"',
+        'criterion': f'stopping_criterion = {criterion}('
+                     f'strategy="{strategy}")',
+        'both': f'sampling_strategy = "{strategy}"\n'
+                f'        stopping_criterion = {criterion}()',
+    }[setting]
 
     solver = f"""from benchopt.utils.temp_benchmark import TempSolver
-    from benchopt.stopping_criterion import {criterion_class.__name__}
+    from benchopt.stopping_criterion import {criterion}
 
     class Solver(TempSolver):
         name = "test-solver"
-        stopping_criterion = {criterion_class.__name__}(strategy="{strategy}")
+        {attributes}
         def run(self, n_iter):
-            assert self._solver_strategy == "{strategy}", self._solver_strategy
-            if self._solver_strategy in "iteration":
+            strategy = self.get_current("_sampling_strategy")
+            assert strategy == "{strategy}", strategy
+            if strategy in "iteration":
                 assert n_iter == 0, n_iter
-            elif self._solver_strategy in "tolerance":
+            elif strategy in "tolerance":
                 assert n_iter == 3e38, n_iter
-            elif self._solver_strategy in "run_once":
+            elif strategy in "run_once":
                 assert n_iter == 1, n_iter
-            elif self._solver_strategy in "callback":
-                assert callable(n_iter)
-                while n_iter(): pass
-    """
-
-    with temp_benchmark(solvers=[solver]) as benchmark:
-        with CaptureCmdOutput():
-            run([str(benchmark.benchmark_dir),
-                *('-s test-solver -d test-dataset --no-plot -n 0').split()],
-                standalone_mode=False)
-
-
-@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
-@pytest.mark.parametrize('criterion_class', [
-    SufficientDescentCriterion, SufficientProgressCriterion
-])
-def test_solver_override_strategy(no_debug_log, criterion_class, strategy):
-
-    if strategy == "run_once":
-        criterion_class = SingleRunCriterion
-
-    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
-    from benchopt.stopping_criterion import {criterion_class.__name__}
-
-    class Solver(TempSolver):
-        name = "test-solver"
-        sampling_strategy = "{strategy}"
-        stopping_criterion = {criterion_class.__name__}()
-        def run(self, n_iter):
-            assert self._solver_strategy == "{strategy}", self._solver_strategy
-            if self._solver_strategy in "iteration":
-                assert n_iter == 0, n_iter
-            elif self._solver_strategy in "tolerance":
-                assert n_iter == 3e38, n_iter
-            elif self._solver_strategy in "run_once":
-                assert n_iter == 1, n_iter
-            elif self._solver_strategy in "callback":
+            elif strategy in "callback":
                 assert callable(n_iter)
                 while n_iter(): pass
     """
@@ -298,10 +245,8 @@ def test_global_strategy_override(no_debug_log, strategy):
     with temp_benchmark(objective=objective) as bench:
         objective = bench.get_benchmark_objective().get_instance()
         solver = bench.get_solvers()[0].get_instance()
-        solver._set_objective(objective)
-
-        assert objective.sampling_strategy == strategy
-        assert solver._solver_strategy == strategy
+        with RunContext(objective=objective, solver=solver):
+            assert solver.get_current('_sampling_strategy') == strategy
 
 
 @pytest.mark.parametrize('criterion_class', [
@@ -320,10 +265,92 @@ def test_global_criterion_override(no_debug_log, criterion_class):
     with temp_benchmark(objective=objective) as bench:
         objective = bench.get_benchmark_objective().get_instance()
         solver = bench.get_solvers()[0].get_instance()
-        solver._set_objective(objective)
+        with RunContext(objective=objective, solver=solver):
+            assert isinstance(
+                solver.get_current('_stopping_criterion'), criterion_class
+            )
 
-        assert isinstance(objective.stopping_criterion, criterion_class)
-        assert isinstance(solver._stopping_criterion, criterion_class)
+
+def test_criterion_resolution():
+    # The solver's settings take precedence over the objective's ones, a
+    # 'run_once' solver runs once, and the objective's criterion is copied
+    # for each run, so solvers with different strategies can share it.
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+    from benchopt.stopping_criterion import SufficientDescentCriterion
+
+    class Objective(TempObjective):
+        name = "test_obj"
+        stopping_criterion = SufficientDescentCriterion()
+    """
+
+    with temp_benchmark(objective=objective) as bench:
+        objective = bench.get_benchmark_objective().get_instance()
+        solver = bench.get_solvers()[0].get_instance()
+        for strategy, criterion_class in [
+            ("run_once", SingleRunCriterion),
+            ("tolerance", SufficientDescentCriterion),
+            ("iteration", SufficientDescentCriterion),
+        ]:
+            solver.sampling_strategy = strategy
+            with RunContext(objective=objective, solver=solver):
+                criterion = solver.get_current('_stopping_criterion')
+                assert isinstance(criterion, criterion_class)
+                assert criterion.strategy == strategy
+        assert objective.stopping_criterion.strategy is None
+
+
+@pytest.mark.parametrize('solver_strategy, objective_strategy, expected', [
+    (None, None, 'run_once'),
+    ('iteration', None, 'run_once'),
+    ('callback', None, 'callback'),
+    (None, 'callback', 'callback'),
+    (None, 'tolerance', 'run_once'),
+])
+def test_single_run_criterion_strategy(
+    solver_strategy, objective_strategy, expected
+):
+    # A SingleRunCriterion is 'run_once', or 'callback' when `run` takes a
+    # callback.
+    with temp_benchmark() as bench:
+        objective = bench.get_benchmark_objective().get_instance()
+        solver = bench.get_solvers()[0].get_instance()
+        objective.sampling_strategy = objective_strategy
+        solver.sampling_strategy = solver_strategy
+        solver.stopping_criterion = SingleRunCriterion(stop_val=3)
+        with RunContext(objective=objective, solver=solver):
+            assert solver.get_current('_sampling_strategy') == expected
+
+    assert SingleRunCriterion(strategy='iteration').strategy == 'run_once'
+    with pytest.raises(ValueError, match="'tolerance' strategy"):
+        SingleRunCriterion(strategy='tolerance')
+
+
+def test_get_next_resolution():
+    # `get_next` comes from the solver, else from the objective, and is kept
+    # in the runner instance, also once pickled.
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
+        name = "test_obj"
+        def get_next(self, stop_val): return stop_val + 2
+    """
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        name = "test-solver"
+        def get_next(self, stop_val): return stop_val + 3
+    """
+
+    with temp_benchmark(objective=objective, solvers=[solver]) as bench:
+        objective = bench.get_benchmark_objective().get_instance()
+        solver = bench.get_solvers()[0].get_instance()
+        for get_next, step in [(solver.get_next, 3), (None, 2)]:
+            solver.get_next = get_next
+            with RunContext(objective=objective, solver=solver):
+                criterion = solver.get_current('_stopping_criterion')
+                criterion = criterion.get_runner_instance(max_runs=10)
+            criterion = pickle.loads(pickle.dumps(criterion))
+            assert criterion.get_next_stop_val(1) == 1 + step
 
 
 def test_global_sampling_strategy(no_debug_log):
@@ -341,84 +368,6 @@ def test_global_sampling_strategy(no_debug_log):
     with temp_benchmark(objective=objective) as bench:
         run(f'{bench.benchmark_dir} -s test-solver -d test-dataset -n 1 '
             "--no-plot".split(), standalone_mode=False)
-
-
-def test_sampling_strategy_meta_independent_of_execution_order(no_debug_log):
-    # Non-regression test: `Solver.sampling_strategy` is a *class* attribute
-    # that `_inherit_stopping_criterion` only resolves from `None` to the
-    # objective's value as a side effect of actually running `_set_objective`.
-    # `meta['sampling_strategy']`, part of the joblib cache key, must not
-    # depend on whether some *other* (solver, dataset) pair already ran in
-    # this process -- otherwise a second process (e.g. `--collect`) computes
-    # a different cache key and reports valid cache entries as missing.
-    objective = """from benchopt.utils.temp_benchmark import TempObjective
-
-    class Objective(TempObjective):
-        name = "test_obj"
-        sampling_strategy = "run_once"
-    """
-
-    solver = """from benchopt.utils.temp_benchmark import TempSolver
-
-    class Solver(TempSolver):
-        name = "test-solver"
-    """
-
-    dataset1 = """from benchopt.utils.temp_benchmark import TempDataset
-
-    class Dataset(TempDataset):
-        name = "dataset1"
-    """
-
-    dataset2 = """from benchopt.utils.temp_benchmark import TempDataset
-
-    class Dataset(TempDataset):
-        name = "dataset2"
-    """
-
-    with temp_benchmark(
-        objective=objective, solvers=[solver],
-        datasets=[dataset1, dataset2], no_default=True,
-    ) as bench:
-        solver_class = bench.get_solvers()[0]
-        objective_instance = bench.get_benchmark_objective().get_instance()
-        datasets = {d.name: d for d in bench.get_datasets()}
-
-        def sampling_strategy_for(dataset_name):
-            # Drive the public generator for that dataset and read the
-            # ``sampling_strategy`` it puts in ``meta`` (the cache key).
-            runs = generate_run_kwargs(
-                bench,
-                solvers=bench.check_solver_patterns([]),
-                datasets=bench.check_dataset_patterns([dataset_name]),
-                objectives=bench.check_objective_filters([]),
-                n_repetitions=1, max_runs=1,
-                terminal=TerminalOutput(1, False), run_context=RunContext(),
-            )
-            return next(runs)['meta']['sampling_strategy']
-
-        # Computed while `Solver.sampling_strategy` is still pristine (`None`)
-        # -- mirrors what a fresh process (e.g. `benchopt run --collect`)
-        # would see.
-        strategy_pristine = sampling_strategy_for("dataset2")
-
-        # Actually run the solver against `dataset1`. This mutates the
-        # *class* attribute `Solver.sampling_strategy` as a side effect.
-        solver_instance = solver_class.get_instance()
-        dataset1_instance = datasets["dataset1"].get_instance()
-        with RunContext(
-            objective=objective_instance, dataset=dataset1_instance,
-            solver=solver_instance, repetition=0,
-        ):
-            objective_instance._load_data()
-            solver_instance._set_objective(objective_instance)
-
-        # Recomputing for `dataset2` must give the same, correct value --
-        # unaffected by the unrelated `dataset1` run that happened in between.
-        strategy_after_other_run = sampling_strategy_for("dataset2")
-
-        assert strategy_pristine == "Run_once"
-        assert strategy_after_other_run == "Run_once"
 
 
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)

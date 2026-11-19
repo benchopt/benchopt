@@ -76,13 +76,16 @@ class Solver(BaseSolver):
 `NoCriterion` never stops on lack of progress, so the run length is set by
 `--max-runs` / `--timeout` (or by your own `run` loop). If `run` already loops
 over the whole budget in a single call, use `SingleRunCriterion(stop_val=N)`
-instead — it drives exactly `N` callback calls (or one `run(N)`).
+instead — it drives exactly `N` callback calls (or one `run(N)`). A single run
+is recorded as `run_once`, and `SingleRunCriterion` only accepts the
+`run_once` and `callback` strategies (`iteration` is the same as `run_once`).
 
 When *every* solver in the benchmark is fixed-budget (e.g. a DL benchmark where
 all solvers train for N epochs), set `stopping_criterion` **once on the
 `Objective`** rather than repeating it per solver — like `sampling_strategy`, a
 solver that doesn't define its own inherits the objective's, so this makes the
-no-truncation behavior benchmark-wide. The early-truncation symptom is covered
+no-truncation behavior benchmark-wide. A solver with `sampling_strategy =
+"run_once"` still runs once, whatever the objective's criterion. The early-truncation symptom is covered
 in [debug.md](./debug.md).
 
 ### Controlling randomness
@@ -108,6 +111,7 @@ repetition. Add `use_dataset=True` / `use_solver=True` to further differentiate 
 - `pre_run_hook(stop_val)`: untimed per-run setup (e.g. JAX precompilation for
   a given iteration count).
 - `get_next(stop_val)`: override the default logarithmic `stop_val` schedule.
+  Define it on the `Objective` to change it for all solvers.
 
 ## Testing
 

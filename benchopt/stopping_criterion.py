@@ -86,7 +86,7 @@ class StoppingCriterion():
             self.key_to_monitor_ = None
 
     def get_runner_instance(self, max_runs=1, timeout=None, terminal=None,
-                            solver=None, run_key=None):
+                            run_key=None):
         """Copy the stopping criterion and set the parameters that depends on
         how benchopt runner is called.
 
@@ -99,9 +99,6 @@ class StoppingCriterion():
             The maximum duration in seconds of the solver run.
         terminal : TerminalOutput or None
             Object to format string to display the progress of the solver.
-        solver : BaseSolver
-            The solver for which this stopping criterion is called. Used to get
-            overridden ``sampling_strategy`` and ``get_next``.
         run_key : tuple
             The key to identify the run in the benchmark results.
 
@@ -117,56 +114,24 @@ class StoppingCriterion():
         if self.kwargs is None:
             raise ValueError(
                 f"{self.__class__.__name__} is a subclass of StoppingCriterion"
-                " but did not called super().__init__(**kwargs) with all its "
-                "parameters in its constructor. See XXX for details on how "
-                "to implement a new StoppingCriterion."
+                " but does not call super().__init__(**kwargs) with all its "
+                "parameters in its constructor. See https://benchopt.github.io"
+                "/stable/user_guide/iterative_solvers.html"
+                "#custom-stopping-criterion for details on how to implement a "
+                "new StoppingCriterion."
             )
 
-        if self.strategy is None:
-            if solver is None:
-                self.strategy = 'iteration'
-            else:
-                self.strategy = solver.sampling_strategy or 'iteration'
-        elif solver is not None and solver.sampling_strategy is not None:
-            assert solver.sampling_strategy == self.strategy, (
-                'The strategy is set both in Solver.sampling_strategy and in '
-                'its criterion, and it does not match. Only set it once.'
-            )
-
-        # Create a new instance of the class
-        stopping_criterion = self.__class__(
-            strategy=self.strategy, key_to_monitor=self.key_to_monitor,
-            minimize=self.minimize, **self.kwargs,
-        )
+        stopping_criterion = self._with_strategy()
 
         # Set stopping criterion parameters depending on run parameters
         stopping_criterion.rho = RHO
         stopping_criterion.timeout = timeout
         stopping_criterion.max_runs = max_runs
         stopping_criterion.terminal = terminal
-        stopping_criterion.solver = solver
         stopping_criterion.run_key = run_key
 
         # Initialize the number of evaluation for iterative tracking
         stopping_criterion.n_eval = 0
-        # Override get_next_stop_val if ``get_next`` is implemented for solver.
-        if hasattr(solver, 'get_next'):
-            if not callable(solver.get_next):
-                raise TypeError(
-                    f"`get_next` of Solver in {solver.__module__} "
-                    "must be callable."
-                )
-
-            try:
-                solver.get_next(1)
-            except TypeError:
-                raise ValueError(
-                    "get_next(1) throw a TypeError. Verify that `get_next` "
-                    "signature is get_next(self, stop_val)"
-                )
-
-            stopping_criterion.get_next_stop_val = solver.get_next
-
         # Store running arguments
         if timeout is not None:
             stopping_criterion._deadline = time.time() + timeout
@@ -176,12 +141,28 @@ class StoppingCriterion():
 
         return stopping_criterion
 
+    def _with_strategy(self, strategy=None, default='iteration'):
+        """Copy the criterion, with ``strategy`` if it does not set one."""
+        if None not in (self.strategy, strategy):
+            assert self.strategy == strategy, (
+                'The strategy is set both in Solver.sampling_strategy and in '
+                'its criterion, and it does not match. Only set it once.'
+            )
+        kwargs = dict(
+            strategy=self.strategy or strategy or default,
+            key_to_monitor=self.key_to_monitor, minimize=self.minimize,
+            **self.kwargs,
+        )
+        return self._reconstruct(
+            kwargs, get_next=self.__dict__.get('get_next_stop_val')
+        )
+
     def init_stop_val(self):
         stop_val = (
             INFINITY if self.strategy == 'tolerance' else 0
         )
 
-        self.debug(f"Calling solver {self.solver} with stop val: {stop_val}")
+        self.debug(f"Calling with stop val: {stop_val}")
         self.progress('initialization')
         return stop_val
 
@@ -319,8 +300,11 @@ class StoppingCriterion():
             self.terminal.progress(progress, self.run_key)
 
     @classmethod
-    def _reconstruct(cls, kwargs, runner_kwargs):
+    def _reconstruct(cls, kwargs, runner_kwargs=None, get_next=None):
         criterion = cls(**kwargs)
+        # Keep the `get_next` schedule set by the solver or the objective.
+        if get_next is not None:
+            criterion.get_next_stop_val = get_next
         if runner_kwargs:
             return criterion.get_runner_instance(**runner_kwargs)
         return criterion
@@ -328,16 +312,17 @@ class StoppingCriterion():
     def __reduce__(self):
         kwargs = dict(
             strategy=self.strategy, key_to_monitor=self.key_to_monitor,
-            **self.kwargs
+            minimize=self.minimize, **self.kwargs
         )
         if getattr(self, 'max_runs', None):
             runner_kwargs = dict(
                 max_runs=self.max_runs, timeout=self.timeout,
-                terminal=self.terminal, solver=self.solver
+                terminal=self.terminal
             )
         else:
             runner_kwargs = None
-        return self._reconstruct, (self.__class__, kwargs, runner_kwargs)
+        get_next = self.__dict__.get('get_next_stop_val')
+        return self._reconstruct, (kwargs, runner_kwargs, get_next)
 
     def get_next_stop_val(self, stop_val):
         if self.strategy == "tolerance":
@@ -510,23 +495,36 @@ class SufficientProgressCriterion(StoppingCriterion):
 class SingleRunCriterion(StoppingCriterion):
     """Stopping criterion for single run solvers.
 
-    The solver will be stopped after one call to the objective.
+    The solver will be stopped after one call to the objective. Its strategy
+    is ``'run_once'``, or ``'callback'`` for solvers whose ``run`` takes a
+    callback. ``'iteration'`` is the same as ``'run_once'``.
 
     Parameters
     ----------
     stop_val : int or float, (default: 1)
-        Value of ``stop_val`` with which the objective function will be called.
-        This value will be passed as ``n_iter`` or ``tol`` parameter for the
-        ``run`` method of solver with ``sampling_strategy`` respectively equals
-        to ``'iteration'`` or ``'tolerance'``, or the number of callback calls
-        minus one for the ``'callback'`` strategy.
+        Value passed to the ``run`` method of the solver, or the number of
+        callback calls minus one for the ``'callback'`` strategy.
+    strategy : {'run_once', 'callback'} or None (default: None)
+        How the ``run`` method of the solver is called.
     """
 
     def __init__(self, stop_val=1, strategy=None, *args, **kwargs):
-        # Necessary as the criterion is given a strategy argument when
-        # instanciated for an instance.
+        if strategy == 'tolerance':
+            raise ValueError(
+                "SingleRunCriterion does not support the 'tolerance' "
+                "strategy. Use 'run_once', with stop_val set to the tolerance."
+            )
+        if strategy == 'iteration':
+            strategy = 'run_once'
         super().__init__(strategy=strategy, stop_val=stop_val)
         self.stop_val = stop_val
+
+    def _with_strategy(self, strategy=None, default='run_once'):
+        # The objective's default only matters for solvers with a callback.
+        default = 'callback' if default == 'callback' else 'run_once'
+        if strategy == 'iteration':
+            strategy = 'run_once'
+        return super()._with_strategy(strategy, default)
 
     def init_stop_val(self):
         return self.stop_val

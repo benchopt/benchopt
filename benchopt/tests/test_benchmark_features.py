@@ -125,7 +125,7 @@ def test_benchopt_min_version():
             )
 
     out.check_output('test-dataset', repetition=1)
-    out.check_output('test-solver', repetition=7)
+    out.check_output('test-solver', repetition=6)
 
 
 @pytest.mark.parametrize('error', [ImportError, ValueError])

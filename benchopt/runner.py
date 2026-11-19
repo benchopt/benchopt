@@ -143,8 +143,7 @@ def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
         solver._set_objective(objective)
 
         stopping_criterion = (
-            solver._stopping_criterion.get_runner_instance(
-                solver=solver,
+            solver.get_current('_stopping_criterion').get_runner_instance(
                 max_runs=max_runs,
                 timeout=timeout,
                 terminal=terminal,
@@ -155,7 +154,7 @@ def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
         # The warm-up step called for each repetition bit only run once.
         solver._warm_up()
 
-        if solver._solver_strategy == "callback":
+        if solver.get_current('_sampling_strategy') == "callback":
 
             # If sampling_strategy is 'callback', only call once to get the
             # results up to convergence.

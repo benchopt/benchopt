@@ -1,6 +1,7 @@
 import inspect
 import itertools
 
+from .stopping_criterion import SingleRunCriterion
 from .utils.pdb_helpers import exception_handler
 from .utils.parametrized_name_mixin import is_matched
 from .utils.run_context import RunContext, RunContextError
@@ -102,9 +103,13 @@ def _materialize_axes(order, datasets, objectives, solvers):
 
 def _run_meta(benchmark, dataset, objective, solver, rep):
     """Build the per-run ``meta`` dict (feeds display and the cache key)."""
-    # for plotting purposes consider 'callback' as 'iteration'
-    sampling_strategy = solver._solver_strategy
-    if sampling_strategy == 'callback':
+    # A single run gives one point, also with a callback. Otherwise, for
+    # plotting purposes, consider 'callback' as 'iteration'.
+    criterion = solver.get_current('_stopping_criterion')
+    sampling_strategy = criterion.strategy
+    if isinstance(criterion, SingleRunCriterion):
+        sampling_strategy = 'run_once'
+    elif sampling_strategy == 'callback':
         sampling_strategy = 'iteration'
     return {
         'base_seed': benchmark.seed,
@@ -115,7 +120,7 @@ def _run_meta(benchmark, dataset, objective, solver, rep):
         'dataset_name': str(dataset),
         'dataset_description': inspect.cleandoc(dataset.__doc__ or ""),
         'idx_rep': rep,
-        'sampling_strategy': sampling_strategy.capitalize(),
+        'sampling_strategy': sampling_strategy,
         'file_objective': objective._module_filename.name,
         **{f"p_obj_{k}": v for k, v in objective._parameters.items()},
         'file_solver': f"solvers/{solver._module_filename.name}",
@@ -195,9 +200,9 @@ def generate_run_kwargs(
         """Display and return whether a `skip` checked at this level skips.
 
         `skip` runs in the context of the first repetition, with the
-        components chosen so far. A failing `skip` is handled as in a run
-        (traceback, ``--pdb``), displayed as an error, and its runs are not
-        created, as for a skip.
+        components chosen so far. A failing `skip`, or an invalid stopping
+        criterion for a solver, is handled as in a run (traceback, ``--pdb``),
+        displayed as an error, and its runs are not created, as for a skip.
         """
         levels = [c for c in CANONICAL_AXES if skip_levels[c] == order[depth]]
         if not levels:
@@ -211,6 +216,8 @@ def generate_run_kwargs(
             status, reason = 'error', None
             with ctx, exception_handler(terminal, pdb=base_ctx.pdb):
                 reason = components[level]._skip_reason()
+                if reason is None and level == 'solver':
+                    components[level].get_current('_stopping_criterion')
                 status = None if reason is None else 'skip'
             if status is not None:
                 terminal.skip(reason, level=level, status=status)
@@ -221,16 +228,14 @@ def generate_run_kwargs(
         """Return the run kwargs."""
         dataset, objective = chosen['dataset'], chosen['objective']
         solver, rep = chosen['solver'], chosen['repetition']
-        # Resolve inheritance now: `meta` feeds the cache key and must not
-        # depend on which solver ran first in the process.
-        solver._inherit_stopping_criterion(objective)
-        meta = _run_meta(benchmark, dataset, objective, solver, rep)
         # Runs share the component instances: each run enters its context
         # when it starts.
         run_ctx = base_ctx.for_run(
             objective=objective, dataset=dataset, solver=solver,
             repetition=rep,
         )
+        with run_ctx:
+            meta = _run_meta(benchmark, dataset, objective, solver, rep)
         return dict(
             benchmark=benchmark, dataset=dataset, objective=objective,
             solver=solver, repetition=rep, meta=meta, timeout=timeout,

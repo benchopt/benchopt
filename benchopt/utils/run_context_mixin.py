@@ -166,6 +166,8 @@ class RunContextMixin:
         names = (
             'dataset', 'objective', 'solver', 'repetition',
             'parallel_config', 'run_parallel_config',
+            # Internal, without attribute.
+            '_stopping_criterion', '_sampling_strategy',
         )
         if name not in names:
             raise ValueError(f"name should be one of {names}. Got {name!r}.")
