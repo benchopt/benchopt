@@ -1,5 +1,7 @@
+import ast
 import sys
 import uuid
+import inspect
 
 import pytest
 from joblib import Parallel, delayed
@@ -9,6 +11,8 @@ from benchopt.cli.main import install as install_cmd
 from benchopt.utils.dynamic_modules import FailedImport
 from benchopt.utils.run_context import RunContext
 from benchopt.stopping_criterion import StoppingCriterion
+from benchopt.base import BaseSolver
+from benchopt.utils.ast_parsing import get_class_attrs
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.temp_benchmark import DEFAULT_SOLVERS
 
@@ -177,6 +181,119 @@ def test_ast_replacement_inherited_methods():
         with RunContext(objective=objective, solver=solver):
             criterion = solver.get_current('_stopping_criterion')
         assert isinstance(criterion, StoppingCriterion)
+
+
+BASE_SOLVER = """
+    from benchopt.utils.temp_benchmark import TempSolver
+
+    class MyBase(TempSolver):
+        requirements = ['pip::base-req']
+        parameters = {'lr': [0.1]}
+"""
+
+
+@pytest.mark.parametrize("import_style", [
+    "from", "alias", "safe_import", "reexport", "local"
+])
+def test_ast_replacement_inherited_attributes(import_style):
+    # The AST replacement collects the attributes of the bases defined in
+    # the benchmark, e.g. the requirements of a base in benchmark_utils.
+    utils = {"base": BASE_SOLVER}
+    base = "MyBase"
+    if import_style == "from":
+        imports = "from benchmark_utils.base import MyBase"
+    elif import_style == "safe_import":
+        imports = (
+            "from benchopt import safe_import_context\n"
+            "    with safe_import_context() as import_ctx:\n"
+            "        from benchmark_utils.base import MyBase"
+        )
+    elif import_style == "alias":
+        imports, base = "from benchmark_utils.base import MyBase as B", "B"
+    elif import_style == "reexport":
+        imports = "from benchmark_utils import MyBase"
+        utils["__init__"] = "from .base import MyBase"
+    else:
+        imports, utils = inspect.cleandoc(BASE_SOLVER), None
+        imports = imports.replace("\n", "\n    ")
+
+    solver = f"""
+    {imports}
+    failure
+
+    class Solver({base}):
+        name = 'my-solver'
+        parameters = {{'lr': [0.2]}}
+    """
+
+    with temp_benchmark(solvers=solver, benchmark_utils=utils) as bench:
+        Solver, _ = bench.check_solver_patterns(["my-solver"])[0]
+        assert isinstance(Solver, FailedImport)
+        assert Solver.requirements == ['pip::base-req']
+        assert Solver.parameters == {'lr': [0.2]}
+
+
+def test_ast_replacement_unreadable_base():
+    # A class re-exported from a module that cannot be parsed is reported as
+    # not found, without breaking the listing of the other solvers.
+    solver = """
+    from benchmark_utils.broken import Solver
+    """
+    with temp_benchmark(
+        solvers={"solver_0.py": solver, **DEFAULT_SOLVERS},
+        benchmark_utils={"broken": "def broken(:"},
+    ) as bench:
+        Solver, _ = bench.check_solver_patterns(["solver_0"])[0]
+        assert isinstance(Solver, FailedImport)
+        with pytest.raises(ValueError, match="Could not find Solver"):
+            Solver.is_installed(raise_on_not_installed=True)
+        bench.check_solver_patterns(["test-solver"])
+
+
+def test_get_class_attrs_mro():
+    # Attributes follow the MRO, which is Solver, B, B, C, A, Mixin here. The
+    # local `B` shadows the imported one, which is its base.
+    utils = {"base": """
+        class Mixin:
+            install_cmd = 'Mixin'
+            unknown = 'Mixin'
+
+        class A(Mixin):
+            requirements = 'A'
+            parameters = 'A'
+            test_config = 'A'
+
+        class B(A):
+            requirements = 'B'
+
+        class C(A, Mixin):
+            requirements = 'C'
+            parameters = 'C'
+            install_cmd = 'C'
+    """}
+    solver = """
+    from benchmark_utils.base import A, B, C, Mixin
+
+    class B(B):
+        def run(self, _): pass
+
+    class Solver(B, C, Mixin):
+        parameters = undefined
+    """
+    with temp_benchmark(solvers=solver, benchmark_utils=utils) as bench:
+        attrs = get_class_attrs(
+            bench.benchmark_dir / "solvers" / "solver_0.py", BaseSolver,
+            bench.benchmark_dir
+        )
+    # Only the attributes of `BaseSolver` are collected.
+    assert set(attrs) == {
+        'install_cmd', 'requirements', 'parameters', 'test_config', 'run'
+    }
+    assert isinstance(attrs.pop("run"), ast.FunctionDef)
+    assert isinstance(attrs.pop("parameters"), AttributeError)
+    assert attrs == {
+        'install_cmd': 'C', 'requirements': 'B', 'test_config': 'A'
+    }
 
 
 @pytest.mark.parametrize("params", [

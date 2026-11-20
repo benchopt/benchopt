@@ -16,6 +16,7 @@ try:
 except ImportError:
     import cloudpickle
 
+from .ast_parsing import get_class_attrs
 from .safe_import import safe_import_context
 from .class_property import classproperty
 from .parametrized_name_mixin import ComponentMeta
@@ -213,7 +214,9 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
 
             _exc = e
             _tb_to_print = tb_to_print
-            _set_cls_attr_from_ast(module_filename, base_cls, locals())
+            _set_cls_attr_from_ast(
+                module_filename, base_cls, locals(), benchmark_dir
+            )
 
         # The methods may be inherited from bases not parsed with ast. The
         # class is never run, so allow instantiating it, e.g. in tests.
@@ -290,14 +293,12 @@ def _reconstruct_class(
     return _load_class_from_module(benchmark_dir, module_filename, class_name)
 
 
-def _set_cls_attr_from_ast(module_file, base_cls, ctx):
-    module = ast.parse(module_file.read_text(encoding="utf-8"))
+def _set_cls_attr_from_ast(module_file, base_cls, ctx, benchmark_dir):
     name = f"{module_file.stem}"
     cls_name = base_cls._base_class_name
 
-    cls_list = [node for node in module.body if isinstance(node, ast.ClassDef)
-                and node.name == cls_name]
-    if not cls_list:
+    attrs = get_class_attrs(module_file, base_cls, benchmark_dir)
+    if attrs is None:
         _exc = ValueError(
             f"Could not find {cls_name} in module {module_file}."
         )
@@ -305,7 +306,6 @@ def _set_cls_attr_from_ast(module_file, base_cls, ctx):
         ctx['_exc'] = _exc
         ctx['name'] = name
         return
-    cls = cls_list[0]
 
     known_methods = [
         # Dataset methods
@@ -324,37 +324,25 @@ def _set_cls_attr_from_ast(module_file, base_cls, ctx):
     })
 
     ctx['name'] = None
-    for node in cls.body:
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if target.id in ctx:
-                    try:
-                        ctx[target.id] = ast.literal_eval(node.value)
-                    except Exception:
-                        if target.id == "name":
-                            _exc = AttributeError(
-                                f"Could not evaluate the name of the class "
-                                f"{cls_name} in module {module_file}.\n"
-                                f"The name should be a string literal."
-                            )
-                            _exc.__cause__ = ctx['_exc']
-                            ctx['_exc'] = _exc
-                            ctx['name'] = name
-                        else:
-                            msg = (
-                                f"Could not evaluate statically '{target.id}' "
-                                f"of the class {cls_name} in {module_file}.\n"
-                                "By default, this should be a string literal. "
-                                "If dynamic evaluation is necessary, use "
-                                "`safe_import_context`."
-                            )
-
-                            def raise_err(self, msg=msg):
-                                raise AttributeError(msg)
-                            ctx[target.id] = classproperty(raise_err)
-        if isinstance(node, ast.FunctionDef):
-            if node.name in known_methods:
-                ctx[node.name] = lambda *args, **kwargs: None
+    for attr, value in attrs.items():
+        if isinstance(value, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if attr in known_methods:
+                ctx[attr] = lambda *args, **kwargs: None
+        elif attr == "name" and isinstance(value, AttributeError):
+            _exc = AttributeError(
+                f"Could not evaluate the name of the class "
+                f"{cls_name} in module {module_file}.\n"
+                f"The name should be a string literal."
+            )
+            _exc.__cause__ = ctx['_exc']
+            ctx['_exc'] = _exc
+            ctx['name'] = name
+        elif isinstance(value, AttributeError):
+            def raise_err(self, exc=value):
+                raise exc
+            ctx[attr] = classproperty(raise_err)
+        else:
+            ctx[attr] = value
 
     if ctx['name'] is None:
         warnings.warn(
