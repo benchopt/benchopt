@@ -24,6 +24,7 @@ def _resolve_class_def(module_file, name, benchmark_dir, before=None,
     except (OSError, SyntaxError, ValueError):
         return None
 
+    # Find the last ClassDef or import of `name` before line `before`.
     # Imports protected by a `safe_import_context` are in a with block.
     binding = None
     for node in tree.body:
@@ -40,6 +41,8 @@ def _resolve_class_def(module_file, name, benchmark_dir, before=None,
 
     if binding is None or isinstance(binding, ast.ClassDef):
         return binding and (module_file, binding)
+
+    # For an import, look up the class in the imported module.
     stmt, name = binding
     parts = stmt.module.split('.') if stmt.module else []
     if 0 < stmt.level <= len(module_file.parents):
@@ -57,7 +60,12 @@ def _resolve_class_def(module_file, name, benchmark_dir, before=None,
 
 
 def _c3_merge(sequences):
-    """Merge the linearizations of the bases, as Python builds the MRO."""
+    """Merge the linearizations of the bases, as Python builds the MRO.
+
+    A class comes after all the classes that derive from it. For
+    ``class A(B, C)`` with ``B(D)`` and ``C(D)``, the MRO is A, B, C, D,
+    while a depth-first walk would give A, B, D, C.
+    """
     sequences = [list(s) for s in sequences if s]
     merged = []
     while sequences:
