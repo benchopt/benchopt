@@ -8,14 +8,6 @@ import inspect
 from pathlib import Path
 
 
-def _parse_module(module_file):
-    """Parse a module file, or return None if it cannot be read."""
-    try:
-        return ast.parse(Path(module_file).read_text(encoding="utf-8"))
-    except (OSError, SyntaxError, ValueError):
-        return None
-
-
 def _resolve_class_def(module_file, name, benchmark_dir, before=None,
                        seen=()):
     """Find the class ``name`` defined or imported in ``module_file``.
@@ -24,10 +16,13 @@ def _resolve_class_def(module_file, name, benchmark_dir, before=None,
     top level before line ``before``, are followed, for modules of the
     benchmark. Return ``(file, ClassDef)``, or None.
     """
-    tree = _parse_module(module_file)
-    if tree is None or (module_file, name) in seen:
+    if (module_file, name) in seen:
         return None
     seen = (*seen, (module_file, name))
+    try:
+        tree = ast.parse(module_file.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, ValueError):
+        return None
 
     # Imports protected by a `safe_import_context` are in a with block.
     binding = None
