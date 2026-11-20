@@ -247,3 +247,21 @@ def test_table_cells_descriptions():
         [custom, {'value': '**O**', 'description': 'objective O'}],
         [3, 'other'],
     ]
+
+
+@pytest.mark.parametrize("Y_axis", ["Objective", "Suboptimality"])
+def test_objective_curve_nan_column(Y_axis):
+    """plot() must skip the runs where the objective column is NaN."""
+    df = pd.concat([
+        _make_df(),
+        _make_df().assign(solver_name='solver2', objective_value=float('nan')),
+    ], ignore_index=True)
+
+    plot = ObjectiveCurvePlot()
+    kwargs = dict(dataset='d1', objective='obj1', X_axis='Time',
+                  objective_column='objective_value', Y_axis=Y_axis)
+    traces = plot.plot(df, **kwargs)
+    assert [t['label'] for t in traces] == ['solver1']
+
+    traces = plot.plot(df.query("solver_name == 'solver2'"), **kwargs)
+    assert traces == []

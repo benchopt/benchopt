@@ -25,6 +25,8 @@ class ObjectiveCurvePlot(BasePlot):
         df = df.query(
             "dataset_name == @dataset and objective_name == @objective"
         )
+        # Drop the runs where this metric is missing, e.g. without a test set.
+        df = df.dropna(subset=[objective_column])
 
         for solver, df_filtered in df.groupby('solver_name'):
 
