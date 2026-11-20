@@ -16,105 +16,49 @@ def _parse_module(module_file):
         return None
 
 
-def _resolve_module_file(module, level, from_file, benchmark_dir):
-    """Return the file of a module defined in the benchmark, or None."""
-    parts = module.split('.') if module else []
-    if 0 < level <= len(from_file.parents):
-        base = from_file.parents[level - 1]
-    elif level == 0 and parts and parts[0] == 'benchmark_utils':
+def _resolve_class_def(module_file, name, benchmark_dir, before=None,
+                       seen=()):
+    """Find the class ``name`` defined or imported in ``module_file``.
+
+    Only ``class name`` and ``from module import name [as alias]``, at the
+    top level before line ``before``, are followed, for modules of the
+    benchmark. Return ``(file, ClassDef)``, or None.
+    """
+    tree = _parse_module(module_file)
+    if tree is None or (module_file, name) in seen:
+        return None
+    seen = (*seen, (module_file, name))
+
+    # Imports protected by a `safe_import_context` are in a with block.
+    binding = None
+    for node in tree.body:
+        for stmt in node.body if isinstance(node, ast.With) else [node]:
+            if before is not None and stmt.lineno >= before:
+                break
+            if isinstance(stmt, ast.ClassDef) and stmt.name == name:
+                binding = stmt
+            elif isinstance(stmt, ast.ImportFrom):
+                binding = next((
+                    (stmt, a.name) for a in stmt.names
+                    if (a.asname or a.name) == name
+                ), binding)
+
+    if binding is None or isinstance(binding, ast.ClassDef):
+        return binding and (module_file, binding)
+    stmt, name = binding
+    parts = stmt.module.split('.') if stmt.module else []
+    if 0 < stmt.level <= len(module_file.parents):
+        base = module_file.parents[stmt.level - 1]
+    elif stmt.level == 0 and parts[:1] == ['benchmark_utils']:
         base = benchmark_dir
     else:
         return None
     path = base.joinpath(*parts)
-    candidates = [path.with_suffix('.py')] if parts else []
-    candidates.append(path / '__init__.py')
-    return next((c.resolve() for c in candidates if c.is_file()), None)
-
-
-def _resolve_class_def(module_file, parts, benchmark_dir, before=None,
-                       seen=None):
-    """Find the class bound to the dotted name ``parts`` in ``module_file``.
-
-    Only the top-level statements before line ``before`` are considered, and
-    imports are followed when they point to a module of the benchmark. Return
-    ``(file, ClassDef)``, or None if the class is not defined statically in
-    the benchmark.
-    """
-    seen = set() if seen is None else seen
-    key = (module_file, before, *parts)
-    tree = _parse_module(module_file)
-    if key in seen or tree is None:
-        return None
-    seen.add(key)
-
-    # Imports protected by a `safe_import_context` are in a with block.
-    statements = [
-        stmt for node in tree.body
-        for stmt in ([node, *node.body] if isinstance(node, ast.With)
-                     else [node])
-    ]
-    head, binding, star_imports = parts[0], None, []
-    for node in statements:
-        if before is not None and node.lineno >= before:
-            break
-        if isinstance(node, ast.ClassDef) and node.name == head:
-            binding = node
-        elif isinstance(node, ast.Assign) and any(
-                isinstance(t, ast.Name) and t.id == head
-                for t in node.targets):
-            # `Base = Other` rebinds the name, to a class we may not resolve.
-            binding = node
-        elif isinstance(node, ast.Import):
-            for alias in node.names:
-                if alias.asname == head:
-                    binding = (alias.name, 0, None)
-                elif alias.asname is None and alias.name.split('.')[0] == head:
-                    binding = (head, 0, None)
-        elif isinstance(node, ast.ImportFrom):
-            for alias in node.names:
-                if alias.name == '*':
-                    star_imports.append((node.module, node.level))
-                elif (alias.asname or alias.name) == head:
-                    binding = (node.module, node.level, alias.name)
-
-    if binding is None:
-        # The name may come from a `from module import *`, the last first.
-        for module, level in star_imports[::-1]:
-            src = _resolve_module_file(module, level, module_file,
-                                       benchmark_dir)
-            found = src and _resolve_class_def(
-                src, parts, benchmark_dir, seen=seen
-            )
-            if found:
-                return found
-        return None
-    if isinstance(binding, ast.ClassDef):
-        return (module_file, binding) if len(parts) == 1 else None
-    if isinstance(binding, ast.Assign):
-        if not isinstance(binding.value, (ast.Name, ast.Attribute)):
-            return None
-        value_parts = ast.unparse(binding.value).split('.')
-        return _resolve_class_def(
-            module_file, value_parts + parts[1:], benchmark_dir,
-            before=binding.lineno, seen=seen
-        )
-    module, level, name = binding
-    if name is not None:
-        # `from module import name`: `name` is a class, or a submodule
-        # when it is used as `name.Class`.
-        if len(parts) == 1:
-            src = _resolve_module_file(module, level, module_file,
-                                       benchmark_dir)
-            return src and _resolve_class_def(
-                src, [name], benchmark_dir, seen=seen
-            )
-        module = '.'.join(p for p in [module, name] if p)
-    # `import module`: the class is `module.sub.Class`.
-    module = '.'.join([module, *parts[1:-1]])
-    src = _resolve_module_file(module, level, module_file, benchmark_dir)
-    return src and _resolve_class_def(
-        src, parts[-1:], benchmark_dir, seen=seen
-    )
+    src = next((
+        c.resolve() for c in [path.with_suffix('.py'), path / '__init__.py']
+        if c.is_file()
+    ), None)
+    return src and _resolve_class_def(src, name, benchmark_dir, seen=seen)
 
 
 def _c3_merge(sequences):
@@ -145,11 +89,10 @@ def _get_mro(module_file, class_def, benchmark_dir, classes, stack=()):
     classes[key] = (module_file, class_def)
     base_mros = []
     for base in class_def.bases:
-        found = _resolve_class_def(
-            module_file, ast.unparse(base).split('.'), benchmark_dir,
-            before=class_def.lineno
+        found = isinstance(base, ast.Name) and _resolve_class_def(
+            module_file, base.id, benchmark_dir, before=class_def.lineno
         )
-        if found is not None and (found[0], found[1].lineno) not in stack:
+        if found and (found[0], found[1].lineno) not in stack:
             base_mros.append(_get_mro(
                 *found, benchmark_dir, classes, stack=(*stack, key)
             ))
@@ -167,7 +110,7 @@ def _get_class_nodes(module_file, class_name, benchmark_dir):
     definition for a method, and ``file`` is the module defining it. Return
     None if the class is not found.
     """
-    found = _resolve_class_def(module_file, [class_name], benchmark_dir)
+    found = _resolve_class_def(module_file, class_name, benchmark_dir)
     if found is None:
         return None
     classes = {}

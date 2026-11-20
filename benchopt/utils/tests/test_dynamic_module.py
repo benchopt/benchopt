@@ -193,7 +193,7 @@ BASE_SOLVER = """
 
 
 @pytest.mark.parametrize("import_style", [
-    "from", "safe_import", "module", "reexport", "star", "assign", "local"
+    "from", "alias", "safe_import", "reexport", "local"
 ])
 def test_ast_replacement_inherited_attributes(import_style):
     # The AST replacement collects the attributes of the bases defined in
@@ -208,19 +208,11 @@ def test_ast_replacement_inherited_attributes(import_style):
             "    with safe_import_context() as import_ctx:\n"
             "        from benchmark_utils.base import MyBase"
         )
-    elif import_style == "module":
-        imports, base = "import benchmark_utils.base as bu", "bu.MyBase"
-    elif import_style in ["reexport", "star"]:
+    elif import_style == "alias":
+        imports, base = "from benchmark_utils.base import MyBase as B", "B"
+    elif import_style == "reexport":
         imports = "from benchmark_utils import MyBase"
-        name = "MyBase" if import_style == "reexport" else "*"
-        utils["__init__"] = f"from .base import {name}"
-    elif import_style == "assign":
-        utils["other"] = "class Other:\n    requirements = ['other']"
-        imports = (
-            "from benchmark_utils.other import Other as MyBase\n"
-            "    from benchmark_utils.base import MyBase as Base\n"
-            "    MyBase = Base"
-        )
+        utils["__init__"] = "from .base import MyBase"
     else:
         imports, utils = inspect.cleandoc(BASE_SOLVER), None
         imports = imports.replace("\n", "\n    ")
