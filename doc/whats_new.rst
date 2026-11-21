@@ -82,7 +82,7 @@ API
 
 - The ``run_id_`` attribute of the components and the ``run_id`` column of
   the results identify each run, with a hash of the names of its components
-  and its repetition. See :ref:`current_run`. By `Thomas Moreau`_ (:gh:`XXXX`)
+  and its repetition. See :ref:`current_run`. By `Thomas Moreau`_ (:gh:`1049`)
 
 - :func:`~benchopt.helpers.requires_gpu.gpu_available` tells in
   ``Solver.skip`` if the runs of a solver will have a GPU, using the SLURM
