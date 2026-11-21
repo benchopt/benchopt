@@ -861,6 +861,9 @@ def test_run_context_scope():
     with ctx1:
         assert solver.solver_ is solver
         assert solver.repetition_ == 0
+        # The run id depends on all the components of the run.
+        with pytest.raises(ValueError, match="No dataset"):
+            solver.run_id_
         # A local run has no parallel config.
         assert solver.parallel_config_ is None
         assert solver.run_parallel_config_ is None
@@ -875,6 +878,38 @@ def test_run_context_scope():
         solver.dataset_
     with ctx1, pytest.raises(ValueError, match="name should be one of"):
         solver.get_current("data")
+
+
+def test_run_id(no_debug_log):
+    # The run id is stable and identifies each run in the results.
+    from benchopt.utils.run_context import RunContext
+
+    ctx = RunContext().for_run("objective", "dataset", "solver", 0)
+    assert ctx.run_id == RunContext(base_seed=1).for_run(
+        "objective", "dataset", "solver", 0
+    ).run_id
+    assert ctx.run_id != RunContext().for_run(
+        "objective", "dataset", "solver", 1
+    ).run_id
+
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            def set_objective(self, X, y, lmbd):
+                print(f"#RUN_ID#{self.run_id_}#{self.repetition_}")
+    """
+    with temp_benchmark(solvers=[solver]) as bench:
+        with CaptureCmdOutput(delete_result_files=False) as out:
+            run([str(bench.benchmark_dir), "--no-plot", "--no-cache",
+                 "-d", "test-dataset", "-r", "2"], standalone_mode=False)
+        df = read_results(bench.get_result_files()[0])
+
+    run_ids = df.groupby("idx_rep")["run_id"].unique()
+    assert all(len(ids) == 1 for ids in run_ids)
+    assert run_ids[0][0] != run_ids[1][0]
+    for rep in range(2):
+        out.check_output(f"#RUN_ID#{run_ids[rep][0]}#{rep}\n", repetition=1)
 
 
 def test_set_current_run_attribute():
