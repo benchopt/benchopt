@@ -825,6 +825,25 @@ def test_get_checkpoint_path():
         ]
 
 
+def test_no_eval():
+    # `--no-eval` runs one run per training. The other runs then find its
+    # checkpoint.
+    with temp_benchmark(solvers=[CHECKPOINT_SOLVER]) as benchmark:
+        cmd = [
+            str(benchmark.benchmark_dir), "-d", "test-dataset",
+            "-r", "2", "--no-plot",
+        ]
+        with CaptureCmdOutput() as out:
+            run([*cmd, "--no-eval"], standalone_mode=False)
+        out.check_output(r"CKPT#.+#False", repetition=2)
+        out.check_output(r"n_eval=1", repetition=1)
+        out.check_output(r"n_eval=2", repetition=0)
+
+        with CaptureCmdOutput() as out:
+            run(cmd, standalone_mode=False)
+        out.check_output(r"CKPT#.+#True", repetition=2)
+
+
 def test_get_checkpoint_path_off():
     with temp_benchmark(solvers=[CHECKPOINT_SOLVER]) as benchmark:
         cmd = [str(benchmark.benchmark_dir), "-d", "test-dataset", "--no-plot"]

@@ -184,6 +184,16 @@ only differ by them share one training.
 The code of the objective is also left out, so a new metric can be computed
 from the existing checkpoints.
 
+In a parallel run, the runs that share a training start together, and each
+one trains as it finds no checkpoint. To train once, first run with
+``--no-eval``, which only keeps one run per training, then run again without
+it:
+
+.. code-block:: bash
+
+    benchopt run . --no-eval   # one run per training
+    benchopt run .             # the other runs, from the checkpoints
+
 .. warning::
 
     benchopt cannot check these choices. A checkpoint is reused silently when

@@ -72,6 +72,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "output",
         "seed",
         "checkpoint",
+        "no_eval",
     ]
     return [cli_kwargs[name] for name in return_names]
 
@@ -223,6 +224,12 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               "are removed and the runs are forced, to train from scratch. "
               "With `off`, they are stored in a temporary folder, so none is "
               "reused nor kept.")
+@click.option('--no-eval',
+              is_flag=True,
+              help="If set, only run the first of the runs that share their "
+              "checkpoints, i.e. that only differ by their `eval_parameters`. "
+              "This trains each model once. Run again without this flag to "
+              "get the other runs from the checkpoints.")
 def run(config_file=None, **kwargs):
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -234,7 +241,7 @@ def run(config_file=None, **kwargs):
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, no_timeout,
         collect, plot, display, html, n_jobs, parallel_config, group_by, pdb,
-        do_profile, env_name, no_cache, output, seed, checkpoint
+        do_profile, env_name, no_cache, output, seed, checkpoint, no_eval
     ) = _get_run_args(kwargs, config)
 
     if env_name == "False":
@@ -333,7 +340,8 @@ def run(config_file=None, **kwargs):
             max_runs=max_runs, n_repetitions=n_repetitions,
             timeout=timeout, output_file=output, plot_result=plot,
             display=display, html=html, collect=collect,
-            parallel_config=parallel_config, pdb=pdb, checkpoint=checkpoint
+            parallel_config=parallel_config, pdb=pdb, checkpoint=checkpoint,
+            no_eval=no_eval,
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -419,6 +427,7 @@ def run(config_file=None, **kwargs):
         rf"{'--profile ' if do_profile else ''}"
         rf"{f'--seed {seed} ' if seed is not None else ''}"
         rf"--checkpoint {checkpoint} "
+        rf"{'--no-eval ' if no_eval else ''}"
         rf"--output {output}"
         .replace('\\', '\\\\')
     )

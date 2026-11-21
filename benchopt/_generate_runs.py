@@ -176,12 +176,16 @@ def generate_run_kwargs(
     benchmark, solvers=None, forced_solvers=None, datasets=None,
     objectives=None, n_repetitions=1, max_runs=10, timeout=None,
     collect=False, terminal=None, run_context=None, group_by=None,
+    no_eval=False,
 ):
     """Yield kwargs for each ``run_one_to_cvg`` call in the benchmark.
 
     The ``group_by`` axes are the outermost loops, so runs sharing them are
     contiguous. ``repetition`` is the innermost axis unless it is in
     ``group_by``.
+
+    With ``no_eval``, only the first of the runs that share their checkpoints
+    is kept, i.e. one run per training.
     """
     group_by = group_by or []
     order = group_by + [a for a in GROUPABLE_AXES if a not in group_by]
@@ -287,4 +291,12 @@ def generate_run_kwargs(
             else:
                 yield from _rec(depth + 1, chosen)
 
-    yield from _rec(0, {})
+    no_eval = no_eval and base_ctx.checkpoint_mode != 'off'
+    trainings = set()
+    for run_kwargs in _rec(0, {}):
+        if no_eval:
+            checkpoint_path = run_kwargs['run_context'].checkpoint_path
+            if checkpoint_path in trainings:
+                continue
+            trainings.add(checkpoint_path)
+        yield run_kwargs

@@ -119,6 +119,10 @@ this: after a change of training code outside the solver file, run with
 `--checkpoint refresh` to remove the checkpoints and train again. Write files
 atomically (temporary name, then `os.replace`).
 
+In a parallel run, runs sharing a training start together and each one trains.
+Run `benchopt run --no-eval` first (one run per training), then the full
+`benchopt run`, which evaluates the other runs from the checkpoints.
+
 With `sampling_strategy = "callback"`, do not write the files yourself: give
 the checkpoint to the callback and restart from `self.checkpoint_` (`None` on
 a fresh start). benchopt stores it with the callback state (iteration, time),

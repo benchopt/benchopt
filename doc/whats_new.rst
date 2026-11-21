@@ -90,7 +90,9 @@ API
   training or to evaluate a trained model again. Parameters listed in the new
   ``eval_parameters`` attribute do not change this directory.
   ``benchopt run --checkpoint refresh`` empties it and ``--checkpoint off``
-  replaces it with a temporary one. See :ref:`checkpoints`.
+  replaces it with a temporary one. ``--no-eval`` only runs one of the runs
+  that share a directory, to train once before a parallel run. See
+  :ref:`checkpoints`.
 
 - A solver with a callback can give its checkpoint with
   ``callback(checkpoint=...)`` and restart from ``self.checkpoint_``. benchopt
