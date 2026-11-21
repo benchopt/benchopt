@@ -5,9 +5,6 @@ import warnings
 
 from .utils.sys_info import get_sys_info
 
-# Minimal time in seconds between two checkpoints that are not evaluated.
-CHECKPOINT_INTERVAL = 600
-
 
 def _dump(obj, path):
     """Pickle ``obj`` in ``path``, which is never left half written."""
@@ -105,7 +102,7 @@ class _Callback:
         checkpoint : object | callable | None
             What the solver needs to restart from this call, or a function
             without argument that returns it. It is stored when the solver is
-            evaluated and every ``CHECKPOINT_INTERVAL`` seconds, and given
+            evaluated and every ``checkpoint_interval`` seconds, and given
             back in ``solver.checkpoint_`` when the run is restarted.
         """
         if self._scoring:
@@ -138,7 +135,7 @@ class _Callback:
         stored from time to time to restart from it.
         """
         interval = time.perf_counter() - self._last_save
-        if not evaluated and interval < CHECKPOINT_INTERVAL:
+        if not evaluated and interval < self._setting('interval', 600):
             return
         self._folder.mkdir(parents=True, exist_ok=True)
         if callable(checkpoint):
@@ -150,14 +147,19 @@ class _Callback:
         _dump(state, self._folder / name)
         if evaluated:
             self._save_curve()
-            keep = (
-                getattr(self.solver, 'checkpoint_keep', None)
-                or getattr(self.objective, 'checkpoint_keep', None) or 'all'
-            )
+            keep = self._setting('keep', 'all')
             if keep != 'all':
                 for it in self._stored_points()[:-keep]:
                     (self._folder / f"point_{it}.pkl").unlink()
         self._last_save = time.perf_counter()
+
+    def _setting(self, name, default):
+        """Return ``checkpoint_<name>`` of the solver, then of the objective.
+        """
+        value = None
+        for component in (self.objective, self.solver):
+            value = getattr(component, f'checkpoint_{name}', value)
+        return default if value is None else value
 
     def _save_curve(self):
         """Store the curve of the run, with the hash of what evaluated it."""

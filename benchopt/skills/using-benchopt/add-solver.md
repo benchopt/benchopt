@@ -150,6 +150,8 @@ def run(self, callback):
   reused, with a warning if the objective code changed.
 - `checkpoint_keep = k` (solver, or objective for all solvers) keeps only the
   `k` last points. Default keeps all, which `rescore` needs for a full curve.
+- `checkpoint_interval = seconds` (same places, default 600) sets how often
+  the checkpoint is stored between two evaluations.
 
 ### Optional methods
 

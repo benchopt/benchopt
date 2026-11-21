@@ -97,7 +97,8 @@ API
   stores the checkpoints with the state of the callback, to resume an
   interrupted run or to evaluate the points of its curve again with
   ``benchopt run --checkpoint rescore``. ``checkpoint_keep`` sets how many
-  are kept. See :ref:`callback_checkpoints`.
+  are kept and ``checkpoint_interval`` how often they are stored. See
+  :ref:`callback_checkpoints`.
   By `Thomas Moreau`_ (:gh:`XXXX`)
 
 - :func:`~benchopt.helpers.requires_gpu.gpu_available` tells in

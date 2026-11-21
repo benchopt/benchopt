@@ -1177,7 +1177,7 @@ CALLBACK_OBJECTIVE = """from benchopt import BaseObjective
         name = "test-objective"
         parameters = {"scale": [1]}
         eval_parameters = ("scale",)
-        CHECKPOINT_KEEP
+        CHECKPOINT_SETTINGS
         def set_data(self, X, y): pass
         def get_one_result(self): return dict(beta=0)
         def evaluate_result(self, beta):
@@ -1234,7 +1234,7 @@ def _run_callback_checkpoint(benchmark, *args, n_eval=None, starts=None):
 
 @pytest.mark.parametrize("mode", ["resume", "rescore"])
 def test_callback_checkpoint_resume(mode, monkeypatch):
-    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_KEEP", "")
+    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_SETTINGS", "")
     with temp_benchmark(
             objective=objective, solvers=[CALLBACK_SOLVER]
     ) as benchmark:
@@ -1260,7 +1260,7 @@ def test_callback_checkpoint_resume(mode, monkeypatch):
 
 
 def test_callback_checkpoint_eval_parameters():
-    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_KEEP", "")
+    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_SETTINGS", "")
     with temp_benchmark(
             objective=objective, solvers=[CALLBACK_SOLVER]
     ) as benchmark:
@@ -1284,7 +1284,7 @@ def test_callback_checkpoint_eval_parameters():
 
 
 def test_callback_checkpoint_objective_changed():
-    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_KEEP", "")
+    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_SETTINGS", "")
     with temp_benchmark(
             objective=objective, solvers=[CALLBACK_SOLVER]
     ) as benchmark:
@@ -1306,7 +1306,7 @@ def test_callback_checkpoint_objective_changed():
 
 def test_callback_checkpoint_keep():
     objective = CALLBACK_OBJECTIVE.replace(
-        "CHECKPOINT_KEEP", "checkpoint_keep = 2"
+        "CHECKPOINT_SETTINGS", "checkpoint_keep = 2"
     )
     with temp_benchmark(
             objective=objective, solvers=[CALLBACK_SOLVER]
@@ -1333,8 +1333,9 @@ def test_callback_checkpoint_keep():
 
 def test_callback_checkpoint_last(monkeypatch):
     # Between two evaluations, the last checkpoint is stored to restart.
-    monkeypatch.setattr("benchopt.callback.CHECKPOINT_INTERVAL", 0)
-    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_KEEP", "")
+    objective = CALLBACK_OBJECTIVE.replace(
+        "CHECKPOINT_SETTINGS", "checkpoint_interval = 0"
+    )
     with temp_benchmark(
             objective=objective, solvers=[CALLBACK_SOLVER]
     ) as benchmark:
@@ -1352,7 +1353,7 @@ def test_callback_checkpoint_last(monkeypatch):
 
 
 def test_callback_checkpoint_off():
-    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_KEEP", "")
+    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_SETTINGS", "")
     with temp_benchmark(
             objective=objective, solvers=[CALLBACK_SOLVER]
     ) as benchmark:

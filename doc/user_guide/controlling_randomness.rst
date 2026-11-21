@@ -228,7 +228,8 @@ from in ``self.checkpoint_``, which is ``None`` for a fresh start.
 
 The checkpoint is any object that can be pickled, or a function without
 argument that returns it. The function is only called when benchopt stores the
-checkpoint: each time the solver is evaluated, and every 10 minutes in between.
+checkpoint: each time the solver is evaluated, and every 10 minutes in between
+(see ``checkpoint_interval`` below).
 It must hold all that the solver needs to continue: the model, the optimizer,
 the schedule and the state of the random generators.
 
@@ -251,8 +252,13 @@ since, with a warning. Use ``benchopt run --checkpoint rescore`` to evaluate
 all the checkpoints again, e.g. to add a metric to finished runs without
 training.
 
-By default, the checkpoints of all the points of the curve are kept. Set
-``checkpoint_keep = k`` on the ``Solver``, or on the ``Objective`` for all the
-solvers, to only keep the ``k`` last ones. The points whose checkpoint was
-removed cannot be evaluated again: they are missing from the curve of a run
-that needs to.
+Two class attributes tune what is stored. They are set on the ``Solver``, or
+on the ``Objective`` for all the solvers:
+
+- ``checkpoint_keep = k`` only keeps the checkpoints of the ``k`` last points
+  of the curve. By default, they are all kept. The points whose checkpoint
+  was removed cannot be evaluated again: they are missing from the curve of a
+  run that needs to.
+- ``checkpoint_interval`` is the time in seconds between two checkpoints
+  stored between the evaluations, 600 by default. A killed run loses at most
+  this training time.
