@@ -71,6 +71,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "no_cache",
         "output",
         "seed",
+        "checkpoint",
     ]
     return [cli_kwargs[name] for name in return_names]
 
@@ -212,6 +213,14 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help="Seed to control the stochasticity of the "
               "benchmark. If it is not provided, an arbitrary seed is "
               "selected to make the benchmark reproducible.")
+@click.option('--checkpoint',
+              type=click.Choice(['resume', 'refresh', 'off']),
+              default='resume', show_default=True,
+              help="How to use the checkpoints that the solvers store in "
+              "`get_checkpoint_path()`. With `resume`, they are reused. With "
+              "`refresh`, they are removed and the runs are forced, to train "
+              "from scratch. With `off`, they are stored in a temporary "
+              "folder, so none is reused nor kept.")
 def run(config_file=None, **kwargs):
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -223,7 +232,7 @@ def run(config_file=None, **kwargs):
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, no_timeout,
         collect, plot, display, html, n_jobs, parallel_config, group_by, pdb,
-        do_profile, env_name, no_cache, output, seed
+        do_profile, env_name, no_cache, output, seed, checkpoint
     ) = _get_run_args(kwargs, config)
 
     if env_name == "False":
@@ -322,7 +331,7 @@ def run(config_file=None, **kwargs):
             max_runs=max_runs, n_repetitions=n_repetitions,
             timeout=timeout, output_file=output, plot_result=plot,
             display=display, html=html, collect=collect,
-            parallel_config=parallel_config, pdb=pdb
+            parallel_config=parallel_config, pdb=pdb, checkpoint=checkpoint
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -406,7 +415,8 @@ def run(config_file=None, **kwargs):
         rf"{parallel_args}"
         rf"{'--pdb ' if pdb else ''}"
         rf"{'--profile ' if do_profile else ''}"
-        rf"{f'--seed {seed}' if seed is not None else ''}"
+        rf"{f'--seed {seed} ' if seed is not None else ''}"
+        rf"--checkpoint {checkpoint} "
         rf"--output {output}"
         .replace('\\', '\\\\')
     )

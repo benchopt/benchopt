@@ -535,13 +535,12 @@ class Benchmark:
     def mem(self):
         from joblib import Memory
         if not hasattr(self, '_mem'):
-            self._mem = Memory(location=self.get_cache_location(), verbose=0)
+            location = None if self.no_cache else self.get_cache_location()
+            self._mem = Memory(location=location, verbose=0)
         return self._mem
 
     def get_cache_location(self):
         "Get the location for the cache of the benchmark."
-        if self.no_cache:
-            return None
         benchopt_cache_dir = get_setting("cache")
         if benchopt_cache_dir is None:
             return self.benchmark_dir / CACHE_DIR

@@ -1,5 +1,6 @@
 import re
 import hashlib
+import tempfile
 from pathlib import Path
 from functools import cached_property
 from dataclasses import dataclass, field, replace as dc_replace
@@ -37,7 +38,8 @@ class RunContext:
     their methods, with ``with run_context:``.
 
     Config fields (set once in ``_run_benchmark``):
-        run_output_base, pdb, parallel_config, base_seed
+        run_output_base, checkpoint_base, checkpoint_mode, pdb,
+        parallel_config, base_seed
 
     Per-run fields (filled by ``for_run`` for each dataset × objective ×
     solver × rep):
@@ -47,6 +49,11 @@ class RunContext:
     """
     # Config fields — set once per benchmark invocation
     run_output_base: Path | None = None
+    # Folder of the checkpoints, None to use a temporary one for each run.
+    checkpoint_base: Path | None = None
+    # 'resume' to reuse the checkpoints, 'refresh' to remove them first, and
+    # 'off' to use a temporary folder for each run.
+    checkpoint_mode: str = 'resume'
     pdb: bool = False
     # Parallel config of the benchmark, as given by `--parallel-config`.
     parallel_config: dict | None = field(default=None, repr=False)
@@ -104,6 +111,35 @@ class RunContext:
         )
         path.mkdir(parents=True, exist_ok=True)
         return path
+
+    def get_checkpoint_path(self):
+        """Return the checkpoint directory of the run, creating it if needed.
+
+        It is named after what defines the training: the seed, the repetition
+        and the components without their ``eval_parameters``, with the code of
+        the dataset and of the solver. The code of the objective is left out.
+        """
+        key = [str(self.base_seed), str(self.get_component('repetition'))]
+        for name in ('dataset', 'objective', 'solver'):
+            component = self.get_component(name)
+            params = {
+                k: v for k, v in sorted(component._parameters.items())
+                if k not in component.eval_parameters
+            }
+            key.append(f"{component.name}{params}")
+            if name != 'objective':
+                key.append(type(component)._file_hash)
+        base = self.checkpoint_base
+        if base is None or self.checkpoint_mode == 'off':
+            base = Path(self._tmp_checkpoint_base.name)
+        path = base / hashlib.sha256("_".join(key).encode()).hexdigest()[:16]
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @cached_property
+    def _tmp_checkpoint_base(self):
+        """Temporary folder for the checkpoints, removed with the context."""
+        return tempfile.TemporaryDirectory(prefix="benchopt_checkpoints_")
 
     @property
     def run_id(self):

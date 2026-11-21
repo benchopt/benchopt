@@ -137,3 +137,61 @@ Like ``get_seed``, this method is available on ``Dataset``, ``Objective``, and
 ``Solver``, and must be called during execution (not at import time or class
 definition). It raises ``RuntimeError`` when called outside of a
 ``benchopt run`` invocation (e.g. during ``benchopt test``).
+
+.. _checkpoints:
+
+Checkpointing a training
+------------------------
+
+The directory given by ``get_run_output_path`` changes at each call to
+``benchopt run``. To find the state of a training again in a later run, use
+``get_checkpoint_path``. It returns a directory that only depends on what
+defines the training, so an interrupted training can be resumed, and a
+finished one can be evaluated again without training.
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        name = "my-solver"
+        sampling_strategy = "run_once"
+
+        def run(self, _):
+            checkpoint = self.get_checkpoint_path() / "checkpoint.pt"
+            # ``fit`` loads ``checkpoint`` if it exists, starts from the
+            # epoch it stores, and saves it as the training goes.
+            self.model = fit(self.X, self.y, checkpoint=checkpoint)
+
+The directory is named with a hash of the seed, the repetition, the code of
+the dataset and of the solver, and the parameters of the three components. It
+lives in the cache folder of the benchmark, under ``checkpoints/``, also with
+``--no-cache``. With ``benchopt run --checkpoint off``, it is a temporary
+directory that lasts for the run, so the code above needs no guard and no
+checkpoint is reused nor kept.
+
+Some parameters change how a model is evaluated but not how it is trained,
+like the number of samples drawn to score it. List them in the
+``eval_parameters`` of the ``Dataset``, ``Objective`` or ``Solver`` that
+defines them. They are left out of the name of the directory, so the runs that
+only differ by them share one training.
+
+.. code-block:: python
+
+    class Objective(BaseObjective):
+        name = "my-objective"
+        parameters = {"reg": [0.1, 1], "n_eval": [100, 1000]}
+        eval_parameters = ("n_eval",)
+
+The code of the objective is also left out, so a new metric can be computed
+from the existing checkpoints.
+
+.. warning::
+
+    benchopt cannot check these choices. A checkpoint is reused silently when
+    a parameter listed in ``eval_parameters`` does change the training, or
+    when the training code changes outside of the files of the dataset and of
+    the solver. Use ``benchopt run --checkpoint refresh`` to remove the
+    checkpoints of the selected runs and train them again.
+
+The solver writes its files itself. Write to a temporary name, then rename it
+with ``os.replace``, so that a job killed while saving does not leave a
+corrupt checkpoint.

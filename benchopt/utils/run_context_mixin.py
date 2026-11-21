@@ -196,3 +196,28 @@ class RunContextMixin:
                 "get_run_output_path() can only be called during run()."
             )
         return self._run_context.get_run_output_path()
+
+    def get_checkpoint_path(self):
+        """Return a directory for the checkpoints of the current run.
+
+        Unlike ``get_run_output_path``, it is the same from one call of
+        ``benchopt run`` to the next, so an interrupted training can be
+        resumed and a finished one reused. It depends on what defines the
+        training: the seed, the repetition, the code of the dataset and of the
+        solver, and the parameters of the components that are not listed in
+        their ``eval_parameters``. It is created on first call.
+
+        With ``--checkpoint off``, it is a temporary directory that lasts for
+        the run.
+
+        Returns
+        -------
+        checkpoint_path : pathlib.Path
+            A directory under the cache folder of the benchmark.
+        """
+        if self._run_context is None:
+            raise RuntimeError(
+                "get_checkpoint_path() can only be called in the methods "
+                "that benchopt calls during a run."
+            )
+        return self._run_context.get_checkpoint_path()

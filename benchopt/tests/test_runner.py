@@ -1,6 +1,7 @@
 import pytest
 import re
 import inspect
+from pathlib import Path
 
 from benchopt.cli.main import run
 from benchopt.results import read_results
@@ -770,6 +771,87 @@ def test_get_run_output_path_raises_outside_run():
     solver = TempSolver()
     with pytest.raises(RuntimeError, match="get_run_output_path"):
         solver.get_run_output_path()
+
+
+CHECKPOINT_SOLVER = """from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        name = "test-solver"
+        sampling_strategy = 'run_once'
+        parameters = {"lr": [0.1], "n_eval": [1, 2]}
+        eval_parameters = ("n_eval",)
+
+        def run(self, _):
+            checkpoint = self.get_checkpoint_path() / "checkpoint"
+            print(f"CKPT#{checkpoint.parent}#{checkpoint.exists()}")
+            checkpoint.touch()
+"""
+
+
+def test_get_checkpoint_path():
+    # The checkpoint directory is shared by the runs that only differ by
+    # their eval parameters, and kept from one `benchopt run` to the next.
+    with temp_benchmark(solvers=[CHECKPOINT_SOLVER]) as benchmark:
+        cmd = [
+            str(benchmark.benchmark_dir), "-d", "test-dataset",
+            "-r", "2", "--no-plot",
+        ]
+        with CaptureCmdOutput() as out:
+            run(cmd, standalone_mode=False)
+
+        # 2 values of n_eval x 2 repetitions give 2 trainings.
+        checkpoints = out.check_output(r"CKPT#(.+)#(.+)", repetition=4)
+        paths = {path for path, _ in checkpoints}
+        assert len(paths) == 2
+        assert sorted(found for _, found in checkpoints) == [
+            "False", "False", "True", "True"
+        ]
+        cache_dir = benchmark.get_cache_location()
+        assert all(Path(p).parent == cache_dir / "checkpoints" for p in paths)
+
+        # Forcing the solver runs it again, with its checkpoints.
+        with CaptureCmdOutput() as out:
+            run([*cmd, "-f", "test-solver"], standalone_mode=False)
+        checkpoints = out.check_output(r"CKPT#(.+)#True", repetition=4)
+        assert set(checkpoints) == paths
+
+        # Refreshing the checkpoints removes them and forces the runs.
+        with CaptureCmdOutput() as out:
+            run([*cmd, "--checkpoint", "refresh"], standalone_mode=False)
+        checkpoints = out.check_output(r"CKPT#(.+)#(.+)", repetition=4)
+        assert {path for path, _ in checkpoints} == paths
+        assert sorted(found for _, found in checkpoints) == [
+            "False", "False", "True", "True"
+        ]
+
+
+def test_get_checkpoint_path_off():
+    with temp_benchmark(solvers=[CHECKPOINT_SOLVER]) as benchmark:
+        cmd = [str(benchmark.benchmark_dir), "-d", "test-dataset", "--no-plot"]
+
+        # The checkpoints do not depend on the cache of the results.
+        for found in ["False", "True"]:
+            with CaptureCmdOutput() as out:
+                run([*cmd, "--no-cache"], standalone_mode=False)
+            checkpoints = out.check_output(r"CKPT#.+#(.+)", repetition=2)
+            assert checkpoints == [found, "True"]
+
+        # With `off`, each run gets its own temporary directory.
+        with CaptureCmdOutput() as out:
+            run([*cmd, "--checkpoint", "off", "-f", "test-solver"],
+                standalone_mode=False)
+        checkpoints = out.check_output(r"CKPT#(.+)#False", repetition=2)
+        assert len(set(checkpoints)) == 2
+        for path in checkpoints:
+            assert benchmark.benchmark_dir not in Path(path).parents
+
+
+def test_get_checkpoint_path_raises_outside_run():
+    from benchopt.utils.temp_benchmark import TempSolver
+
+    solver = TempSolver()
+    with pytest.raises(RuntimeError, match="get_checkpoint_path"):
+        solver.get_checkpoint_path()
 
 
 @pytest.mark.parametrize('n_jobs', [1, 2])

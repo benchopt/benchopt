@@ -26,6 +26,9 @@ class ParametrizedNameMixin(metaclass=ComponentMeta):
     # Parameter config for testing the class
     test_config = None
 
+    # Parameters that only change the evaluation, ignored for checkpoints.
+    eval_parameters = ()
+
     def __init__(self, **parameters):
         """Default init set parameters base on the cls.parameters
         """

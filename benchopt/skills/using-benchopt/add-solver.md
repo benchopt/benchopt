@@ -95,6 +95,30 @@ it in `set_objective`) so `--n-repetitions N` gives N genuinely different but
 reproducible runs; a bare `self.get_seed()` returns the same seed every
 repetition. Add `use_dataset=True` / `use_solver=True` to further differentiate seeds.
 
+### Checkpointing a long training
+
+Store the state of a training in `self.get_checkpoint_path()`: this directory
+is the same from one `benchopt run` to the next, so `run` can load a checkpoint
+if it exists and resume or skip the training. Do not rebuild such a path from
+`get_run_output_path()`, which changes at each run. It needs no guard: with
+`--checkpoint off`, it is a temporary directory.
+
+```python
+def run(self, _):
+    checkpoint = self.get_checkpoint_path() / "checkpoint.pt"
+    self.model = fit(self.X, self.y, checkpoint=checkpoint)  # load or train
+```
+
+The directory depends on the seed, the repetition, the code of the dataset and
+solver files, and the parameters of the three components. List the parameters
+that only change the evaluation in `eval_parameters = ("n_eval", ...)`, on the
+`Dataset`, `Objective` or `Solver` defining them: runs that differ only by
+them share one training. The objective code is not in the key, so a new metric
+is computed from the existing checkpoints. benchopt does not check any of
+this: after a change of training code outside the solver file, run with
+`--checkpoint refresh` to remove the checkpoints and train again. Write files
+atomically (temporary name, then `os.replace`).
+
 ### Optional methods
 
 - `skip(self) -> str | None`: declare incompatibility with

@@ -215,7 +215,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
                    n_repetitions=1, timeout=100,
                    plot_result=True, display=True, html=True, collect=False,
                    output_file="None", parallel_config=None,
-                   show_progress=True, pdb=False):
+                   show_progress=True, pdb=False, checkpoint='resume'):
     """Run full benchmark.
 
     Parameters
@@ -261,6 +261,11 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         If pdb is set to True, open a debugger on error.
+    checkpoint : 'resume' | 'refresh' | 'off'
+        With 'resume' (default), the runs reuse the checkpoints stored in
+        ``get_checkpoint_path()``. With 'refresh', these are removed and the
+        runs are forced. With 'off', ``get_checkpoint_path()`` gives a
+        temporary directory, so no checkpoint is reused nor kept.
     output_file : str
         Name or path for the result output. A bare name is stored at
         <BENCHMARK>/outputs/<name>.parquet. A value containing a path separator
@@ -299,6 +304,8 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     base_run_context = RunContext(
         pdb=pdb,
         run_output_base=output_path.parent / output_path.stem,
+        checkpoint_base=benchmark.get_cache_location() / 'checkpoints',
+        checkpoint_mode=checkpoint,
         # Copied, as `parallel_run` pops the run keys from `parallel_config`.
         parallel_config=dict(parallel_config or {}),
         base_seed=benchmark.seed,
@@ -385,7 +392,7 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
                   n_jobs=None, parallel_config=None,
                   plot_result=True, display=True, html=True,  collect=False,
                   show_progress=True, pdb=False, no_cache=False,
-                  output_file="None"):
+                  output_file="None", checkpoint='resume'):
     """Run full benchmark.
 
     Parameters
@@ -440,6 +447,11 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
     output_file : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.
+    checkpoint : 'resume' | 'refresh' | 'off'
+        With 'resume' (default), the runs reuse the checkpoints stored in
+        ``get_checkpoint_path()``. With 'refresh', these are removed and the
+        runs are forced. With 'off', ``get_checkpoint_path()`` gives a
+        temporary directory, so no checkpoint is reused nor kept.
 
     Returns
     -------
@@ -479,7 +491,8 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         show_progress=show_progress,
         parallel_config=parallel_config,
         pdb=pdb,
-        output_file=output_file
+        output_file=output_file,
+        checkpoint=checkpoint,
     )
     if exit_code != 0:
         raise RuntimeError("Benchmark failed, check the terminal output.")

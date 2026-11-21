@@ -1,3 +1,4 @@
+import shutil
 import inspect
 import itertools
 
@@ -189,6 +190,11 @@ def generate_run_kwargs(
     axis_items = _materialize_axes(order, datasets, objectives, solvers)
     terminal.set_levels(order if rep_is_level else order[:-1])
     base_ctx = run_context or RunContext(base_seed=benchmark.seed)
+    # With 'refresh', remove the checkpoints and force the runs. They are
+    # removed here and not in the run, which can be requeued. Runs can share
+    # their checkpoints, which are then removed once.
+    refresh = base_ctx.checkpoint_mode == 'refresh' and not collect
+    refreshed = set()
 
     # Each `skip` is checked once, at the first level where all the
     # components it receives are chosen.
@@ -237,11 +243,18 @@ def generate_run_kwargs(
         )
         with run_ctx:
             meta = _run_meta(benchmark, dataset, objective, solver, rep)
+        if refresh:
+            checkpoint_path = run_ctx.get_checkpoint_path()
+            if checkpoint_path not in refreshed:
+                shutil.rmtree(checkpoint_path)
+                refreshed.add(checkpoint_path)
         return dict(
             benchmark=benchmark, dataset=dataset, objective=objective,
             solver=solver, repetition=rep, meta=meta, timeout=timeout,
             max_runs=max_runs, terminal=terminal, run_context=run_ctx,
-            force=is_matched(str(solver), forced_solvers, default=False),
+            force=refresh or is_matched(
+                str(solver), forced_solvers, default=False
+            ),
         )
 
     def _rec(depth, chosen):
