@@ -195,3 +195,64 @@ from the existing checkpoints.
 The solver writes its files itself. Write to a temporary name, then rename it
 with ``os.replace``, so that a job killed while saving does not leave a
 corrupt checkpoint.
+
+.. _callback_checkpoints:
+
+Checkpoints with a callback
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+With ``sampling_strategy = "callback"``, one training gives a whole curve.
+Here benchopt stores the checkpoints itself, with the state of the callback,
+so that a restarted run gives the same curve as an uninterrupted one. The
+solver gives its checkpoint to the callback, and reads the one to restart
+from in ``self.checkpoint_``, which is ``None`` for a fresh start.
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        name = "my-solver"
+        sampling_strategy = "callback"
+
+        def run(self, callback):
+            model, optimizer = build(self.X)
+            if self.checkpoint_ is not None:
+                model.load_state_dict(self.checkpoint_["model"])
+                optimizer.load_state_dict(self.checkpoint_["optimizer"])
+
+            def checkpoint():
+                return dict(model=model.state_dict(),
+                            optimizer=optimizer.state_dict())
+
+            while callback(checkpoint=checkpoint):
+                train_one_step(model, optimizer)
+
+The checkpoint is any object that can be pickled, or a function without
+argument that returns it. The function is only called when benchopt stores the
+checkpoint: each time the solver is evaluated, and every 10 minutes in between.
+It must hold all that the solver needs to continue: the model, the optimizer,
+the schedule and the state of the random generators.
+
+When a run starts and checkpoints exist for its training:
+
+- the points of the curve already evaluated for this run are reused. The
+  other ones are evaluated from their checkpoint, e.g. for a run that only
+  differs by a parameter listed in ``eval_parameters``. For this, ``run`` is
+  called with ``checkpoint_`` set and stopped at its first call to the
+  callback. The last point is always evaluated this way.
+- the solver then restarts from its last checkpoint, with the iteration and
+  the time of the callback restored.
+
+The callback must be called before the first step of the solver, as in the
+``while callback(...)`` loop above. Otherwise, a point evaluated from its
+checkpoint is one step late.
+
+The stored evaluations are reused even if the code of the objective changed
+since, with a warning. Use ``benchopt run --checkpoint rescore`` to evaluate
+all the checkpoints again, e.g. to add a metric to finished runs without
+training.
+
+By default, the checkpoints of all the points of the curve are kept. Set
+``checkpoint_keep = k`` on the ``Solver``, or on the ``Objective`` for all the
+solvers, to only keep the ``k`` last ones. The points whose checkpoint was
+removed cannot be evaluated again: they are missing from the curve of a run
+that needs to.

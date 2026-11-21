@@ -214,13 +214,15 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               "benchmark. If it is not provided, an arbitrary seed is "
               "selected to make the benchmark reproducible.")
 @click.option('--checkpoint',
-              type=click.Choice(['resume', 'refresh', 'off']),
+              type=click.Choice(['resume', 'rescore', 'refresh', 'off']),
               default='resume', show_default=True,
-              help="How to use the checkpoints that the solvers store in "
-              "`get_checkpoint_path()`. With `resume`, they are reused. With "
-              "`refresh`, they are removed and the runs are forced, to train "
-              "from scratch. With `off`, they are stored in a temporary "
-              "folder, so none is reused nor kept.")
+              help="How to use the checkpoints of the solvers, given to "
+              "their callback or stored in `get_checkpoint_path()`. With "
+              "`resume`, they are reused. With `rescore`, the ones given to "
+              "the callback are also evaluated again. With `refresh`, they "
+              "are removed and the runs are forced, to train from scratch. "
+              "With `off`, they are stored in a temporary folder, so none is "
+              "reused nor kept.")
 def run(config_file=None, **kwargs):
     if config_file is not None:
         with open(config_file, "r") as f:

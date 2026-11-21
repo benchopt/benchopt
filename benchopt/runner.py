@@ -159,11 +159,13 @@ def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
             # If sampling_strategy is 'callback', only call once to get the
             # results up to convergence.
             callback = _Callback(
-                objective, solver, meta, stopping_criterion
+                objective, solver, meta, stopping_criterion, run_context
             )
             solver.pre_run_hook(callback)
-            callback.start()
-            solver.run(callback)
+            if callback.restore():
+                callback.start()
+                solver.run(callback)
+            run_context.checkpoint = None
             curve, ctx.status, last_result = callback.get_results()
         else:
 
@@ -261,11 +263,13 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         If pdb is set to True, open a debugger on error.
-    checkpoint : 'resume' | 'refresh' | 'off'
-        With 'resume' (default), the runs reuse the checkpoints stored in
-        ``get_checkpoint_path()``. With 'refresh', these are removed and the
-        runs are forced. With 'off', ``get_checkpoint_path()`` gives a
-        temporary directory, so no checkpoint is reused nor kept.
+    checkpoint : 'resume' | 'rescore' | 'refresh' | 'off'
+        With 'resume' (default), the runs reuse the checkpoints given to the
+        callback or stored in ``get_checkpoint_path()``. With 'rescore', the
+        ones given to the callback are also evaluated again. With 'refresh',
+        they are removed and the runs are forced. With 'off',
+        ``get_checkpoint_path()`` gives a temporary directory, so no
+        checkpoint is reused nor kept.
     output_file : str
         Name or path for the result output. A bare name is stored at
         <BENCHMARK>/outputs/<name>.parquet. A value containing a path separator
@@ -447,11 +451,13 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
     output_file : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.
-    checkpoint : 'resume' | 'refresh' | 'off'
-        With 'resume' (default), the runs reuse the checkpoints stored in
-        ``get_checkpoint_path()``. With 'refresh', these are removed and the
-        runs are forced. With 'off', ``get_checkpoint_path()`` gives a
-        temporary directory, so no checkpoint is reused nor kept.
+    checkpoint : 'resume' | 'rescore' | 'refresh' | 'off'
+        With 'resume' (default), the runs reuse the checkpoints given to the
+        callback or stored in ``get_checkpoint_path()``. With 'rescore', the
+        ones given to the callback are also evaluated again. With 'refresh',
+        they are removed and the runs are forced. With 'off',
+        ``get_checkpoint_path()`` gives a temporary directory, so no
+        checkpoint is reused nor kept.
 
     Returns
     -------

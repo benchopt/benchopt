@@ -51,8 +51,9 @@ class RunContext:
     run_output_base: Path | None = None
     # Folder of the checkpoints, None to use a temporary one for each run.
     checkpoint_base: Path | None = None
-    # 'resume' to reuse the checkpoints, 'refresh' to remove them first, and
-    # 'off' to use a temporary folder for each run.
+    # 'resume' to reuse the checkpoints, 'rescore' to also evaluate them
+    # again, 'refresh' to remove them first, and 'off' to use a temporary
+    # folder for each run.
     checkpoint_mode: str = 'resume'
     pdb: bool = False
     # Parallel config of the benchmark, as given by `--parallel-config`.
@@ -67,6 +68,8 @@ class RunContext:
     objective: RunContextMixin | str | None = field(default=None, repr=False)
     solver: RunContextMixin | str | None = field(default=None, repr=False)
     repetition: int | None = None
+    # Checkpoint to restart the solver from, None for a fresh start.
+    checkpoint: object = field(default=None, repr=False)
     # Contexts of the components before entering this one, to restore them.
     _previous: list = field(default_factory=list, repr=False, compare=False)
 
@@ -112,8 +115,9 @@ class RunContext:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def get_checkpoint_path(self):
-        """Return the checkpoint directory of the run, creating it if needed.
+    @property
+    def checkpoint_path(self):
+        """Checkpoint directory of the run, which may not exist yet.
 
         It is named after what defines the training: the seed, the repetition
         and the components without their ``eval_parameters``, with the code of
@@ -132,7 +136,12 @@ class RunContext:
         base = self.checkpoint_base
         if base is None or self.checkpoint_mode == 'off':
             base = Path(self._tmp_checkpoint_base.name)
-        path = base / hashlib.sha256("_".join(key).encode()).hexdigest()[:16]
+        return base / hashlib.sha256("_".join(key).encode()).hexdigest()[:16]
+
+    def get_checkpoint_path(self):
+        """Return the checkpoint directory of the run, creating it if needed.
+        """
+        path = self.checkpoint_path
         path.mkdir(parents=True, exist_ok=True)
         return path
 
@@ -172,7 +181,8 @@ class RunContext:
         Raise if a component or the repetition is absent from the context.
         """
         value = getattr(self, name)
-        if value is None and 'parallel_config' not in name:
+        optional = ('parallel_config', 'run_parallel_config', 'checkpoint')
+        if value is None and name not in optional:
             raise RunContextError(
                 name,
                 f"No {name} is defined in the current run context. The "

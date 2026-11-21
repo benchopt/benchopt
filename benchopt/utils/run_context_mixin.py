@@ -40,6 +40,9 @@ class RunContextMixin:
     solver_ = _CurrentRun("Solver of the current run.")
     repetition_ = _CurrentRun("Repetition index of the current run.")
     run_id_ = _CurrentRun("Identifier of the current run.")
+    checkpoint_ = _CurrentRun(
+        "Checkpoint to restart the solver from, None for a fresh start."
+    )
     parallel_config_ = _CurrentRun("Parallel config of the benchmark run.")
     run_parallel_config_ = _CurrentRun("Workers' parallel config, or None.")
 
@@ -166,7 +169,7 @@ class RunContextMixin:
         """Return ``name`` of the current run, e.g. ``self.dataset_``."""
         names = (
             'dataset', 'objective', 'solver', 'repetition', 'run_id',
-            'parallel_config', 'run_parallel_config',
+            'checkpoint', 'parallel_config', 'run_parallel_config',
             # Internal, without attribute.
             '_stopping_criterion', '_sampling_strategy',
         )

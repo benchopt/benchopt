@@ -119,6 +119,38 @@ this: after a change of training code outside the solver file, run with
 `--checkpoint refresh` to remove the checkpoints and train again. Write files
 atomically (temporary name, then `os.replace`).
 
+With `sampling_strategy = "callback"`, do not write the files yourself: give
+the checkpoint to the callback and restart from `self.checkpoint_` (`None` on
+a fresh start). benchopt stores it with the callback state (iteration, time),
+at each evaluation and every 10 minutes, so a restarted run gives the same
+curve.
+
+```python
+def run(self, callback):
+    model, optimizer = build(self.X)
+    if self.checkpoint_ is not None:
+        model.load_state_dict(self.checkpoint_["model"])
+        optimizer.load_state_dict(self.checkpoint_["optimizer"])
+
+    def checkpoint():  # only called when benchopt stores it
+        return dict(model=model.state_dict(),
+                    optimizer=optimizer.state_dict())
+
+    while callback(checkpoint=checkpoint):
+        train_one_step(model, optimizer)
+```
+
+- Put everything needed to continue in the checkpoint (optimizer, schedule,
+  step counter, RNG state), and keep it picklable.
+- Call the callback **before** the first step (`while callback(...)`): points
+  are re-evaluated by calling `run` with `checkpoint_` set and stopping it at
+  its first callback call.
+- `--checkpoint rescore` evaluates all the stored points again without
+  training, e.g. after adding a metric. Without it, stored evaluations are
+  reused, with a warning if the objective code changed.
+- `checkpoint_keep = k` (solver, or objective for all solvers) keeps only the
+  `k` last points. Default keeps all, which `rescore` needs for a full curve.
+
 ### Optional methods
 
 - `skip(self) -> str | None`: declare incompatibility with
