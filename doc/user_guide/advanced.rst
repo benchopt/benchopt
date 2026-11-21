@@ -99,6 +99,10 @@ methods that benchopt calls on a component, e.g. ``skip``, ``get_data``,
   the run.
 - ``self.repetition_``: the index of the repetition. ``skip`` is checked for
   the first repetition.
+- ``self.run_id_``: a short hash of the seed of the benchmark, the names of
+  the components and the repetition, which identifies the run. It is the
+  ``run_id`` column of the results, to select the rows of one run, and can
+  name the files of the run, e.g. checkpoints.
 - ``self.parallel_config_``: the parallel config given to ``benchopt run``,
   with ``--parallel-config``. It can be used in ``slurm_params``.
 - ``self.run_parallel_config_``: the parallel config of the workers that run it,

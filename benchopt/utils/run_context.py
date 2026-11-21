@@ -105,6 +105,15 @@ class RunContext:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
+    @property
+    def run_id(self):
+        """Short hash of the seed, the components and the repetition."""
+        names = [str(self.base_seed)] + [
+            str(self.get_component(name))
+            for name in ('dataset', 'objective', 'solver', 'repetition')
+        ]
+        return hashlib.sha256("_".join(names).encode()).hexdigest()[:16]
+
     def for_run(self, objective, dataset, solver, repetition):
         """Clone the context with the per-run fields.
 
@@ -122,7 +131,7 @@ class RunContext:
         return None if value is None else str(value)
 
     def get_component(self, name):
-        """Return the component, repetition or run parallel config ``name``.
+        """Return the run attribute ``name``, e.g. a component or the run id.
 
         Raise if a component or the repetition is absent from the context.
         """

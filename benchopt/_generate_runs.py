@@ -120,6 +120,7 @@ def _run_meta(benchmark, dataset, objective, solver, rep):
         'dataset_name': str(dataset),
         'dataset_description': inspect.cleandoc(dataset.__doc__ or ""),
         'idx_rep': rep,
+        'run_id': solver.run_id_,
         'sampling_strategy': sampling_strategy,
         'file_objective': objective._module_filename.name,
         **{f"p_obj_{k}": v for k, v in objective._parameters.items()},
