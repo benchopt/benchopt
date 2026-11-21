@@ -884,13 +884,13 @@ def test_run_id(no_debug_log):
     # The run id is stable and identifies each run in the results.
     from benchopt.utils.run_context import RunContext
 
-    ctx = RunContext().for_run("objective", "dataset", "solver", 0)
-    assert ctx.run_id == RunContext(base_seed=1).for_run(
-        "objective", "dataset", "solver", 0
-    ).run_id
-    assert ctx.run_id != RunContext().for_run(
-        "objective", "dataset", "solver", 1
-    ).run_id
+    def run_id(seed=0, rep=0):
+        ctx = RunContext(base_seed=seed)
+        return ctx.for_run("objective", "dataset", "solver", rep).run_id
+
+    assert run_id() == run_id()
+    assert run_id() != run_id(seed=1)
+    assert run_id() != run_id(rep=1)
 
     solver = """from benchopt.utils.temp_benchmark import TempSolver
 

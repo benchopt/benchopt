@@ -107,8 +107,8 @@ class RunContext:
 
     @property
     def run_id(self):
-        """Short hash of the dataset, objective, solver and repetition."""
-        names = [
+        """Short hash of the seed, the components and the repetition."""
+        names = [str(self.base_seed)] + [
             str(self.get_component(name))
             for name in ('dataset', 'objective', 'solver', 'repetition')
         ]
