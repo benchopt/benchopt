@@ -1,3 +1,4 @@
+import shutil
 import pytest
 import inspect
 import numpy as np
@@ -8,6 +9,7 @@ from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils.dynamic_modules import _get_module_from_file
 from benchopt.utils.parametrized_name_mixin import get_configs
 from benchopt.utils.run_context import RunContext
+from benchopt.callback import _Callback
 
 
 def test_dataset_class(benchmark, dataset_class):
@@ -289,6 +291,129 @@ def test_solver_run(
     if len(reasons) == 1:
         pytest.skip(reasons[0])
     pytest.skip("No compatible config: " + "; ".join(reasons))
+
+
+def test_eval_parameters(benchmark):
+    # Each entry of `eval_parameters` must be a parameter of its component.
+    components = [benchmark.get_benchmark_objective()]
+    components += benchmark.get_datasets() + benchmark.get_solvers()
+    for component in components:
+        unknown = set(component.eval_parameters) - set(component.parameters)
+        assert not unknown, (
+            f"{component.name}.eval_parameters lists {sorted(unknown)}, which "
+            f"are not in its parameters {sorted(component.parameters)}."
+        )
+
+
+class _EveryCallCriterion:
+    """Score the solver at each callback call, and stop after a few calls."""
+
+    def __init__(self, n_points):
+        self.n_points = n_points
+
+    def init_stop_val(self):
+        return 0
+
+    def should_stop(self, stop_val, objective_list):
+        done = stop_val + 1 >= self.n_points
+        return done, 'done' if done else 'running', stop_val + 1
+
+
+def _run_from_checkpoints(benchmark, config, classes, checkpoint_base, mode):
+    """Run a callback solver like `run_one_to_cvg`, with fresh components.
+
+    The solver is scored at each callback call, so that a short test run
+    stores several checkpoints. Return the scores and times of the curve.
+    """
+    dataset_class, objective_class, solver_class = classes
+    dataset = dataset_class.get_instance(**config['dataset'])
+    objective = objective_class.get_instance(**config['objective'])
+    solver = solver_class.get_instance(**config['solver'])
+    ctx = RunContext(
+        objective=objective, dataset=dataset, solver=solver, repetition=0,
+        base_seed=benchmark.seed, checkpoint_base=checkpoint_base,
+        checkpoint_mode=mode,
+    )
+    with ctx:
+        objective._load_data()
+        solver._set_objective(objective)
+        callback = _Callback(
+            objective, solver, {}, _EveryCallCriterion(n_points=4), ctx
+        )
+        solver.pre_run_hook(callback)
+        if callback.restore():
+            callback.start()
+            solver.run(callback)
+        ctx.checkpoint = None
+        curve, _, _ = callback.get_results()
+        folder = ctx.checkpoint_path / 'callback'
+    scores = [
+        {k: v for k, v in row.items()
+         if k == 'stop_val' or (k.startswith('objective_')
+                                and isinstance(v, (int, float)))}
+        for row in curve
+    ]
+    return scores, [row['time'] for row in curve], folder
+
+
+def test_solver_checkpoint(
+        benchmark, solver_class, test_dataset_name, require_solver_installed,
+        tmp_path
+):
+    # A solver that gives checkpoints to its callback must restart from them:
+    # rescoring the stored points gives the same scores, and a run resumed
+    # from an early point gives the same curve as an uninterrupted one.
+    dataset_class = benchmark.get_test_dataset(name=test_dataset_name)
+    objective_class = benchmark.get_benchmark_objective()
+    config = get_configs(dataset_class, objective_class, solver_class)[0]
+    if solver_class.sampling_strategy != 'callback':
+        pytest.skip("Checkpoints are only stored for callback solvers.")
+    classes = dataset_class, objective_class, solver_class
+
+    ref, ref_time, folder = _run_from_checkpoints(
+        benchmark, config, classes, tmp_path, 'resume'
+    )
+    points = sorted(
+        int(f.stem[len('point_'):]) for f in folder.glob('point_*.pkl')
+    )
+    if not points:
+        pytest.skip("The solver gives no checkpoint to its callback.")
+    assert points == [row['stop_val'] for row in ref], (
+        "Each scored point should have a checkpoint: call the callback "
+        "after the last step instead of returning before it."
+    )
+
+    # Rescoring evaluates each stored checkpoint again, without training.
+    rescored, rescored_time, _ = _run_from_checkpoints(
+        benchmark, config, classes, tmp_path, 'rescore'
+    )
+    assert rescored == ref, (
+        "Scores differ when the stored checkpoints are evaluated again. "
+        "Check that the checkpoint holds all the state used by get_result, "
+        "that get_result is deterministic, and that the first callback call "
+        "happens before the first step."
+    )
+    assert rescored_time == ref_time
+
+    if len(points) < 3:
+        return
+    # Remove all but the 2 first points, as if the run had been interrupted.
+    for f in folder.glob('*.pkl'):
+        if not (f.stem.startswith('point_')
+                and int(f.stem[len('point_'):]) in points[:2]):
+            f.unlink()
+    resumed, resumed_time, _ = _run_from_checkpoints(
+        benchmark, config, classes, tmp_path, 'resume'
+    )
+    assert [r['stop_val'] for r in resumed] == points
+    for row, ref_row in zip(resumed, ref):
+        assert row == pytest.approx(ref_row, rel=1e-5), (
+            "The run resumed from a checkpoint differs from the "
+            "uninterrupted one. Check that the checkpoint holds the full "
+            "training state: model, optimizer, schedule, step and RNG."
+        )
+    assert resumed_time == sorted(resumed_time)
+    shutil.rmtree(tmp_path, ignore_errors=True)
 
 
 def _test_solver_one_objective(solver, objective):

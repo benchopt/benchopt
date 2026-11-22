@@ -150,6 +150,11 @@ def run(self, callback):
 - Call the callback **before** the first step (`while callback(...)`): points
   are re-evaluated by calling `run` with `checkpoint_` set and stopping it at
   its first callback call.
+- `benchopt test` checks it (`test_solver_checkpoint`): it scores the
+  solver at each callback call, then checks that rescoring the stored points
+  gives the same scores and that a run resumed from its second point gives
+  the same curve. A solver that cannot be exact can skip it in
+  `test_config.py` with `check_test_solver_checkpoint`.
 - `--checkpoint rescore` evaluates all the stored points again without
   training, e.g. after adding a metric. Without it, stored evaluations are
   reused, with a warning if the objective code changed.

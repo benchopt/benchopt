@@ -1421,3 +1421,35 @@ def test_callback_checkpoint_off():
                 n_eval=4, starts=["0"],
             )
         assert not (benchmark.get_cache_location() / "checkpoints").exists()
+
+
+@pytest.mark.parametrize("ignore_checkpoint", [False, True])
+def test_benchmark_test_solver_checkpoint(ignore_checkpoint, tmp_path):
+    # `benchopt test` checks that a solver restarts from its checkpoints, and
+    # fails for a solver that ignores them.
+    from benchopt.tests.test_benchmarks import test_solver_checkpoint
+
+    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_SETTINGS", "")
+    solver = CALLBACK_SOLVER
+    if ignore_checkpoint:
+        solver = solver.replace("self.checkpoint_ is not None", "False")
+    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+        solver_class = benchmark.get_solvers()[0]
+        args = (benchmark, solver_class, "test-dataset", None, tmp_path)
+        if not ignore_checkpoint:
+            test_solver_checkpoint(*args)
+            return
+        with pytest.raises(AssertionError, match="Scores differ"):
+            test_solver_checkpoint(*args)
+
+
+def test_benchmark_test_eval_parameters():
+    # `benchopt test` checks that `eval_parameters` are parameters.
+    from benchopt.tests.test_benchmarks import test_eval_parameters
+
+    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_SETTINGS", "").replace(
+        'eval_parameters = ("scale",)', 'eval_parameters = ("scal",)'
+    )
+    with temp_benchmark(objective=objective) as benchmark:
+        with pytest.raises(AssertionError, match="scal"):
+            test_eval_parameters(benchmark)
