@@ -361,7 +361,7 @@ const getScatterData = () => {
       },
       marker: {
         symbol: curveData.marker % N_SYMBOLS,
-        size: 10,
+        size: curveData.marker_size ?? 10,
         color: curveData.color,
       },
       legendgroup: label,

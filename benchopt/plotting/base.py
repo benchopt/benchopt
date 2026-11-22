@@ -35,8 +35,8 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         -------
         The plot data structure, depending on the plot type:
         - scatter: list of dict for each trace, requires: 'x', 'y',
-                'label', optional: 'marker', 'color', 'x_low', 'x_high',
-                'description'.
+                'label', optional: 'marker', 'marker_size', 'color',
+                'x_low', 'x_high', 'description'.
         - bar_chart: list of dict for each bar, requires: 'y',
                 'label', optional: 'color', 'text'.
         - boxplot: list of dict for each box, requires: 'x', 'y',

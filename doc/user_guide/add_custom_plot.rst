@@ -103,6 +103,8 @@ each dictionary represents a trace in the plot. Each dictionary must contain:
   override this, or to :code:`None` to hide the icon.
 - :code:`color` (optional): The color of the trace.
 - :code:`marker` (optional): The marker style of the trace.
+- :code:`marker_size` (optional): The size of the trace markers, 10 by
+  default.
 - :code:`y_low`, :code:`y_high` (optional): Lists of values to display uncertainty in the plot.
   They will be used to display shaded area around the plot.
 - :code:`x_low`, :code:`x_high` (optional): Lists of values to display uncertainty in the plot.
