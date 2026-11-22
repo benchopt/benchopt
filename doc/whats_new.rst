@@ -92,7 +92,7 @@ API
   ``benchopt run --checkpoint refresh`` empties it and ``--checkpoint off``
   replaces it with a temporary one. ``--no-eval`` only runs one of the runs
   that share a directory, to train once before a parallel run. See
-  :ref:`checkpoints`.
+  :ref:`checkpoints`. By `Thomas Moreau`_ (:gh:`1051`)
 
 - A solver with a callback can give its checkpoint with
   ``callback(checkpoint=...)`` and restart from ``self.checkpoint_``. benchopt
@@ -101,7 +101,7 @@ API
   ``benchopt run --checkpoint rescore``. ``checkpoint_keep`` sets how many
   are kept and ``checkpoint_interval`` how often they are stored. See
   :ref:`callback_checkpoints`.
-  By `Thomas Moreau`_ (:gh:`XXXX`)
+  By `Thomas Moreau`_ (:gh:`1051`)
 
 - :func:`~benchopt.helpers.requires_gpu.gpu_available` tells in
   ``Solver.skip`` if the runs of a solver will have a GPU, using the SLURM
