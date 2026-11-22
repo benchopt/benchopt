@@ -1,3 +1,4 @@
+import json
 import pytest
 import warnings
 import re
@@ -809,6 +810,17 @@ def test_get_checkpoint_path():
         ]
         cache_dir = benchmark.get_cache_location()
         assert all(Path(p).parent == cache_dir / "checkpoints" for p in paths)
+
+        # Each directory describes its training, without the eval parameters.
+        params = [
+            json.loads((Path(p) / "benchopt_params.json").read_text())
+            for p in sorted(paths)
+        ]
+        assert sorted(p["repetition"] for p in params) == [0, 1]
+        assert all(p["solver"] == dict(
+            name="test-solver", parameters={"lr": 0.1}
+        ) for p in params)
+        assert all(p["dataset"]["name"] == "test-dataset" for p in params)
 
         # Forcing the solver runs it again, with its checkpoints.
         with CaptureCmdOutput() as out:

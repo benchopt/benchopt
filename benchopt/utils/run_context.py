@@ -1,3 +1,4 @@
+import os
 import re
 import json
 import hashlib
@@ -118,34 +119,52 @@ class RunContext:
         return path
 
     @property
+    def _checkpoint_params(self):
+        """What defines the training of the run, as a JSON string.
+
+        It holds the seed, the repetition and the components without their
+        ``eval_parameters``. Their code is left out, so that fixing a solver
+        does not lose its checkpoints.
+        """
+        params = dict(
+            seed=self.base_seed, repetition=self.get_component('repetition')
+        )
+        for name in ('dataset', 'objective', 'solver'):
+            component = self.get_component(name)
+            params[name] = dict(name=component.name, parameters={
+                k: v for k, v in component._parameters.items()
+                if k not in component.eval_parameters
+            })
+        return json.dumps(params, sort_keys=True, default=str, indent=1)
+
+    @property
     def checkpoint_path(self):
         """Checkpoint directory of the run, which may not exist yet.
 
-        It is named after what defines the training: the seed, the repetition
-        and the components without their ``eval_parameters``. Their code is
-        left out, so that fixing a solver does not lose its checkpoints.
+        It is named with a hash of what defines the training of the run.
         """
-        key = [str(self.base_seed), str(self.get_component('repetition'))]
-        for name in ('dataset', 'objective', 'solver'):
-            component = self.get_component(name)
-            params = {
-                k: v for k, v in sorted(component._parameters.items())
-                if k not in component.eval_parameters
-            }
-            key.append(f"{component.name}{params}")
         base = self.checkpoint_base
         if base is None or self.checkpoint_mode == 'off':
             base = Path(self._tmp_checkpoint_base.name)
-        return base / hashlib.sha256("_".join(key).encode()).hexdigest()[:16]
+        params = self._checkpoint_params.encode()
+        return base / hashlib.sha256(params).hexdigest()[:16]
 
     def get_checkpoint_path(self):
         """Return the checkpoint directory of the run, creating it if needed.
 
-        The hashes of the files of the dataset and of the solver are stored
-        in it, to warn when a checkpoint is reused with another code.
+        What defines the training is stored in ``benchopt_params.json``, to
+        find the directory of a run. The hashes of the files of the dataset
+        and of the solver are stored in ``benchopt_code.json``, to warn when
+        a checkpoint is reused with another code.
         """
         path = self.checkpoint_path
         path.mkdir(parents=True, exist_ok=True)
+        params_file = path / "benchopt_params.json"
+        if not params_file.exists():
+            # Written once, with a rename so that it is never half written.
+            tmp_file = params_file.with_suffix(f".tmp{os.getpid()}")
+            tmp_file.write_text(self._checkpoint_params)
+            os.replace(tmp_file, params_file)
         code = {
             name: type(self.get_component(name))._file_hash
             for name in ('dataset', 'solver')

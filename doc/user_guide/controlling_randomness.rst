@@ -162,7 +162,9 @@ finished one can be evaluated again without training.
             self.model = fit(self.X, self.y, checkpoint=checkpoint)
 
 The directory is named with a hash of the seed, the repetition and the
-parameters of the three components. It
+parameters of the three components. These are written in the
+``benchopt_params.json`` file of the directory, to find which run it belongs
+to. It
 lives in the cache folder of the benchmark, under ``checkpoints/``, also with
 ``--no-cache``. With ``benchopt run --checkpoint off``, it is a temporary
 directory that lasts for the run, so the code above needs no guard and no
