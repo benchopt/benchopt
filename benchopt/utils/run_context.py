@@ -1,6 +1,8 @@
 import re
+import json
 import hashlib
 import tempfile
+import warnings
 from pathlib import Path
 from functools import cached_property
 from dataclasses import dataclass, field, replace as dc_replace
@@ -120,8 +122,8 @@ class RunContext:
         """Checkpoint directory of the run, which may not exist yet.
 
         It is named after what defines the training: the seed, the repetition
-        and the components without their ``eval_parameters``, with the code of
-        the dataset and of the solver. The code of the objective is left out.
+        and the components without their ``eval_parameters``. Their code is
+        left out, so that fixing a solver does not lose its checkpoints.
         """
         key = [str(self.base_seed), str(self.get_component('repetition'))]
         for name in ('dataset', 'objective', 'solver'):
@@ -131,8 +133,6 @@ class RunContext:
                 if k not in component.eval_parameters
             }
             key.append(f"{component.name}{params}")
-            if name != 'objective':
-                key.append(type(component)._file_hash)
         base = self.checkpoint_base
         if base is None or self.checkpoint_mode == 'off':
             base = Path(self._tmp_checkpoint_base.name)
@@ -140,9 +140,30 @@ class RunContext:
 
     def get_checkpoint_path(self):
         """Return the checkpoint directory of the run, creating it if needed.
+
+        The hashes of the files of the dataset and of the solver are stored
+        in it, to warn when a checkpoint is reused with another code.
         """
         path = self.checkpoint_path
         path.mkdir(parents=True, exist_ok=True)
+        code = {
+            name: type(self.get_component(name))._file_hash
+            for name in ('dataset', 'solver')
+        }
+        code_file = path / "benchopt_code.json"
+        stored = {}
+        if code_file.exists():
+            stored = json.loads(code_file.read_text())
+        changed = [name for name in stored if stored[name] != code[name]]
+        if changed:
+            warnings.warn(
+                f"The code of the {' and '.join(changed)} changed since the "
+                f"checkpoints of {self.solver} were stored in {path}. They "
+                "are reused. Use `--checkpoint refresh` to train again.",
+                UserWarning
+            )
+        if stored != code:
+            code_file.write_text(json.dumps(code))
         return path
 
     @cached_property

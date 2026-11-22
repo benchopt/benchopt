@@ -206,9 +206,11 @@ class RunContextMixin:
         Unlike ``get_run_output_path``, it is the same from one call of
         ``benchopt run`` to the next, so an interrupted training can be
         resumed and a finished one reused. It depends on what defines the
-        training: the seed, the repetition, the code of the dataset and of the
-        solver, and the parameters of the components that are not listed in
-        their ``eval_parameters``. It is created on first call.
+        training: the seed, the repetition and the parameters of the
+        components that are not listed in their ``eval_parameters``. It does
+        not depend on their code: a warning is raised when the code of the
+        dataset or of the solver changed since the directory was created. It
+        is created on first call.
 
         With ``--checkpoint off``, it is a temporary directory that lasts for
         the run.

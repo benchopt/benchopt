@@ -161,8 +161,8 @@ finished one can be evaluated again without training.
             # epoch it stores, and saves it as the training goes.
             self.model = fit(self.X, self.y, checkpoint=checkpoint)
 
-The directory is named with a hash of the seed, the repetition, the code of
-the dataset and of the solver, and the parameters of the three components. It
+The directory is named with a hash of the seed, the repetition and the
+parameters of the three components. It
 lives in the cache folder of the benchmark, under ``checkpoints/``, also with
 ``--no-cache``. With ``benchopt run --checkpoint off``, it is a temporary
 directory that lasts for the run, so the code above needs no guard and no
@@ -181,8 +181,13 @@ only differ by them share one training.
         parameters = {"reg": [0.1, 1], "n_eval": [100, 1000]}
         eval_parameters = ("n_eval",)
 
-The code of the objective is also left out, so a new metric can be computed
-from the existing checkpoints.
+The code of the components is also left out. A new metric can thus be
+computed from the existing checkpoints, and fixing a solver does not lose
+them. A warning is raised the first time a checkpoint is reused after the file
+of its dataset or of its solver changed.
+
+The cache of the results is checked first: a run whose result is cached does
+not read its checkpoints. Force it with ``-f`` or ``--no-cache``.
 
 In a parallel run, the runs that share a training start together, and each
 one trains as it finds no checkpoint. To train once, first run with
@@ -196,11 +201,10 @@ it:
 
 .. warning::
 
-    benchopt cannot check these choices. A checkpoint is reused silently when
-    a parameter listed in ``eval_parameters`` does change the training, or
-    when the training code changes outside of the files of the dataset and of
-    the solver. Use ``benchopt run --checkpoint refresh`` to remove the
-    checkpoints of the selected runs and train them again.
+    benchopt cannot check these choices. A checkpoint is reused when a
+    parameter listed in ``eval_parameters`` does change the training, or when
+    the training code changes. Use ``benchopt run --checkpoint refresh`` to
+    remove the checkpoints of the selected runs and train them again.
 
 The solver writes its files itself. Write to a temporary name, then rename it
 with ``os.replace``, so that a job killed while saving does not leave a

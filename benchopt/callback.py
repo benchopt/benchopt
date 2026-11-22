@@ -132,25 +132,33 @@ class _Callback:
 
         An evaluated checkpoint is a point of the curve, kept in its own file
         with the curve of the run. Between two of them, the last checkpoint is
-        stored from time to time to restart from it.
+        stored every ``checkpoint_interval`` seconds to restart from it.
         """
         interval = time.perf_counter() - self._last_save
         if not evaluated and interval < self._setting('interval', 600):
             return
-        self._folder.mkdir(parents=True, exist_ok=True)
+        self.run_context.get_checkpoint_path()
+        self._folder.mkdir(exist_ok=True)
         if callable(checkpoint):
             checkpoint = checkpoint()
         state = dict(
             checkpoint=checkpoint, it=self.it, time_iter=self.time_iter
         )
-        name = f"point_{self.it}.pkl" if evaluated else "last.pkl"
-        _dump(state, self._folder / name)
+        last_file = self._folder / "last.pkl"
         if evaluated:
+            # The last checkpoint is a link to the one of the point.
+            point_file = self._folder / f"point_{self.it}.pkl"
+            _dump(state, point_file)
+            tmp_file = last_file.with_suffix(f".tmp{os.getpid()}")
+            os.link(point_file, tmp_file)
+            os.replace(tmp_file, last_file)
             self._save_curve()
             keep = self._setting('keep', 'all')
             if keep != 'all':
                 for it in self._stored_points()[:-keep]:
                     (self._folder / f"point_{it}.pkl").unlink()
+        else:
+            _dump(state, last_file)
         self._last_save = time.perf_counter()
 
     def _setting(self, name, default):
@@ -188,6 +196,8 @@ class _Callback:
         points = [] if self._folder is None else self._stored_points()
         if not points:
             return True
+        # Warn if the code changed since the checkpoints were stored.
+        self.run_context.get_checkpoint_path()
 
         rescore = self.run_context.checkpoint_mode == 'rescore'
         curve_file = self._folder / f"curve_{self.run_context.run_id}.pkl"
@@ -234,10 +244,9 @@ class _Callback:
             if last['it'] > self.it:
                 self.it, self.time_iter = last['it'], last['time_iter']
                 self.run_context.checkpoint = last['checkpoint']
-        action = "done at" if stop else "resumed from"
         print(
-            f"{self.solver}: {action} iteration {self.it}, with {n_scored} "
-            f"of {n_points} points evaluated from the checkpoints."
+            f"{self.solver}: restored at iteration {self.it}, with "
+            f"{n_scored} of {n_points} points evaluated from the checkpoints."
         )
         return not stop
 

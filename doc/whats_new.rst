@@ -88,7 +88,7 @@ API
 - Add ``get_checkpoint_path`` method to all benchmark components. It returns
   a directory that is kept from one run to the next, to resume an interrupted
   training or to evaluate a trained model again. Parameters listed in the new
-  ``eval_parameters`` attribute do not change this directory.
+  ``eval_parameters`` attribute and the code do not change this directory.
   ``benchopt run --checkpoint refresh`` empties it and ``--checkpoint off``
   replaces it with a temporary one. ``--no-eval`` only runs one of the runs
   that share a directory, to train once before a parallel run. See

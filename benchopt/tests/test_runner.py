@@ -1,4 +1,5 @@
 import pytest
+import warnings
 import re
 import inspect
 from pathlib import Path
@@ -825,6 +826,29 @@ def test_get_checkpoint_path():
         ]
 
 
+def test_get_checkpoint_path_code_changed():
+    # The checkpoints are kept when the code of the solver changes, with a
+    # warning the first time they are reused.
+    with temp_benchmark(solvers=[CHECKPOINT_SOLVER]) as benchmark:
+        cmd = [str(benchmark.benchmark_dir), "-d", "test-dataset", "--no-plot"]
+        with CaptureCmdOutput() as out:
+            run(cmd, standalone_mode=False)
+        paths = set(out.check_output(r"CKPT#(.+)#.+", repetition=2))
+
+        solver_file, = (benchmark.benchmark_dir / "solvers").glob("*.py")
+        solver_file.write_text(solver_file.read_text() + "# changed")
+        with pytest.warns(UserWarning, match="The code of the solver"):
+            with CaptureCmdOutput() as out:
+                run(cmd, standalone_mode=False)
+        assert set(out.check_output(r"CKPT#(.+)#True", repetition=2)) == paths
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            with CaptureCmdOutput() as out:
+                run([*cmd, "-f", "test-solver"], standalone_mode=False)
+        out.check_output(r"CKPT#(.+)#True", repetition=2)
+
+
 def test_no_eval():
     # `--no-eval` runs one run per training. The other runs then find its
     # checkpoint.
@@ -1271,7 +1295,7 @@ def test_callback_checkpoint_resume(mode, monkeypatch):
             starts=["0", "2", "4", "4"][-n_scored - 1:],
         )
         out.check_output(
-            f"resumed from iteration 4, with {n_scored} of 3 points"
+            f"restored at iteration 4, with {n_scored} of 3 points"
         )
         assert df['stop_val'].tolist() == [0, 2, 4, 8]
         assert df['objective_value'].tolist() == [0, 2, 4, 8]
@@ -1334,6 +1358,9 @@ def test_callback_checkpoint_keep():
         checkpoints = benchmark.get_cache_location() / "checkpoints"
         points = sorted(f.name for f in checkpoints.glob("*/callback/point*"))
         assert points == ["point_4.pkl", "point_8.pkl"]
+        # The last checkpoint is a link to the last point.
+        folder, = checkpoints.glob("*/callback")
+        assert (folder / "last.pkl").samefile(folder / "point_8.pkl")
 
         # The stored curve gives the points without a checkpoint.
         out, df = _run_callback_checkpoint(
@@ -1366,7 +1393,7 @@ def test_callback_checkpoint_last(monkeypatch):
         out, df = _run_callback_checkpoint(
             benchmark, n_eval=2, starts=["4", "5"]
         )
-        out.check_output("resumed from iteration 5, with 1 of 3 points")
+        out.check_output("restored at iteration 5, with 1 of 3 points")
         assert df['stop_val'].tolist() == [0, 2, 4, 8]
         assert df['objective_value'].tolist() == [0, 2, 4, 8]
 

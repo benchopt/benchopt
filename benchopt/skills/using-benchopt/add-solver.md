@@ -109,15 +109,16 @@ def run(self, _):
     self.model = fit(self.X, self.y, checkpoint=checkpoint)  # load or train
 ```
 
-The directory depends on the seed, the repetition, the code of the dataset and
-solver files, and the parameters of the three components. List the parameters
-that only change the evaluation in `eval_parameters = ("n_eval", ...)`, on the
-`Dataset`, `Objective` or `Solver` defining them: runs that differ only by
-them share one training. The objective code is not in the key, so a new metric
-is computed from the existing checkpoints. benchopt does not check any of
-this: after a change of training code outside the solver file, run with
-`--checkpoint refresh` to remove the checkpoints and train again. Write files
-atomically (temporary name, then `os.replace`).
+The directory depends on the seed, the repetition and the parameters of the
+three components. List the parameters that only change the evaluation in
+`eval_parameters = ("n_eval", ...)`, on the `Dataset`, `Objective` or `Solver`
+defining them: runs that differ only by them share one training. The code is
+not in the key, so a new metric is computed from the existing checkpoints and
+a fixed solver keeps them. benchopt only warns when the dataset or solver file
+changed since they were stored: after a change of training code, run with
+`--checkpoint refresh` to remove the checkpoints and train again. A cached
+result answers before any checkpoint is read (`-f` or `--no-cache` to force).
+Write files atomically (temporary name, then `os.replace`).
 
 In a parallel run, runs sharing a training start together and each one trains.
 Run `benchopt run --no-eval` first (one run per training), then the full
