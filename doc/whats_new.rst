@@ -97,7 +97,7 @@ PLOT
 ~~~~
 
 - Custom ``scatter`` plots can set the size of a trace's markers with
-  ``marker_size``. By `Thomas Moreau`_
+  ``marker_size``. By `Thomas Moreau`_ (:gh:`1052`)
 
 - The "Suboptimal Curve" and "Relative Curve" toggles are replaced by a
   ``Y_axis`` option of the ``objective_curve`` plot, so they no longer apply
