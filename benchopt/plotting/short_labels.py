@@ -6,7 +6,7 @@ display-only and must never be written back into the results.
 """
 
 from html import escape
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from ..utils.parametrized_name_mixin import _extract_options
 
@@ -53,10 +53,6 @@ def compute_short_labels(names, default_names=None):
             by_base[base].append((name, params))
 
     for base, group in by_base.items():
-        if len(group) == 1:
-            short_map[group[0][0]] = base
-            continue
-
         # Keep the parameters taking several values across the group.
         values = defaultdict(set)
         for _, params in group:
@@ -69,9 +65,7 @@ def compute_short_labels(names, default_names=None):
             short_map[name] = _format_name(base, short)
 
     # A short label shared by several names would merge them in the plots.
-    counts = defaultdict(int)
-    for short in short_map.values():
-        counts[short] += 1
+    counts = Counter(short_map.values())
     return {
         name: short if counts[short] == 1 else name
         for name, short in short_map.items()
