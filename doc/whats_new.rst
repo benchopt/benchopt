@@ -24,6 +24,12 @@ CLI
 FIX
 ~~~
 
+- Short labels in the report no longer merge names formatted with a
+  ``parameter_template``, which are kept as is, and never give the same
+  label to two names. The results store the names without template, in
+  ``solver_default_name``, ``dataset_default_name`` and ``obj_default_name``.
+  By `Thomas Moreau`_ (:gh:`1053`)
+
 - The sampling strategy, stopping criterion and ``get_next`` of a solver are
   resolved for each run, from the solver then the ``Objective``, instead of
   being copied on the solver class. A ``"run_once"`` solver now always runs

@@ -1,11 +1,12 @@
 """Short display labels and hover descriptions for parametrized names.
 
-Short labels only keep the parameters that vary across the compared names.
-They are display-only and must never be written back into the results.
+Short labels only keep the parameters that vary across the compared names,
+and keep the names set by a ``parameter_template`` as is. They are
+display-only and must never be written back into the results.
 """
 
 from html import escape
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from ..utils.parametrized_name_mixin import _extract_options
 
@@ -16,47 +17,6 @@ def _format_name(base, params):
         return base
     param_str = ",".join(f"{k}={v}" for k, v in params.items())
     return f"{base}[{param_str}]"
-
-
-def compute_short_labels(names):
-    """Compute short display labels from a list of parametrized names.
-
-    Short labels include only the parameters that *vary* within a group of
-    names sharing the same base class name.
-
-    Parameters
-    ----------
-    names : sequence of str
-        Parametrized names, e.g. from ``df["solver_name"].unique()``.
-
-    Returns
-    -------
-    short_map : dict[str, str]
-        Mapping ``{full_name: short_label}`` for every name.
-    """
-    by_base = defaultdict(list)
-    for name in map(str, names):
-        base, _args, params = _extract_options(name)
-        by_base[base].append((name, params))
-
-    short_map = {}
-    for base, group in by_base.items():
-        if len(group) == 1:
-            short_map[group[0][0]] = base
-            continue
-
-        # Keep the parameters taking several values across the group.
-        values = defaultdict(set)
-        for _, params in group:
-            for k, v in params.items():
-                values[k].add(str(v))
-        varying = {k for k, vals in values.items() if len(vals) > 1}
-
-        for name, params in group:
-            short = {k: v for k, v in params.items() if k in varying}
-            short_map[name] = _format_name(base, short)
-
-    return short_map
 
 
 def _format_description(params, description=""):
@@ -76,29 +36,64 @@ def _format_description(params, description=""):
     return "".join(parts)
 
 
-def compute_descriptions(names, prose=None):
-    """Compute hover-icon HTML describing each name.
+def compute_labels(default_names, prose=None):
+    """Compute the short display label and hover HTML of each name.
+
+    Short labels include only the parameters that *vary* within a group of
+    names sharing the same base class name. A name set by a
+    ``parameter_template`` is kept as is, as the template already sets the
+    label, and so are names whose short label would not be unique. The hover
+    HTML shows the free-text description and all the parameters of a name.
 
     Parameters
     ----------
-    names : sequence of str
-        Parametrized names, e.g. ``df["solver_name"].unique()``.
+    default_names : dict[str, str]
+        Mapping ``{name: default_name}`` of the parametrized names, e.g. from
+        ``df["solver_name"]``, where the default name ignores the
+        ``parameter_template`` and lists all the parameters as ``key=value``
+        (e.g. ``df["solver_default_name"]``).
     prose : dict[str, str] or None
         Optional ``{name: free_text}`` (e.g. solver docstrings) prepended to
         the parameters table.
 
     Returns
     -------
+    short_map : dict[str, str]
+        Mapping ``{full_name: short_label}`` for every name.
     descriptions : dict[str, str]
         Mapping ``{name: html}``, empty when there is nothing to show.
     """
     prose = prose or {}
-    descriptions = {}
-    for name in map(str, names):
-        _, _, params = _extract_options(name)
-        params = {k: str(v) for k, v in params.items()}
-        descriptions[name] = _format_description(params, prose.get(name, ""))
-    return descriptions
+    short_map, descriptions, by_base = {}, {}, defaultdict(list)
+    for name, default in default_names.items():
+        base, args, params = _extract_options(default)
+        descriptions[name] = _format_description(
+            {k: str(v) for k, v in params.items()}, prose.get(name, "")
+        )
+        if args or name != _format_name(base, params):
+            short_map[name] = name
+        else:
+            by_base[base].append((name, params))
+
+    for base, group in by_base.items():
+        # Keep the parameters taking several values across the group.
+        values = defaultdict(set)
+        for _, params in group:
+            for k, v in params.items():
+                values[k].add(str(v))
+        varying = {k for k, vals in values.items() if len(vals) > 1}
+
+        for name, params in group:
+            short = {k: v for k, v in params.items() if k in varying}
+            short_map[name] = _format_name(base, short)
+
+    # A short label shared by several names would merge them in the plots.
+    counts = Counter(short_map.values())
+    short_map = {
+        name: short if counts[short] == 1 else name
+        for name, short in short_map.items()
+    }
+    return short_map, descriptions
 
 
 # Description column of each name column, in hover priority order.
@@ -131,8 +126,12 @@ def shorten_names(df):
         if col not in df.columns:
             continue
         names = df[col].astype(str)
-        unique = names.unique().tolist()
-        short_map = compute_short_labels(unique)
+        # The names without parameter_template have the prefix of the
+        # description, e.g. `obj_` and not `objective_`, which marks metrics.
+        # Results from older benchopt versions have no default names.
+        default_col = desc_col.replace("description", "default_name")
+        defaults = df.get(default_col, names).astype(str)
+        default_names = dict(zip(names, defaults))
 
         # Docstring per name, read before the name column is overwritten.
         prose = {}
@@ -141,7 +140,7 @@ def shorten_names(df):
                 str(k): (v or "")
                 for k, v in df.groupby(col)[desc_col].first().items()
             }
-        desc = compute_descriptions(unique, prose)
+        short_map, desc = compute_labels(default_names, prose)
 
         full_col = col.replace("_name", "_full_name")
         df[full_col] = names

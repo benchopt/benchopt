@@ -388,6 +388,8 @@ class TestParametrizedNameMixin:
             cls = bench.get_datasets()[0]
             instance = cls.get_instance(n=1000, seed=42)
         assert repr(instance) == "test-dataset[n=1000]"
+        # The default name ignores the template and lists all the parameters.
+        assert instance._get_default_name() == "test-dataset[n=1000,seed=42]"
 
     def test_get_instance_saves_params_with_custom_init(self):
         # get_instance saves parameters even when __init__ is overridden.

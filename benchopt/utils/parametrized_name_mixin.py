@@ -98,19 +98,25 @@ class ParametrizedNameMixin(metaclass=ComponentMeta):
 
     def __repr__(self):
         """Compute the parametrized name of the instance."""
-        out = f"{self.name}"
-        if len(self._parameters) > 0:
-            if not hasattr(self, 'parameter_template'):
-                # sort parameters to make sure the representation
-                # is deterministic
-                param_fmt = ",".join([
-                    f"{k}={self._parameters[k]}"
-                    for k in sorted(self._parameters)
-                ])
-            else:
-                param_fmt = self.parameter_template.format(**self._parameters)
-            out += f"[{param_fmt}]"
-        return out
+        if len(self._parameters) == 0 or not hasattr(
+            self, 'parameter_template'
+        ):
+            return self._get_default_name()
+        param_fmt = self.parameter_template.format(**self._parameters)
+        return f"{self.name}[{param_fmt}]"
+
+    def _get_default_name(self):
+        """Parametrized name ignoring ``parameter_template``.
+
+        All the parameters are listed as ``key=value``, sorted to make sure
+        the name is deterministic.
+        """
+        if len(self._parameters) == 0:
+            return f"{self.name}"
+        param_fmt = ",".join(
+            f"{k}={self._parameters[k]}" for k in sorted(self._parameters)
+        )
+        return f"{self.name}[{param_fmt}]"
 
     @classmethod
     def _get_parametrized_name(cls, **parameters):
