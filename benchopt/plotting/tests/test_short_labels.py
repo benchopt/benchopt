@@ -17,7 +17,7 @@ from benchopt.plotting.short_labels import (
 def test_single_name_returns_base():
     # Single instance: base name only (params don't aid disambiguation).
     names = ["Solver[alpha=0.1,n_iter=100]"]
-    short = compute_short_labels(names)
+    short = compute_short_labels({n: n for n in names})
     assert short["Solver[alpha=0.1,n_iter=100]"] == "Solver"
 
 
@@ -26,7 +26,7 @@ def test_varying_param_only():
         "Solver[alpha=0.1,n_iter=100]",
         "Solver[alpha=0.5,n_iter=100]",
     ]
-    short = compute_short_labels(names)
+    short = compute_short_labels({n: n for n in names})
     assert short["Solver[alpha=0.1,n_iter=100]"] == "Solver[alpha=0.1]"
     assert short["Solver[alpha=0.5,n_iter=100]"] == "Solver[alpha=0.5]"
 
@@ -36,7 +36,7 @@ def test_all_params_vary():
         "Solver[alpha=0.1,n_iter=10]",
         "Solver[alpha=0.5,n_iter=50]",
     ]
-    short = compute_short_labels(names)
+    short = compute_short_labels({n: n for n in names})
     assert (
         short["Solver[alpha=0.1,n_iter=10]"] == "Solver[alpha=0.1,n_iter=10]"
     )
@@ -47,7 +47,7 @@ def test_all_params_vary():
 
 def test_no_params():
     names = ["SolverA", "SolverB"]
-    short = compute_short_labels(names)
+    short = compute_short_labels({n: n for n in names})
     assert short["SolverA"] == "SolverA"
     assert short["SolverB"] == "SolverB"
 
@@ -58,7 +58,7 @@ def test_mixed_solver_types():
         "SolverA[alpha=0.5,n_iter=100]",
         "SolverB[alpha=0.1]",
     ]
-    short = compute_short_labels(names)
+    short = compute_short_labels({n: n for n in names})
     # Within SolverA group only alpha varies
     assert short["SolverA[alpha=0.1,n_iter=100]"] == "SolverA[alpha=0.1]"
     assert short["SolverA[alpha=0.5,n_iter=100]"] == "SolverA[alpha=0.5]"
@@ -72,7 +72,7 @@ def test_mixed_solver_types():
 
 
 def test_compute_descriptions_params_table():
-    desc = compute_descriptions(["S[a=1,b=2]", "S[a=3,b=2]"])
+    desc = compute_descriptions({n: n for n in ["S[a=1,b=2]", "S[a=3,b=2]"]})
     for html in desc.values():
         assert "<table>" in html
         assert ">a<" in html
@@ -80,14 +80,14 @@ def test_compute_descriptions_params_table():
 
 
 def test_compute_descriptions_no_params_is_empty():
-    desc = compute_descriptions(["SolverA", "SolverB"])
+    desc = compute_descriptions({n: n for n in ["SolverA", "SolverB"]})
     assert desc == {"SolverA": "", "SolverB": ""}
 
 
 def test_compute_descriptions_with_prose():
     # Free-text description is included even when there are no parameters.
     desc = compute_descriptions(
-        ["SolverA", "S[a=1]"],
+        {n: n for n in ["SolverA", "S[a=1]"]},
         prose={"SolverA": "A great solver", "S[a=1]": "Another one"},
     )
     assert "A great solver" in desc["SolverA"]
@@ -163,7 +163,7 @@ def test_template_names_are_kept():
         "T[a=1,b=2]": "T[a=1,b=2]",
         "T[a=3,b=2]": "T[a=3,b=2]",
     }
-    short = compute_short_labels(list(default_names), default_names)
+    short = compute_short_labels(default_names)
     assert short["S[newton-cg]"] == "S[newton-cg]"
     assert short["S[lbfgs]"] == "S[lbfgs]"
     assert short["U[a=1]"] == "U[a=1]"
@@ -175,7 +175,7 @@ def test_template_names_are_kept():
 def test_template_names_are_kept_without_default_names():
     # Without default names, e.g. for older results, positional options
     # can only come from a template.
-    short = compute_short_labels(["S[newton-cg]", "S[lbfgs]"])
+    short = compute_short_labels({n: n for n in ["S[newton-cg]", "S[lbfgs]"]})
     assert short == {"S[newton-cg]": "S[newton-cg]", "S[lbfgs]": "S[lbfgs]"}
 
 
@@ -183,7 +183,7 @@ def test_colliding_labels_keep_full_names():
     # S[a=1,b=2] shortens to S[b=2], which is another name: both keep their
     # full names.
     names = ["S[a=1,b=2]", "S[a=1,b=3]", "S[b=2]"]
-    short = compute_short_labels(names)
+    short = compute_short_labels({n: n for n in names})
     assert short["S[a=1,b=2]"] == "S[a=1,b=2]"
     assert short["S[b=2]"] == "S[b=2]"
     assert short["S[a=1,b=3]"] == "S[b=3]"

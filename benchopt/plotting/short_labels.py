@@ -19,7 +19,7 @@ def _format_name(base, params):
     return f"{base}[{param_str}]"
 
 
-def compute_short_labels(names, default_names=None):
+def compute_short_labels(default_names):
     """Compute short display labels from a list of parametrized names.
 
     Short labels include only the parameters that *vary* within a group of
@@ -29,24 +29,20 @@ def compute_short_labels(names, default_names=None):
 
     Parameters
     ----------
-    names : sequence of str
-        Parametrized names, e.g. from ``df["solver_name"].unique()``.
-    default_names : dict[str, str] or None
-        Optional ``{name: default_name}``, where the default name ignores the
+    default_names : dict[str, str]
+        Mapping ``{name: default_name}`` of the parametrized names, e.g. from
+        ``df["solver_name"]``, where the default name ignores the
         ``parameter_template`` and lists all the parameters as ``key=value``
-        (e.g. ``df["solver_default_name"]``). When None, each name is its own
-        default name.
+        (e.g. ``df["solver_default_name"]``).
 
     Returns
     -------
     short_map : dict[str, str]
         Mapping ``{full_name: short_label}`` for every name.
     """
-    names = list(map(str, names))
-    default_names = default_names or dict(zip(names, names))
     short_map, by_base = {}, defaultdict(list)
-    for name in names:
-        base, args, params = _extract_options(default_names[name])
+    for name, default in default_names.items():
+        base, args, params = _extract_options(default)
         if args or name != _format_name(base, params):
             short_map[name] = name
         else:
@@ -89,33 +85,29 @@ def _format_description(params, description=""):
     return "".join(parts)
 
 
-def compute_descriptions(names, prose=None, default_names=None):
+def compute_descriptions(default_names, prose=None):
     """Compute hover-icon HTML describing each name.
 
     Parameters
     ----------
-    names : sequence of str
-        Parametrized names, e.g. ``df["solver_name"].unique()``.
+    default_names : dict[str, str]
+        Mapping ``{name: default_name}`` of the parametrized names, e.g. from
+        ``df["solver_name"]``, where the default name ignores the
+        ``parameter_template`` and lists all the parameters as ``key=value``
+        (e.g. ``df["solver_default_name"]``).
     prose : dict[str, str] or None
         Optional ``{name: free_text}`` (e.g. solver docstrings) prepended to
         the parameters table.
-    default_names : dict[str, str] or None
-        Optional ``{name: default_name}``, where the default name ignores the
-        ``parameter_template`` and lists all the parameters as ``key=value``
-        (e.g. ``df["solver_default_name"]``). When None, each name is its own
-        default name.
 
     Returns
     -------
     descriptions : dict[str, str]
         Mapping ``{name: html}``, empty when there is nothing to show.
     """
-    names = list(map(str, names))
     prose = prose or {}
-    default_names = default_names or dict(zip(names, names))
     descriptions = {}
-    for name in names:
-        _, _, params = _extract_options(default_names[name])
+    for name, default in default_names.items():
+        _, _, params = _extract_options(default)
         params = {k: str(v) for k, v in params.items()}
         descriptions[name] = _format_description(params, prose.get(name, ""))
     return descriptions
@@ -158,11 +150,10 @@ def shorten_names(df):
         if col not in df.columns:
             continue
         names = df[col].astype(str)
-        unique = names.unique().tolist()
         # Results from older benchopt versions have no default names.
         defaults = df.get(_DEFAULT_NAME_COLUMNS[col], names).astype(str)
         default_names = dict(zip(names, defaults))
-        short_map = compute_short_labels(unique, default_names)
+        short_map = compute_short_labels(default_names)
 
         # Docstring per name, read before the name column is overwritten.
         prose = {}
@@ -171,7 +162,7 @@ def shorten_names(df):
                 str(k): (v or "")
                 for k, v in df.groupby(col)[desc_col].first().items()
             }
-        desc = compute_descriptions(unique, prose, default_names)
+        desc = compute_descriptions(default_names, prose)
 
         full_col = col.replace("_name", "_full_name")
         df[full_col] = names
