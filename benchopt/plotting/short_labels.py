@@ -102,13 +102,6 @@ _DESCRIPTION_COLUMNS = {
     "dataset_name": "dataset_description",
     "objective_name": "obj_description",
 }
-# Column of the names without parameter_template, of each name column. The
-# objective one is not prefixed with `objective_`, which marks the metrics.
-_DEFAULT_NAME_COLUMNS = {
-    "solver_name": "solver_default_name",
-    "dataset_name": "dataset_default_name",
-    "objective_name": "obj_default_name",
-}
 
 
 def shorten_names(df):
@@ -133,8 +126,11 @@ def shorten_names(df):
         if col not in df.columns:
             continue
         names = df[col].astype(str)
+        # The names without parameter_template have the prefix of the
+        # description, e.g. `obj_` and not `objective_`, which marks metrics.
         # Results from older benchopt versions have no default names.
-        defaults = df.get(_DEFAULT_NAME_COLUMNS[col], names).astype(str)
+        default_col = desc_col.replace("description", "default_name")
+        defaults = df.get(default_col, names).astype(str)
         default_names = dict(zip(names, defaults))
 
         # Docstring per name, read before the name column is overwritten.
