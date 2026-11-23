@@ -150,3 +150,60 @@ def test_shorten_names_is_a_copy():
     assert list(df["solver_name"]) == ["S[a=1]", "S[a=2]"]
     assert "solver_full_name" not in df.columns
     assert short_df is not df
+
+
+def test_template_names_are_kept():
+    # Names set by a parameter_template are kept, as the template already
+    # sets the label, even when they look like positional options.
+    names = ["S[newton-cg]", "S[lbfgs]", "T[a=1,b=2]", "T[a=3,b=2]"]
+    params = {
+        "S[newton-cg]": {"solver": "newton-cg"},
+        "S[lbfgs]": {"solver": "lbfgs"},
+        "T[a=1,b=2]": {"b": 2, "a": 1},
+        "T[a=3,b=2]": {"b": 2, "a": 3},
+    }
+    short = compute_short_labels(names, params)
+    assert short["S[newton-cg]"] == "S[newton-cg]"
+    assert short["S[lbfgs]"] == "S[lbfgs]"
+    assert short["T[a=1,b=2]"] == "T[a=1]"
+    assert short["T[a=3,b=2]"] == "T[a=3]"
+
+
+def test_template_with_key_value_is_kept():
+    # A template can format the name like key=value: compare with the
+    # default name from the parameters, not with the name format.
+    names = ["S[a=1]", "S[a=2]"]
+    params = {"S[a=1]": {"a": 1, "b": 0}, "S[a=2]": {"a": 2, "b": 1}}
+    short = compute_short_labels(names, params)
+    assert short == {"S[a=1]": "S[a=1]", "S[a=2]": "S[a=2]"}
+
+
+def test_colliding_labels_keep_full_names():
+    names = ["S[a=1,b=2]", "S[a=1,b=3]", "S[b=2]"]
+    params = {
+        "S[a=1,b=2]": {"a": 1, "b": 2},
+        "S[a=1,b=3]": {"a": 1, "b": 3},
+        "S[b=2]": {"b": 2},
+    }
+    short = compute_short_labels(names, params)
+    # S[a=1,b=2] and S[b=2] both shorten to S[b=2]: both keep full names.
+    assert short["S[a=1,b=2]"] == "S[a=1,b=2]"
+    assert short["S[b=2]"] == "S[b=2]"
+    assert short["S[a=1,b=3]"] == "S[b=3]"
+
+
+def test_shorten_names_uses_param_columns():
+    df = pd.DataFrame({
+        "solver_name": ["S[newton-cg]", "S[lbfgs]", "T[n=10]", "T[n=20]"],
+        # Integer parameters become floats with missing values.
+        "p_solver_solver": ["newton-cg", "lbfgs", None, None],
+        "p_solver_n": [float("nan"), float("nan"), 10.0, 20.0],
+        "dataset_name": ["d1"] * 4,
+        "objective_name": ["obj1"] * 4,
+    })
+    short_df = shorten_names(df)
+    assert list(short_df["solver_name"]) == [
+        "S[newton-cg]", "S[lbfgs]", "T[n=10]", "T[n=20]"
+    ]
+    # Templated names get their parameters table from the columns.
+    assert "newton-cg" in short_df["solver_description"].iloc[0]

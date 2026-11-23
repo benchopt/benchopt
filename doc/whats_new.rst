@@ -24,6 +24,11 @@ CLI
 FIX
 ~~~
 
+- Short labels in the report no longer merge names formatted with a
+  ``parameter_template``, which are kept as is, and never give the same
+  label to two names. Parameters are read from the ``p_*`` columns of the
+  results. By `Thomas Moreau`_
+
 - The sampling strategy, stopping criterion and ``get_next`` of a solver are
   resolved for each run, from the solver then the ``Objective``, instead of
   being copied on the solver class. A ``"run_once"`` solver now always runs
