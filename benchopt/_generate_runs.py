@@ -114,10 +114,14 @@ def _run_meta(benchmark, dataset, objective, solver, rep):
     return {
         'base_seed': benchmark.seed,
         'objective_name': str(objective),
+        # Names without parameter_template, to shorten names in the report.
+        'obj_default_name': objective._get_default_name(),
         'obj_description': objective.__doc__ or "",
         'solver_name': str(solver),
+        'solver_default_name': solver._get_default_name(),
         'solver_description': inspect.cleandoc(solver.__doc__ or ""),
         'dataset_name': str(dataset),
+        'dataset_default_name': dataset._get_default_name(),
         'dataset_description': inspect.cleandoc(dataset.__doc__ or ""),
         'idx_rep': rep,
         'run_id': solver.run_id_,
