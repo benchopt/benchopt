@@ -1,7 +1,8 @@
 """Short display labels and hover descriptions for parametrized names.
 
-Short labels only keep the parameters that vary across the compared names.
-They are display-only and must never be written back into the results.
+Short labels only keep the parameters that vary across the compared names,
+and keep the names set by a ``parameter_template`` as is. They are
+display-only and must never be written back into the results.
 """
 
 from html import escape
@@ -31,20 +32,21 @@ def compute_short_labels(names, default_names=None):
     names : sequence of str
         Parametrized names, e.g. from ``df["solver_name"].unique()``.
     default_names : dict[str, str] or None
-        Name without ``parameter_template`` of each name, which lists all its
-        parameters as ``key=value``, e.g. from ``df["solver_default_name"]``.
-        A name is its own default name when missing, e.g. in older results.
+        Optional ``{name: default_name}``, where the default name ignores the
+        ``parameter_template`` and lists all the parameters as ``key=value``
+        (e.g. ``df["solver_default_name"]``). When None, each name is its own
+        default name.
 
     Returns
     -------
     short_map : dict[str, str]
         Mapping ``{full_name: short_label}`` for every name.
     """
-    default_names = default_names or {}
+    names = list(map(str, names))
+    default_names = default_names or dict(zip(names, names))
     short_map, by_base = {}, defaultdict(list)
-    for name in map(str, names):
-        default = default_names.get(name, name)
-        base, args, params = _extract_options(default)
+    for name in names:
+        base, args, params = _extract_options(default_names[name])
         if args or name != _format_name(base, params):
             short_map[name] = name
         else:
@@ -100,20 +102,22 @@ def compute_descriptions(names, prose=None, default_names=None):
         Optional ``{name: free_text}`` (e.g. solver docstrings) prepended to
         the parameters table.
     default_names : dict[str, str] or None
-        Name without ``parameter_template`` of each name, which lists all its
-        parameters as ``key=value``, e.g. from ``df["solver_default_name"]``.
-        A name is its own default name when missing, e.g. in older results.
+        Optional ``{name: default_name}``, where the default name ignores the
+        ``parameter_template`` and lists all the parameters as ``key=value``
+        (e.g. ``df["solver_default_name"]``). When None, each name is its own
+        default name.
 
     Returns
     -------
     descriptions : dict[str, str]
         Mapping ``{name: html}``, empty when there is nothing to show.
     """
-    prose, default_names = prose or {}, default_names or {}
+    names = list(map(str, names))
+    prose = prose or {}
+    default_names = default_names or dict(zip(names, names))
     descriptions = {}
-    for name in map(str, names):
-        default = default_names.get(name, name)
-        _, _, params = _extract_options(default)
+    for name in names:
+        _, _, params = _extract_options(default_names[name])
         params = {k: str(v) for k, v in params.items()}
         descriptions[name] = _format_description(params, prose.get(name, ""))
     return descriptions
