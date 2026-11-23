@@ -31,18 +31,19 @@ def compute_short_labels(names, default_names=None):
     names : sequence of str
         Parametrized names, e.g. from ``df["solver_name"].unique()``.
     default_names : dict[str, str] or None
-        Name of each name without ``parameter_template``, which lists all its
+        Name without ``parameter_template`` of each name, which lists all its
         parameters as ``key=value``, e.g. from ``df["solver_default_name"]``.
-        When None, a name is templated if it is not of this form.
+        A name is its own default name when missing, e.g. in older results.
 
     Returns
     -------
     short_map : dict[str, str]
         Mapping ``{full_name: short_label}`` for every name.
     """
+    default_names = default_names or {}
     short_map, by_base = {}, defaultdict(list)
     for name in map(str, names):
-        default = name if default_names is None else default_names[name]
+        default = default_names.get(name, name)
         base, args, params = _extract_options(default)
         if args or name != _format_name(base, params):
             short_map[name] = name
@@ -99,18 +100,19 @@ def compute_descriptions(names, prose=None, default_names=None):
         Optional ``{name: free_text}`` (e.g. solver docstrings) prepended to
         the parameters table.
     default_names : dict[str, str] or None
-        Name of each name without ``parameter_template``, to read its
-        parameters from. When None, they are read from the names.
+        Name without ``parameter_template`` of each name, which lists all its
+        parameters as ``key=value``, e.g. from ``df["solver_default_name"]``.
+        A name is its own default name when missing, e.g. in older results.
 
     Returns
     -------
     descriptions : dict[str, str]
         Mapping ``{name: html}``, empty when there is nothing to show.
     """
-    prose = prose or {}
+    prose, default_names = prose or {}, default_names or {}
     descriptions = {}
     for name in map(str, names):
-        default = name if default_names is None else default_names[name]
+        default = default_names.get(name, name)
         _, _, params = _extract_options(default)
         params = {k: str(v) for k, v in params.items()}
         descriptions[name] = _format_description(params, prose.get(name, ""))
@@ -156,10 +158,8 @@ def shorten_names(df):
         names = df[col].astype(str)
         unique = names.unique().tolist()
         # Results from older benchopt versions have no default names.
-        default_col = _DEFAULT_NAME_COLUMNS[col]
-        default_names = None
-        if default_col in df.columns:
-            default_names = dict(zip(names, df[default_col].astype(str)))
+        defaults = df.get(_DEFAULT_NAME_COLUMNS[col], names).astype(str)
+        default_names = dict(zip(names, defaults))
         short_map = compute_short_labels(unique, default_names)
 
         # Docstring per name, read before the name column is overwritten.
