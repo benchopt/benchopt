@@ -19,13 +19,31 @@ def _format_name(base, params):
     return f"{base}[{param_str}]"
 
 
-def compute_short_labels(default_names):
-    """Compute short display labels from a list of parametrized names.
+def _format_description(params, description=""):
+    """Render the hover HTML: free-text description and parameters table."""
+    parts = []
+    if description:
+        parts.append(f'<div class="param-desc">{escape(description)}</div>')
+    if params:
+        rows = "".join(
+            f'<tr><td class="param-key">{escape(k)}</td>'
+            f'<td class="param-val">{escape(v)}</td></tr>'
+            for k, v in params.items()
+        )
+        parts.append(
+            f'<div class="param-title">Parameters</div><table>{rows}</table>'
+        )
+    return "".join(parts)
+
+
+def compute_labels(default_names, prose=None):
+    """Compute the short display label and hover HTML of each name.
 
     Short labels include only the parameters that *vary* within a group of
     names sharing the same base class name. A name set by a
     ``parameter_template`` is kept as is, as the template already sets the
-    label, and so are names whose short label would not be unique.
+    label, and so are names whose short label would not be unique. The hover
+    HTML shows the free-text description and all the parameters of a name.
 
     Parameters
     ----------
@@ -34,15 +52,24 @@ def compute_short_labels(default_names):
         ``df["solver_name"]``, where the default name ignores the
         ``parameter_template`` and lists all the parameters as ``key=value``
         (e.g. ``df["solver_default_name"]``).
+    prose : dict[str, str] or None
+        Optional ``{name: free_text}`` (e.g. solver docstrings) prepended to
+        the parameters table.
 
     Returns
     -------
     short_map : dict[str, str]
         Mapping ``{full_name: short_label}`` for every name.
+    descriptions : dict[str, str]
+        Mapping ``{name: html}``, empty when there is nothing to show.
     """
-    short_map, by_base = {}, defaultdict(list)
+    prose = prose or {}
+    short_map, descriptions, by_base = {}, {}, defaultdict(list)
     for name, default in default_names.items():
         base, args, params = _extract_options(default)
+        descriptions[name] = _format_description(
+            {k: str(v) for k, v in params.items()}, prose.get(name, "")
+        )
         if args or name != _format_name(base, params):
             short_map[name] = name
         else:
@@ -62,55 +89,11 @@ def compute_short_labels(default_names):
 
     # A short label shared by several names would merge them in the plots.
     counts = Counter(short_map.values())
-    return {
+    short_map = {
         name: short if counts[short] == 1 else name
         for name, short in short_map.items()
     }
-
-
-def _format_description(params, description=""):
-    """Render the hover HTML: free-text description and parameters table."""
-    parts = []
-    if description:
-        parts.append(f'<div class="param-desc">{escape(description)}</div>')
-    if params:
-        rows = "".join(
-            f'<tr><td class="param-key">{escape(k)}</td>'
-            f'<td class="param-val">{escape(v)}</td></tr>'
-            for k, v in params.items()
-        )
-        parts.append(
-            f'<div class="param-title">Parameters</div><table>{rows}</table>'
-        )
-    return "".join(parts)
-
-
-def compute_descriptions(default_names, prose=None):
-    """Compute hover-icon HTML describing each name.
-
-    Parameters
-    ----------
-    default_names : dict[str, str]
-        Mapping ``{name: default_name}`` of the parametrized names, e.g. from
-        ``df["solver_name"]``, where the default name ignores the
-        ``parameter_template`` and lists all the parameters as ``key=value``
-        (e.g. ``df["solver_default_name"]``).
-    prose : dict[str, str] or None
-        Optional ``{name: free_text}`` (e.g. solver docstrings) prepended to
-        the parameters table.
-
-    Returns
-    -------
-    descriptions : dict[str, str]
-        Mapping ``{name: html}``, empty when there is nothing to show.
-    """
-    prose = prose or {}
-    descriptions = {}
-    for name, default in default_names.items():
-        _, _, params = _extract_options(default)
-        params = {k: str(v) for k, v in params.items()}
-        descriptions[name] = _format_description(params, prose.get(name, ""))
-    return descriptions
+    return short_map, descriptions
 
 
 # Description column of each name column, in hover priority order.
@@ -153,7 +136,6 @@ def shorten_names(df):
         # Results from older benchopt versions have no default names.
         defaults = df.get(_DEFAULT_NAME_COLUMNS[col], names).astype(str)
         default_names = dict(zip(names, defaults))
-        short_map = compute_short_labels(default_names)
 
         # Docstring per name, read before the name column is overwritten.
         prose = {}
@@ -162,7 +144,7 @@ def shorten_names(df):
                 str(k): (v or "")
                 for k, v in df.groupby(col)[desc_col].first().items()
             }
-        desc = compute_descriptions(default_names, prose)
+        short_map, desc = compute_labels(default_names, prose)
 
         full_col = col.replace("_name", "_full_name")
         df[full_col] = names
