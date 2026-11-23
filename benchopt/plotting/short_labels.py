@@ -53,6 +53,10 @@ def compute_short_labels(names, default_names=None):
             by_base[base].append((name, params))
 
     for base, group in by_base.items():
+        if len(group) == 1:
+            short_map[group[0][0]] = base
+            continue
+
         # Keep the parameters taking several values across the group.
         values = defaultdict(set)
         for _, params in group:
