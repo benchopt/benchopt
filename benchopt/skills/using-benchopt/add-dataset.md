@@ -31,8 +31,11 @@ benchopt decides a dataset is installed by **importing the module and catching
   run time. This applies to imported `benchmark_utils` helpers too.
 - Set `requirements` to exactly what the dataset needs (`["pip::pkg"]`,
   `["chan::pkg"]`) as a **literal list of strings** — benchopt reads it
-  statically via `ast`, so a computed value (`OtherDataset.requirements + [...]`)
-  is not parsable.
+  statically via `ast`, so a computed value is not parsable.
+- `requirements` and `parameters` are merged with those of the base classes, so
+  a shared base in `benchmark_utils` declares the common ones and each dataset
+  lists only its own. `"__inherit__": False` in `parameters` drops the inherited
+  parameters.
 - Avoid `safe_import_context` except for class-body attributes that reference an
   imported name at definition time.
 - Ship a zero-dependency `Simulated` dataset in its own file

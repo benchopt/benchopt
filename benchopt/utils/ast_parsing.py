@@ -7,6 +7,8 @@ import ast
 import inspect
 from pathlib import Path
 
+from .parametrized_name_mixin import merge_declared_attrs
+
 
 def _resolve_class_def(module_file, name, benchmark_dir, before=None,
                        seen=()):
@@ -86,10 +88,9 @@ def _c3_merge(sequences):
 def _get_mro(module_file, class_def, benchmark_dir, classes, stack=()):
     """MRO of the classes defined in the benchmark, as keys of ``classes``.
 
-    ``classes`` maps each key ``(file, lineno)`` to ``(file, ClassDef)``.
+    ``classes`` maps each key ``(file, lineno)`` to ``(file, ClassDef, mro)``.
     """
     key = (module_file, class_def.lineno)
-    classes[key] = (module_file, class_def)
     base_mros = []
     for base in class_def.bases:
         found = isinstance(base, ast.Name) and _resolve_class_def(
@@ -100,41 +101,57 @@ def _get_mro(module_file, class_def, benchmark_dir, classes, stack=()):
                 *found, benchmark_dir, classes, stack=(*stack, key)
             ))
     try:
-        return [key, *_c3_merge([*base_mros, [m[0] for m in base_mros]])]
+        mro = [key, *_c3_merge([*base_mros, [m[0] for m in base_mros]])]
     except TypeError:
         # Python cannot build this class either: keep its own attributes.
-        return [key]
+        mro = [key]
+    classes[key] = (module_file, class_def, mro)
+    return mro
 
 
-def _get_class_nodes(module_file, class_name, benchmark_dir):
-    """Map the attributes of a class to ``(node, file)``, following its MRO.
+def _get_class_nodes(class_def):
+    """Map the attributes set in the body of ``class_def`` to their node.
 
     ``node`` is the value expression for an assignment, or the function
-    definition for a method, and ``file`` is the module defining it. Return
-    None if the class is not found.
+    definition for a method.
     """
-    found = _resolve_class_def(module_file, class_name, benchmark_dir)
-    if found is None:
-        return None
-    classes = {}
-    mro = _get_mro(*found, benchmark_dir, classes)
-
     nodes = {}
-    # From the last class of the MRO, so the first ones take precedence.
-    for key in mro[::-1]:
-        class_file, class_def = classes[key]
-        for node in class_def.body:
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                nodes[node.name] = (node, class_file)
-            elif isinstance(node, (ast.Assign, ast.AnnAssign)):
-                targets = (
-                    node.targets if isinstance(node, ast.Assign)
-                    else [node.target]
-                )
-                for target in targets:
-                    if isinstance(target, ast.Name) and node.value:
-                        nodes[target.id] = (node.value, class_file)
+    for node in class_def.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            nodes[node.name] = node
+        elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = (
+                node.targets if isinstance(node, ast.Assign)
+                else [node.target]
+            )
+            for target in targets:
+                if isinstance(target, ast.Name) and node.value:
+                    nodes[target.id] = node.value
     return nodes
+
+
+def _literal_eval(node, class_file, class_def, benchmark_dir, merged):
+    """Evaluate ``node``, with ``**Base.parameters`` for a base in ``merged``.
+
+    ``merged`` maps the classes of the MRO to their merged attributes.
+    """
+    if not isinstance(node, ast.Dict):
+        return ast.literal_eval(node)
+    value = {}
+    for k, v in zip(node.keys, node.values):
+        if k is not None:
+            value[ast.literal_eval(k)] = ast.literal_eval(v)
+            continue
+        found = (
+            isinstance(v, ast.Attribute) and v.attr == 'parameters'
+            and isinstance(v.value, ast.Name) and _resolve_class_def(
+                class_file, v.value.id, benchmark_dir, before=class_def.lineno
+            )
+        )
+        if not found or (found[0], found[1].lineno) not in merged:
+            raise ValueError(f"Cannot evaluate {ast.unparse(v)}.")
+        value.update(merged[found[0], found[1].lineno].get('parameters', {}))
+    return value
 
 
 def get_class_attrs(module_file, base_cls, benchmark_dir):
@@ -160,7 +177,8 @@ def get_class_attrs(module_file, base_cls, benchmark_dir):
     Returns
     -------
     attrs : dict or None
-        The attributes set by the class or its bases. A data attribute maps
+        The attributes set by the class or its bases, with ``requirements``
+        and ``parameters`` merged along the MRO. A data attribute maps
         to its value, or to an ``AttributeError`` when it is not a literal,
         and a method to its ``ast.FunctionDef``. None if the class is not
         found.
@@ -168,29 +186,42 @@ def get_class_attrs(module_file, base_cls, benchmark_dir):
     module_file = Path(module_file).resolve()
     benchmark_dir = Path(benchmark_dir).resolve()
     cls_name = base_cls._base_class_name
-    nodes = _get_class_nodes(module_file, cls_name, benchmark_dir)
-    if nodes is None:
+    found = _resolve_class_def(module_file, cls_name, benchmark_dir)
+    if found is None:
         return None
+    classes = {}
+    mro = _get_mro(*found, benchmark_dir, classes)
 
     # Attributes ending with `_` are computed, e.g. `dataset_`.
     names = ['name'] + [
         p.name for p in inspect.classify_class_attrs(base_cls)
         if not p.name.startswith('_') and not p.name.endswith('_')
     ]
-    attrs = {}
-    for attr, (node, attr_file) in nodes.items():
-        if attr not in names:
-            continue
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            attrs[attr] = node
-            continue
-        try:
-            attrs[attr] = ast.literal_eval(node)
-        except Exception:
-            attrs[attr] = AttributeError(
-                f"Could not evaluate statically '{attr}' of the class "
-                f"{cls_name} in {attr_file}.\nBy default, this should be a "
-                "string literal. If dynamic evaluation is necessary, use "
-                "`safe_import_context`."
-            )
+    declared, merged = {}, {}
+    for key in mro[::-1]:
+        class_file, class_def, class_mro = classes[key]
+        attrs = {}
+        for attr, node in _get_class_nodes(class_def).items():
+            if attr not in names:
+                continue
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                attrs[attr] = node
+                continue
+            try:
+                attrs[attr] = _literal_eval(
+                    node, class_file, class_def, benchmark_dir, merged
+                )
+            except Exception:
+                attrs[attr] = AttributeError(
+                    f"Could not evaluate statically '{attr}' of the class "
+                    f"{cls_name} in {class_file}.\nBy default, this should "
+                    "be a string literal. If dynamic evaluation is necessary, "
+                    "use `safe_import_context`."
+                )
+        declared[key] = attrs
+        merged[key] = merge_declared_attrs(
+            declared[k] for k in class_mro[::-1]
+        )
+    attrs = {k: v for d in declared.values() for k, v in d.items()}
+    attrs.update(merged[mro[0]])
     return attrs
