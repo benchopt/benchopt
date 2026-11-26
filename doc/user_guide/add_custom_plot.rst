@@ -413,3 +413,21 @@ With another label, pass the matching ``*_description`` as the trace's
 The short labels are **display-only** and computed relative to the current
 results. Never write them back into persisted results, and use the
 ``*_full_name`` columns as the canonical identity.
+
+Custom HTML result page
+-----------------------
+
+To replace the whole result page, pass a
+`Mako <https://www.makotemplates.org>`_ template to ``benchopt plot``:
+
+.. code-block:: bash
+
+    benchopt plot . --html-template my_page.mako.html
+
+The template is rendered once per result file, with the same variables as the
+default page: ``benchmark``, ``home`` (the URL of the benchmark's index),
+``static`` (benchopt's CSS and JS assets, by file name) and ``result``. On top
+of the plot data used by the default page, ``result['df']`` holds the results
+as the ``DataFrame`` passed to the plots, with the short labels described
+above. As the template is rendered in the benchmark's process, it can import
+from ``benchmark_utils``.

@@ -13,6 +13,7 @@ from ..results.parquet import get_metadata as get_parquet_metadata
 
 from benchopt.benchmark import Benchmark
 from .helpers import reset_solver_styles
+from .short_labels import shorten_names
 from .helpers import update_plot_data_style
 
 ROOT = Path(__file__).parent / "html"
@@ -49,7 +50,8 @@ for asset in STATIC_DIR.glob("**/*"):
     STATIC[asset.relative_to(STATIC_DIR).name] = asset.read_text()
 
 
-def get_results(fnames, html_root, benchmark, config=None, copy=False):
+def get_results(fnames, html_root, benchmark, config=None, copy=False,
+                with_df=False):
     """Generate figures from a list of result files.
 
     Parameters
@@ -66,6 +68,9 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
     copy : bool (default: False)
         If set to True, copy each file in the html_root / OUTPUTS
         directory, to make sure it can be downloaded.
+    with_df : bool (default: False)
+        If set to True, store the results with short labels in
+        ``result['df']``, for custom templates.
 
     Returns
     -------
@@ -115,6 +120,8 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
         data = update_plot_data_style(data, plotly=True)
         result['json_plots'] = json.dumps(data)
         result['plot_options'] = options
+        if with_df:
+            result['df'] = shorten_names(df)
 
         results.append(result)
     print()
@@ -227,7 +234,8 @@ def render_benchmark(results, benchmark, home='index.html'):
     )
 
 
-def render_all_results(results, benchmark, home='index.html'):
+def render_all_results(results, benchmark, home='index.html',
+                       template=None):
     """Create an html file containing the plots from a benchmark run.
 
     Parameters
@@ -238,13 +246,17 @@ def render_all_results(results, benchmark, home='index.html'):
         Object to represent the benchmark.
     home : str
         URL of the home page.
+    template : str or Path, optional
+        Mako template used to render each run, instead of the default result
+        page. It is rendered with the same variables as the default one:
+        ``result``, ``benchmark``, ``static`` and ``home``.
 
     Returns
     -------
     htmls : list of str
         A List of str contraining the HTML code for each benchmark run.
     """
-    template = TEMPLATE_RESULT
+    template = TEMPLATE_RESULT if template is None else template
     htmls = []
     for result in results:
         html = Template(
@@ -282,7 +294,8 @@ def _fetch_cached_run_list(new_results, benchmark_html):
 
 
 def plot_benchmark_html(
-        fnames, benchmark, config=None, display=True, html_home=None
+        fnames, benchmark, config=None, display=True, html_home=None,
+        template=None
 ):
     """Plot a given benchmark as an HTML report. This function can either plot
     a single run or multiple ones.
@@ -302,6 +315,9 @@ def plot_benchmark_html(
         Index of the HTML website. This default to the benchmark index. This
         argument can be used to pass the index file when generating the full
         result website.
+    template : str or Path, optional
+        Mako template for the result page, instead of the default one. See
+        :func:`render_all_results`.
     """
     if isinstance(fnames, Path):
         fnames = [fnames]
@@ -322,8 +338,13 @@ def plot_benchmark_html(
 
     # Create the figures and render the page as a html.
     print("Rendering benchmark results...")
-    results = get_results(fnames, html_root, benchmark, config, copy=copy)
-    htmls = render_all_results(results, benchmark, home=html_home)
+    results = get_results(
+        fnames, html_root, benchmark, config, copy=copy,
+        with_df=template is not None
+    )
+    htmls = render_all_results(
+        results, benchmark, home=html_home, template=template
+    )
     print("done")
 
     # Save the resulting page in the HTML folder

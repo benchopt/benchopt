@@ -34,6 +34,12 @@ process_results = click.Group(
 @click.option('--html/--no-html', default=True,
               help="If set to True (default), render the results as an HTML "
               "page, otherwise create matplotlib figures, saved as PNG.")
+@click.option('--html-template', default=None,
+              type=click.Path(exists=True, dir_okay=False),
+              help="Mako template used to render the HTML result page, "
+              "instead of the default one. It is rendered with the variables "
+              "`result` (with the results in `result['df']`), "
+              "`benchmark`, `static` and `home`.")
 @click.option('--plotly', is_flag=True,
               help="If this flag is set, generate figure as HTML with plotly. "
               "This option does not work with all plot kinds and requires "
@@ -42,7 +48,8 @@ process_results = click.Group(
               help="If this flag is set, generate the plot for all existing "
               "runs of a benchmark at once.")
 def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
-         display=True, html=True, plotly=False, all_files=False):
+         display=True, html=True, html_template=None, plotly=False,
+         all_files=False):
 
     if all_files:
         assert filename is None, (
@@ -64,7 +71,7 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
     from benchopt.plotting import plot_benchmark
     return plot_benchmark(
         result_filename, benchmark, kinds=kinds, display=display,
-        plotly=plotly, html=html
+        plotly=plotly, html=html, html_template=html_template
     )
 
 

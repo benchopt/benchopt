@@ -186,6 +186,25 @@ class TestPlotCmd:
         assert '"__incompatible__"' in html_content
         assert '"image": null' in html_content
 
+    def test_html_template(self, tmp_path):
+        # A custom template replaces the result page and gets the raw results.
+        template = tmp_path / "custom.mako.html"
+        template.write_text(
+            "custom ${benchmark.name} ${len(result['df'])} ${home}"
+        )
+
+        with CaptureCmdOutput(delete_result_files=False) as out:
+            cmd = f"{self.bench.benchmark_dir} -f {self.result_file} "
+            cmd += f"--no-display --html-template {template}"
+            plot(cmd.split(), 'benchopt', standalone_mode=False)
+
+        pages = [
+            Path(f).read_text() for f in out.result_files if '.html' in f
+        ]
+        assert any(
+            page.startswith(f"custom {self.bench.name} ") for page in pages
+        ), pages
+
     @pytest.mark.parametrize("n_rep", N_REP)
     @patch("benchopt.plotting.generate_matplotlib.get_plot_boxplot")
     def test_boxplot_with_repetitions(self, plot_boxplot, n_rep):

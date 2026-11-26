@@ -102,6 +102,10 @@ API
 PLOT
 ~~~~
 
+- ``benchopt plot --html-template`` renders the HTML result page with a
+  custom Mako template. The template gets the results in ``result['df']``.
+  By `Hippolyte Verninas`_
+
 - Custom ``scatter`` plots can set the size of a trace's markers with
   ``marker_size``. By `Thomas Moreau`_ (:gh:`1052`)
 
