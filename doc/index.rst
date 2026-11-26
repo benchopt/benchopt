@@ -1,25 +1,108 @@
-
 ``Benchopt``
 =============
 
-*—A framework for reproducible, comparable benchmarks—*
+**Standardized benchmarks for AI and optimization.**
+*Same data, same metrics, every method.*
 
 
 |Python 3.10+| |PyPI version| |License|
 
-Benchopt is a benchmarking framework for **machine learning and optimization**.
-You bring **datasets**, **metrics**, and the **methods** to compare —
-Benchopt provides the loop that connects them and runs reproducible comparisons
-at scale. Out of the box:
+Benchopt turns an evaluation protocol into shared code. A benchmark fixes
+**the data** (datasets) and **the evaluation** (an objective and its metrics),
+and runs every **method** (called a *solver*) under exactly the same
+conditions. Because the evaluation lives in one place, a new metric or a fixed
+bug applies to all methods at once, and a single ``benchopt run`` updates the
+whole comparison.
 
-* **Scale experiments:** loop over grid of parameters, run in parallel locally or on HPC clusters, with native SLURM support.
-* **Save time:** cache results to avoid recomputing unchanged runs.
-* **Trust comparisons:** control randomness with seeds and stable protocols.
-* **Integrate broadly:** use implementations from Python, R, Julia, or binaries.
-* **Share outcomes:** merge and publish results from multiple runs, with easy interactive visualization.
-* **Maintain and Extend:** modular design to easily add new datasets, solvers, and metrics, and CI tools to test them.
+.. raw:: html
 
-Learn how to construct and run a benchmark with the following pages!
+   <object class="benchopt-overview" data="_static/benchopt_overview.svg"
+           type="image/svg+xml"
+           aria-label="Research, competitions and reference benchmarks all rely on one benchopt benchmark, which produces paper figures, reusable results, leaderboards and a live results site.">
+   </object>
+
+
+One benchmark, three goals
+--------------------------
+
+The same benchmark serves very different goals. Hover a goal in the figure
+above to see what it uses and what it produces.
+
+.. grid:: 1 1 3 3
+    :gutter: 2
+
+    .. grid-item-card::
+
+        :octicon:`person` **Research**
+        ^^^
+        Create a new method or answer a research question. Compare it to
+        baselines without rewriting the evaluation, and get the figures for
+        your paper.
+
+        *Example:* the `simulated benchmark
+        <https://github.com/soda-inria/crossing-the-validation-crisis/tree/main/simulated>`_
+        behind the NeurIPS 2026 paper *Crossing the Validation Crisis*.
+        +++
+        Start from a template:
+        `ML <https://github.com/benchopt/template_benchmark_ml>`_ |
+        `optimization <https://github.com/benchopt/template_benchmark>`_
+
+    .. grid-item-card::
+
+        :octicon:`people` **Competition**
+        ^^^
+        Evaluate the methods submitted by participants, with the same scoring
+        for all. The test data and some methods can stay private, and the
+        results feed a leaderboard.
+
+        *Example:* the `neural-interfaces 2026 competition
+        <https://github.com/neural-interfaces26/2026-competition>`_, run on
+        Codabench.
+        +++
+        Start from the `Codabench template
+        <https://github.com/benchopt/template_codabench>`_
+
+    .. grid-item-card::
+
+        :octicon:`organization` **Reference benchmark**
+        ^^^
+        Give a consolidated view of a field, across many test cases. The
+        community adds datasets, metrics and methods, and the results are
+        published on a live site.
+
+        *Examples:* `L2-regularized logistic regression
+        <https://github.com/benchopt/benchmark_logreg_l2>`_,
+        `unsupervised domain adaptation
+        <https://github.com/scikit-adaptation/skada-bench>`_.
+        +++
+        See :ref:`publish_benchmark`
+
+
+A toolbox for benchmark campaigns
+---------------------------------
+
+Benchopt runs every method on every dataset and every parameter, and takes
+care of the rest:
+
+* **Scale experiments:** run in parallel locally or on HPC clusters, with
+  native SLURM support.
+* **Save time:** cache results, checkpoint long runs, and reuse past results
+  instead of recomputing them.
+* **Trust comparisons:** control randomness with seeds, and check every
+  component with ``benchopt test``.
+* **Find bottlenecks:** profile solvers line by line with ``--profile``.
+* **Integrate broadly:** write solvers in Python, R, Julia, or wrap binaries.
+* **Share outcomes:** merge runs and publish interactive reports.
+* **Work with your agent:** ``benchopt sync-skills`` teaches your coding agent
+  how to write, run and debug a benchmark. See :ref:`agent_skills`.
+
+Start small and grow when needed: run an existing benchmark, add your method
+as one file, write your own benchmark from a template, then scale it to a
+cluster or open it to others.
+
+
+Learn benchopt
+--------------
 
 .. grid:: 2
     :gutter: 1
@@ -57,11 +140,6 @@ Learn how to construct and run a benchmark with the following pages!
         :octicon:`mortar-board` **Examples**
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         Gallery of use-cases crafted by the benchopt community
-
-.. tip::
-   **Want to create a new benchmark with benchopt?** Use our templates to get started:
-   `ML benchmarks <https://github.com/benchopt/template_benchmark_ml>`_ |
-   `Optimization benchmarks <https://github.com/benchopt/template_benchmark>`_
 
 
 .. _faq:
