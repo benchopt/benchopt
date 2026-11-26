@@ -1052,6 +1052,53 @@ def test_components_share_state_then_release(parallel, no_debug_log):
     out.check_output("#ALIVE#[2-9]", repetition=0)
 
 
+@pytest.mark.parametrize("n_solvers, n_loads", [(1, 1), (2, 4)])
+def test_keep_state_until_solver_changes(n_solvers, n_loads, no_debug_log):
+    """`keep_state` survives a new dataset, not a new solver instance.
+
+    One solver loads its model once for both datasets. Two solvers alternate
+    on each dataset, so each run loads it again, and old models are freed.
+    """
+    dataset = """from benchopt import BaseDataset
+
+    class Dataset(BaseDataset):
+        name = "test-dataset"
+        parameters = {"n": [1, 2]}
+        def get_data(self):
+            return dict(X=None, y=None)
+    """
+    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
+        import gc, weakref
+
+        REFS = []
+
+        class Model:
+            pass
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            sampling_strategy = 'run_once'
+            parameters = dict(q=list(range({n_solvers})))
+            keep_state = ("model",)
+            def set_objective(self, X, y, lmbd):
+                if not hasattr(self, "model"):
+                    gc.collect()
+                    alive = sum(r() is not None for r in REFS)
+                    print(f"#LOAD#ALIVE#{{alive}}")
+                    self.model = Model()
+                    REFS.append(weakref.ref(self.model))
+    """
+    with temp_benchmark(
+        datasets=[dataset], solvers=[solver]
+    ) as bench, CaptureCmdOutput() as out:
+        run([str(bench.benchmark_dir), "-d", "test-dataset", "--no-plot",
+             "--no-cache"], standalone_mode=False)
+
+    out.check_output("#LOAD#", repetition=n_loads)
+    # The previous model may linger, but models must not pile up.
+    out.check_output("#LOAD#ALIVE#[2-9]", repetition=0)
+
+
 def test_repetition_reloads_seeded_data(no_debug_log):
     """A repetition reloads the data when the dataset seed depends on it."""
     dataset = """from benchopt import BaseDataset
