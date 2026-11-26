@@ -56,7 +56,7 @@ FIX
   node applies the same rule to the runs it sends to other processes. See
   :ref:`data_memory`. A solver lists in ``keep_state`` the attributes that do
   not depend on the data, such as model weights, to keep them across datasets.
-  By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`1030`, :gh:`PRNUM`)
+  By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`1030`, :gh:`1055`)
 
 - The "Export LaTeX" button of the HTML report shows the table in a text box
   when the clipboard is unavailable, and no longer adds an extra column. By
