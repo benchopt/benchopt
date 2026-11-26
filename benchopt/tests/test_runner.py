@@ -1052,12 +1052,16 @@ def test_components_share_state_then_release(parallel, no_debug_log):
     out.check_output("#ALIVE#[2-9]", repetition=0)
 
 
-@pytest.mark.parametrize("n_solvers, n_loads", [(1, 1), (2, 4)])
-def test_keep_state_until_solver_changes(n_solvers, n_loads, no_debug_log):
+@pytest.mark.parametrize("n_jobs, n_solvers, group_by, n_loads", [
+    (1, 1, None, 1), (1, 2, None, 4), (1, 2, "solver", 2), (2, 2, "solver", 2)
+])
+def test_keep_state_until_solver_changes(n_jobs, n_solvers, group_by, n_loads,
+                                         no_debug_log):
     """`keep_state` survives a new dataset, not a new solver instance.
 
     One solver loads its model once for both datasets. Two solvers alternate
-    on each dataset, so each run loads it again, and old models are freed.
+    on each dataset, so each run loads it again unless the runs are grouped
+    by solver, and old models are freed.
     """
     dataset = """from benchopt import BaseDataset
 
@@ -1091,8 +1095,12 @@ def test_keep_state_until_solver_changes(n_solvers, n_loads, no_debug_log):
     with temp_benchmark(
         datasets=[dataset], solvers=[solver]
     ) as bench, CaptureCmdOutput() as out:
+        extra = [] if group_by is None else ["--group-by", group_by]
         run([str(bench.benchmark_dir), "-d", "test-dataset", "--no-plot",
-             "--no-cache"], standalone_mode=False)
+             "--no-cache", "-j", str(n_jobs), *extra], standalone_mode=False)
+
+        from joblib.externals.loky import get_reusable_executor
+        get_reusable_executor().shutdown(wait=True)
 
     out.check_output("#LOAD#", repetition=n_loads)
     # The previous model may linger, but models must not pile up.
