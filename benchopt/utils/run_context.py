@@ -1,5 +1,9 @@
+import os
 import re
+import json
 import hashlib
+import tempfile
+import warnings
 from pathlib import Path
 from functools import cached_property
 from dataclasses import dataclass, field, replace as dc_replace
@@ -37,7 +41,8 @@ class RunContext:
     their methods, with ``with run_context:``.
 
     Config fields (set once in ``_run_benchmark``):
-        run_output_base, pdb, parallel_config, base_seed
+        run_output_base, checkpoint_base, checkpoint_mode, pdb,
+        parallel_config, base_seed
 
     Per-run fields (filled by ``for_run`` for each dataset × objective ×
     solver × rep):
@@ -47,6 +52,12 @@ class RunContext:
     """
     # Config fields — set once per benchmark invocation
     run_output_base: Path | None = None
+    # Folder of the checkpoints, None to use a temporary one for each run.
+    checkpoint_base: Path | None = None
+    # 'resume' to reuse the checkpoints, 'rescore' to also evaluate them
+    # again, 'refresh' to remove them first, and 'off' to use a temporary
+    # folder for each run.
+    checkpoint_mode: str = 'resume'
     pdb: bool = False
     # Parallel config of the benchmark, as given by `--parallel-config`.
     parallel_config: dict | None = field(default=None, repr=False)
@@ -60,6 +71,8 @@ class RunContext:
     objective: RunContextMixin | str | None = field(default=None, repr=False)
     solver: RunContextMixin | str | None = field(default=None, repr=False)
     repetition: int | None = None
+    # Checkpoint to restart the solver from, None for a fresh start.
+    checkpoint: object = field(default=None, repr=False)
     # Contexts of the components before entering this one, to restore them.
     _previous: list = field(default_factory=list, repr=False, compare=False)
 
@@ -106,6 +119,78 @@ class RunContext:
         return path
 
     @property
+    def _checkpoint_params(self):
+        """What defines the training of the run, as a JSON string.
+
+        It holds the seed, the repetition and the components without their
+        ``eval_parameters``. Their code is left out, so that fixing a solver
+        does not lose its checkpoints.
+        """
+        params = dict(
+            seed=self.base_seed, repetition=self.get_component('repetition')
+        )
+        for name in ('dataset', 'objective', 'solver'):
+            component = self.get_component(name)
+            params[name] = dict(name=component.name, parameters={
+                k: v for k, v in component._parameters.items()
+                if k not in component.eval_parameters
+            })
+        return json.dumps(params, sort_keys=True, default=str, indent=1)
+
+    @property
+    def checkpoint_path(self):
+        """Checkpoint directory of the run, which may not exist yet.
+
+        It is named with a hash of what defines the training of the run.
+        """
+        base = self.checkpoint_base
+        if base is None or self.checkpoint_mode == 'off':
+            base = Path(self._tmp_checkpoint_base.name)
+        params = self._checkpoint_params.encode()
+        return base / hashlib.sha256(params).hexdigest()[:16]
+
+    def get_checkpoint_path(self):
+        """Return the checkpoint directory of the run, creating it if needed.
+
+        What defines the training is stored in ``benchopt_params.json``, to
+        find the directory of a run. The hashes of the files of the dataset
+        and of the solver are stored in ``benchopt_code.json``, to warn when
+        a checkpoint is reused with another code.
+        """
+        path = self.checkpoint_path
+        path.mkdir(parents=True, exist_ok=True)
+        params_file = path / "benchopt_params.json"
+        if not params_file.exists():
+            # Written once, with a rename so that it is never half written.
+            tmp_file = params_file.with_suffix(f".tmp{os.getpid()}")
+            tmp_file.write_text(self._checkpoint_params)
+            os.replace(tmp_file, params_file)
+        code = {
+            name: type(self.get_component(name))._file_hash
+            for name in ('dataset', 'solver')
+        }
+        code_file = path / "benchopt_code.json"
+        stored = {}
+        if code_file.exists():
+            stored = json.loads(code_file.read_text())
+        changed = [name for name in stored if stored[name] != code[name]]
+        if changed:
+            warnings.warn(
+                f"The code of the {' and '.join(changed)} changed since the "
+                f"checkpoints of {self.solver} were stored in {path}. They "
+                "are reused. Use `--checkpoint refresh` to train again.",
+                UserWarning
+            )
+        if stored != code:
+            code_file.write_text(json.dumps(code))
+        return path
+
+    @cached_property
+    def _tmp_checkpoint_base(self):
+        """Temporary folder for the checkpoints, removed with the context."""
+        return tempfile.TemporaryDirectory(prefix="benchopt_checkpoints_")
+
+    @property
     def run_id(self):
         """Short hash of the seed, the components and the repetition."""
         names = [str(self.base_seed)] + [
@@ -136,7 +221,8 @@ class RunContext:
         Raise if a component or the repetition is absent from the context.
         """
         value = getattr(self, name)
-        if value is None and 'parallel_config' not in name:
+        optional = ('parallel_config', 'run_parallel_config', 'checkpoint')
+        if value is None and name not in optional:
             raise RunContextError(
                 name,
                 f"No {name} is defined in the current run context. The "

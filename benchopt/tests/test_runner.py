@@ -1,6 +1,9 @@
+import json
 import pytest
+import warnings
 import re
 import inspect
+from pathlib import Path
 
 from benchopt.cli.main import run
 from benchopt.results import read_results
@@ -772,6 +775,140 @@ def test_get_run_output_path_raises_outside_run():
         solver.get_run_output_path()
 
 
+CHECKPOINT_SOLVER = """from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        name = "test-solver"
+        sampling_strategy = 'run_once'
+        parameters = {"lr": [0.1], "n_eval": [1, 2]}
+        eval_parameters = ("n_eval",)
+
+        def run(self, _):
+            checkpoint = self.get_checkpoint_path() / "checkpoint"
+            print(f"CKPT#{checkpoint.parent}#{checkpoint.exists()}")
+            checkpoint.touch()
+"""
+
+
+def test_get_checkpoint_path():
+    # The checkpoint directory is shared by the runs that only differ by
+    # their eval parameters, and kept from one `benchopt run` to the next.
+    with temp_benchmark(solvers=[CHECKPOINT_SOLVER]) as benchmark:
+        cmd = [
+            str(benchmark.benchmark_dir), "-d", "test-dataset",
+            "-r", "2", "--no-plot",
+        ]
+        with CaptureCmdOutput() as out:
+            run(cmd, standalone_mode=False)
+
+        # 2 values of n_eval x 2 repetitions give 2 trainings.
+        checkpoints = out.check_output(r"CKPT#(.+)#(.+)", repetition=4)
+        paths = {path for path, _ in checkpoints}
+        assert len(paths) == 2
+        assert sorted(found for _, found in checkpoints) == [
+            "False", "False", "True", "True"
+        ]
+        cache_dir = benchmark.get_cache_location()
+        assert all(Path(p).parent == cache_dir / "checkpoints" for p in paths)
+
+        # Each directory describes its training, without the eval parameters.
+        params = [
+            json.loads((Path(p) / "benchopt_params.json").read_text())
+            for p in sorted(paths)
+        ]
+        assert sorted(p["repetition"] for p in params) == [0, 1]
+        assert all(p["solver"] == dict(
+            name="test-solver", parameters={"lr": 0.1}
+        ) for p in params)
+        assert all(p["dataset"]["name"] == "test-dataset" for p in params)
+
+        # Forcing the solver runs it again, with its checkpoints.
+        with CaptureCmdOutput() as out:
+            run([*cmd, "-f", "test-solver"], standalone_mode=False)
+        checkpoints = out.check_output(r"CKPT#(.+)#True", repetition=4)
+        assert set(checkpoints) == paths
+
+        # Refreshing the checkpoints removes them and forces the runs.
+        with CaptureCmdOutput() as out:
+            run([*cmd, "--checkpoint", "refresh"], standalone_mode=False)
+        checkpoints = out.check_output(r"CKPT#(.+)#(.+)", repetition=4)
+        assert {path for path, _ in checkpoints} == paths
+        assert sorted(found for _, found in checkpoints) == [
+            "False", "False", "True", "True"
+        ]
+
+
+def test_get_checkpoint_path_code_changed():
+    # The checkpoints are kept when the code of the solver changes, with a
+    # warning the first time they are reused.
+    with temp_benchmark(solvers=[CHECKPOINT_SOLVER]) as benchmark:
+        cmd = [str(benchmark.benchmark_dir), "-d", "test-dataset", "--no-plot"]
+        with CaptureCmdOutput() as out:
+            run(cmd, standalone_mode=False)
+        paths = set(out.check_output(r"CKPT#(.+)#.+", repetition=2))
+
+        solver_file, = (benchmark.benchmark_dir / "solvers").glob("*.py")
+        solver_file.write_text(solver_file.read_text() + "# changed")
+        with pytest.warns(UserWarning, match="The code of the solver"):
+            with CaptureCmdOutput() as out:
+                run(cmd, standalone_mode=False)
+        assert set(out.check_output(r"CKPT#(.+)#True", repetition=2)) == paths
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            with CaptureCmdOutput() as out:
+                run([*cmd, "-f", "test-solver"], standalone_mode=False)
+        out.check_output(r"CKPT#(.+)#True", repetition=2)
+
+
+def test_no_eval():
+    # `--no-eval` runs one run per training. The other runs then find its
+    # checkpoint.
+    with temp_benchmark(solvers=[CHECKPOINT_SOLVER]) as benchmark:
+        cmd = [
+            str(benchmark.benchmark_dir), "-d", "test-dataset",
+            "-r", "2", "--no-plot",
+        ]
+        with CaptureCmdOutput() as out:
+            run([*cmd, "--no-eval"], standalone_mode=False)
+        out.check_output(r"CKPT#.+#False", repetition=2)
+        out.check_output(r"n_eval=1", repetition=1)
+        out.check_output(r"n_eval=2", repetition=0)
+
+        with CaptureCmdOutput() as out:
+            run(cmd, standalone_mode=False)
+        out.check_output(r"CKPT#.+#True", repetition=2)
+
+
+def test_get_checkpoint_path_off():
+    with temp_benchmark(solvers=[CHECKPOINT_SOLVER]) as benchmark:
+        cmd = [str(benchmark.benchmark_dir), "-d", "test-dataset", "--no-plot"]
+
+        # The checkpoints do not depend on the cache of the results.
+        for found in ["False", "True"]:
+            with CaptureCmdOutput() as out:
+                run([*cmd, "--no-cache"], standalone_mode=False)
+            checkpoints = out.check_output(r"CKPT#.+#(.+)", repetition=2)
+            assert checkpoints == [found, "True"]
+
+        # With `off`, each run gets its own temporary directory.
+        with CaptureCmdOutput() as out:
+            run([*cmd, "--checkpoint", "off", "-f", "test-solver"],
+                standalone_mode=False)
+        checkpoints = out.check_output(r"CKPT#(.+)#False", repetition=2)
+        assert len(set(checkpoints)) == 2
+        for path in checkpoints:
+            assert benchmark.benchmark_dir not in Path(path).parents
+
+
+def test_get_checkpoint_path_raises_outside_run():
+    from benchopt.utils.temp_benchmark import TempSolver
+
+    solver = TempSolver()
+    with pytest.raises(RuntimeError, match="get_checkpoint_path"):
+        solver.get_checkpoint_path()
+
+
 @pytest.mark.parametrize('n_jobs', [1, 2])
 def test_current_run_attributes(n_jobs, no_debug_log):
     # Each method benchopt calls sees the components of its own run, also
@@ -1142,3 +1279,232 @@ def test_repetition_reloads_seeded_data(no_debug_log):
 
     seeds = set(re.findall(r"#SET_OBJECTIVE#(\d+)", out.output))
     assert len(seeds) == 3, out.output
+
+
+CALLBACK_OBJECTIVE = """from benchopt import BaseObjective
+
+    class Objective(BaseObjective):
+        name = "test-objective"
+        parameters = {"scale": [1]}
+        eval_parameters = ("scale",)
+        CHECKPOINT_SETTINGS
+        def set_data(self, X, y): pass
+        def get_one_result(self): return dict(beta=0)
+        def evaluate_result(self, beta):
+            print(f"EVAL#{beta}")
+            return dict(value=beta * self.scale)
+        def get_objective(self): return dict(X=None, y=None, lmbd=None)
+"""
+
+# The solver counts up to 8 and is evaluated at 0, 2, 4 and 8. The checkpoint
+# is given as a function, or as a value with `x=0`.
+CALLBACK_SOLVER = """import os
+    from benchopt import BaseSolver
+    from benchopt.stopping_criterion import NoCriterion
+
+    class Solver(BaseSolver):
+        name = "test-solver"
+        sampling_strategy = 'callback'
+        stopping_criterion = NoCriterion()
+
+        @staticmethod
+        def get_next(it):
+            return max(2, 2 * it)
+
+        def set_objective(self, X, y, lmbd): pass
+
+        def run(self, callback):
+            self.x = 0
+            if self.checkpoint_ is not None:
+                self.x = self.checkpoint_["x"]
+            print(f"START#{self.x}")
+            while callback(checkpoint=lambda: dict(x=self.x)) and self.x < 8:
+                if self.x == 5 and os.environ.get("BENCHOPT_TEST_FAIL"):
+                    raise ValueError("interrupted")
+                self.x += 1
+
+        def get_result(self): return dict(beta=self.x)
+"""
+
+
+def _run_callback_checkpoint(benchmark, *args, n_eval=None, starts=None):
+    """Run the benchmark and check the evaluations, starts and curve."""
+    with CaptureCmdOutput(delete_result_files=False) as out:
+        run([
+            str(benchmark.benchmark_dir), "-d", "test-dataset", "--no-plot",
+            *args
+        ], standalone_mode=False)
+    if n_eval is not None:
+        out.check_output(r"EVAL#", repetition=n_eval)
+    if starts is not None:
+        assert out.check_output(r"START#(\d+)") == starts
+    df = read_results(out.result_files[-1])
+    return out, df
+
+
+@pytest.mark.parametrize("mode", ["resume", "rescore"])
+def test_callback_checkpoint_resume(mode, monkeypatch):
+    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_SETTINGS", "")
+    with temp_benchmark(
+            objective=objective, solvers=[CALLBACK_SOLVER]
+    ) as benchmark:
+        # The run fails after the points 0, 2 and 4.
+        monkeypatch.setenv("BENCHOPT_TEST_FAIL", "1")
+        with pytest.raises(ValueError, match="interrupted"):
+            _run_callback_checkpoint(benchmark)
+        monkeypatch.delenv("BENCHOPT_TEST_FAIL")
+
+        # The next run restarts from 4. The last point is always evaluated
+        # again, and the others are only with `rescore`.
+        n_scored = 3 if mode == "rescore" else 1
+        out, df = _run_callback_checkpoint(
+            benchmark, "--checkpoint", mode, n_eval=n_scored + 1,
+            starts=["0", "2", "4", "4"][-n_scored - 1:],
+        )
+        out.check_output(
+            f"restored at iteration 4, with {n_scored} of 3 points"
+        )
+        assert df['stop_val'].tolist() == [0, 2, 4, 8]
+        assert df['objective_value'].tolist() == [0, 2, 4, 8]
+        assert df['time'].is_monotonic_increasing
+
+
+def test_callback_checkpoint_eval_parameters():
+    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_SETTINGS", "")
+    with temp_benchmark(
+            objective=objective, solvers=[CALLBACK_SOLVER]
+    ) as benchmark:
+        _, df = _run_callback_checkpoint(benchmark, n_eval=4, starts=["0"])
+
+        # Changing an eval parameter evaluates the checkpoints of the first
+        # run, without training: each start is followed by an evaluation.
+        _, df_scale = _run_callback_checkpoint(
+            benchmark, "-o", "test-objective[scale=2]", n_eval=4,
+            starts=["0", "2", "4", "8", "8"],
+        )
+        assert df_scale['stop_val'].tolist() == [0, 2, 4, 8]
+        assert df_scale['objective_value'].tolist() == [0, 4, 8, 16]
+        assert df_scale['time'].tolist() == df['time'].tolist()
+
+        # Its curve is then stored: only the last point is evaluated again.
+        _run_callback_checkpoint(
+            benchmark, "-o", "test-objective[scale=2]", "-f", "test-solver",
+            n_eval=1, starts=["8", "8"],
+        )
+
+
+def test_callback_checkpoint_objective_changed():
+    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_SETTINGS", "")
+    with temp_benchmark(
+            objective=objective, solvers=[CALLBACK_SOLVER]
+    ) as benchmark:
+        _run_callback_checkpoint(benchmark, n_eval=4, starts=["0"])
+
+        # With a new objective, the stored evaluations are kept with a
+        # warning, unless they are computed again with `rescore`.
+        objective_file = benchmark.benchmark_dir / "objective.py"
+        objective_file.write_text(objective_file.read_text() + "# changed")
+        with pytest.warns(UserWarning, match="The objective changed"):
+            _run_callback_checkpoint(benchmark, n_eval=1, starts=["8", "8"])
+
+        objective_file.write_text(objective_file.read_text() + "# again")
+        _run_callback_checkpoint(
+            benchmark, "--checkpoint", "rescore", n_eval=4,
+            starts=["0", "2", "4", "8", "8"],
+        )
+
+
+def test_callback_checkpoint_keep():
+    objective = CALLBACK_OBJECTIVE.replace(
+        "CHECKPOINT_SETTINGS", "checkpoint_keep = 2"
+    )
+    with temp_benchmark(
+            objective=objective, solvers=[CALLBACK_SOLVER]
+    ) as benchmark:
+        _run_callback_checkpoint(benchmark, n_eval=4, starts=["0"])
+        checkpoints = benchmark.get_cache_location() / "checkpoints"
+        points = sorted(f.name for f in checkpoints.glob("*/callback/point*"))
+        assert points == ["point_4.pkl", "point_8.pkl"]
+        # The last checkpoint is a link to the last point.
+        folder, = checkpoints.glob("*/callback")
+        assert (folder / "last.pkl").samefile(folder / "point_8.pkl")
+
+        # The stored curve gives the points without a checkpoint.
+        out, df = _run_callback_checkpoint(
+            benchmark, "-f", "test-solver", n_eval=1, starts=["8", "8"],
+        )
+        assert df['stop_val'].tolist() == [0, 2, 4, 8]
+
+        # They cannot be evaluated again, and are dropped.
+        out, df = _run_callback_checkpoint(
+            benchmark, "-f", "test-solver", "--checkpoint", "rescore",
+            n_eval=2, starts=["4", "8", "8"],
+        )
+        out.check_output("with 2 of 4 points")
+        assert df['stop_val'].tolist() == [4, 8]
+
+
+def test_callback_checkpoint_last(monkeypatch):
+    # Between two evaluations, the last checkpoint is stored to restart.
+    objective = CALLBACK_OBJECTIVE.replace(
+        "CHECKPOINT_SETTINGS", "checkpoint_interval = 0"
+    )
+    with temp_benchmark(
+            objective=objective, solvers=[CALLBACK_SOLVER]
+    ) as benchmark:
+        monkeypatch.setenv("BENCHOPT_TEST_FAIL", "1")
+        with pytest.raises(ValueError, match="interrupted"):
+            _run_callback_checkpoint(benchmark)
+        monkeypatch.delenv("BENCHOPT_TEST_FAIL")
+
+        out, df = _run_callback_checkpoint(
+            benchmark, n_eval=2, starts=["4", "5"]
+        )
+        out.check_output("restored at iteration 5, with 1 of 3 points")
+        assert df['stop_val'].tolist() == [0, 2, 4, 8]
+        assert df['objective_value'].tolist() == [0, 2, 4, 8]
+
+
+def test_callback_checkpoint_off():
+    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_SETTINGS", "")
+    with temp_benchmark(
+            objective=objective, solvers=[CALLBACK_SOLVER]
+    ) as benchmark:
+        for _ in range(2):
+            _run_callback_checkpoint(
+                benchmark, "-f", "test-solver", "--checkpoint", "off",
+                n_eval=4, starts=["0"],
+            )
+        assert not (benchmark.get_cache_location() / "checkpoints").exists()
+
+
+@pytest.mark.parametrize("ignore_checkpoint", [False, True])
+def test_benchmark_test_solver_checkpoint(ignore_checkpoint, tmp_path):
+    # `benchopt test` checks that a solver restarts from its checkpoints, and
+    # fails for a solver that ignores them.
+    from benchopt.tests.test_benchmarks import test_solver_checkpoint
+
+    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_SETTINGS", "")
+    solver = CALLBACK_SOLVER
+    if ignore_checkpoint:
+        solver = solver.replace("self.checkpoint_ is not None", "False")
+    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+        solver_class = benchmark.get_solvers()[0]
+        args = (benchmark, solver_class, "test-dataset", None, tmp_path)
+        if not ignore_checkpoint:
+            test_solver_checkpoint(*args)
+            return
+        with pytest.raises(AssertionError, match="Scores differ"):
+            test_solver_checkpoint(*args)
+
+
+def test_benchmark_test_eval_parameters():
+    # `benchopt test` checks that `eval_parameters` are parameters.
+    from benchopt.tests.test_benchmarks import test_eval_parameters
+
+    objective = CALLBACK_OBJECTIVE.replace("CHECKPOINT_SETTINGS", "").replace(
+        'eval_parameters = ("scale",)', 'eval_parameters = ("scal",)'
+    )
+    with temp_benchmark(objective=objective) as benchmark:
+        with pytest.raises(AssertionError, match="scal"):
+            test_eval_parameters(benchmark)

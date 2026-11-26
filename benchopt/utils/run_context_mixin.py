@@ -40,6 +40,9 @@ class RunContextMixin:
     solver_ = _CurrentRun("Solver of the current run.")
     repetition_ = _CurrentRun("Repetition index of the current run.")
     run_id_ = _CurrentRun("Identifier of the current run.")
+    checkpoint_ = _CurrentRun(
+        "Checkpoint to restart the solver from, None for a fresh start."
+    )
     parallel_config_ = _CurrentRun("Parallel config of the benchmark run.")
     run_parallel_config_ = _CurrentRun("Workers' parallel config, or None.")
 
@@ -166,7 +169,7 @@ class RunContextMixin:
         """Return ``name`` of the current run, e.g. ``self.dataset_``."""
         names = (
             'dataset', 'objective', 'solver', 'repetition', 'run_id',
-            'parallel_config', 'run_parallel_config',
+            'checkpoint', 'parallel_config', 'run_parallel_config',
             # Internal, without attribute.
             '_stopping_criterion', '_sampling_strategy',
         )
@@ -196,3 +199,30 @@ class RunContextMixin:
                 "get_run_output_path() can only be called during run()."
             )
         return self._run_context.get_run_output_path()
+
+    def get_checkpoint_path(self):
+        """Return a directory for the checkpoints of the current run.
+
+        Unlike ``get_run_output_path``, it is the same from one call of
+        ``benchopt run`` to the next, so an interrupted training can be
+        resumed and a finished one reused. It depends on what defines the
+        training: the seed, the repetition and the parameters of the
+        components that are not listed in their ``eval_parameters``. It does
+        not depend on their code: a warning is raised when the code of the
+        dataset or of the solver changed since the directory was created. It
+        is created on first call.
+
+        With ``--checkpoint off``, it is a temporary directory that lasts for
+        the run.
+
+        Returns
+        -------
+        checkpoint_path : pathlib.Path
+            A directory under the cache folder of the benchmark.
+        """
+        if self._run_context is None:
+            raise RuntimeError(
+                "get_checkpoint_path() can only be called in the methods "
+                "that benchopt calls during a run."
+            )
+        return self._run_context.get_checkpoint_path()

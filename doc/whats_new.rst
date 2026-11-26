@@ -92,6 +92,24 @@ API
   components and its repetition. See :ref:`current_run`.
   By `Thomas Moreau`_ (:gh:`1049`)
 
+- Add ``get_checkpoint_path`` method to all benchmark components. It returns
+  a directory that is kept from one run to the next, to resume an interrupted
+  training or to evaluate a trained model again. Parameters listed in the new
+  ``eval_parameters`` attribute and the code do not change this directory.
+  ``benchopt run --checkpoint refresh`` empties it and ``--checkpoint off``
+  replaces it with a temporary one. ``--no-eval`` only runs one of the runs
+  that share a directory, to train once before a parallel run. See
+  :ref:`checkpoints`. By `Thomas Moreau`_ (:gh:`1051`)
+
+- A solver with a callback can give its checkpoint with
+  ``callback(checkpoint=...)`` and restart from ``self.checkpoint_``. benchopt
+  stores the checkpoints with the state of the callback, to resume an
+  interrupted run or to evaluate the points of its curve again with
+  ``benchopt run --checkpoint rescore``. ``checkpoint_keep`` sets how many
+  are kept and ``checkpoint_interval`` how often they are stored. See
+  :ref:`callback_checkpoints`.
+  By `Thomas Moreau`_ (:gh:`1051`)
+
 - :func:`~benchopt.helpers.requires_gpu.gpu_available` tells in
   ``Solver.skip`` if the runs of a solver will have a GPU, using the SLURM
   config of its jobs with the ``submitit`` backend.

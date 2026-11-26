@@ -137,3 +137,144 @@ Like ``get_seed``, this method is available on ``Dataset``, ``Objective``, and
 ``Solver``, and must be called during execution (not at import time or class
 definition). It raises ``RuntimeError`` when called outside of a
 ``benchopt run`` invocation (e.g. during ``benchopt test``).
+
+.. _checkpoints:
+
+Checkpointing a training
+------------------------
+
+The directory given by ``get_run_output_path`` changes at each call to
+``benchopt run``. To find the state of a training again in a later run, use
+``get_checkpoint_path``. It returns a directory that only depends on what
+defines the training, so an interrupted training can be resumed, and a
+finished one can be evaluated again without training.
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        name = "my-solver"
+        sampling_strategy = "run_once"
+
+        def run(self, _):
+            checkpoint = self.get_checkpoint_path() / "checkpoint.pt"
+            # ``fit`` loads ``checkpoint`` if it exists, starts from the
+            # epoch it stores, and saves it as the training goes.
+            self.model = fit(self.X, self.y, checkpoint=checkpoint)
+
+The directory is named with a hash of the seed, the repetition and the
+parameters of the three components. These are written in the
+``benchopt_params.json`` file of the directory, to find which run it belongs
+to. It
+lives in the cache folder of the benchmark, under ``checkpoints/``, also with
+``--no-cache``. With ``benchopt run --checkpoint off``, it is a temporary
+directory that lasts for the run, so the code above needs no guard and no
+checkpoint is reused nor kept.
+
+Some parameters change how a model is evaluated but not how it is trained,
+like the number of samples drawn to score it. List them in the
+``eval_parameters`` of the ``Dataset``, ``Objective`` or ``Solver`` that
+defines them. They are left out of the name of the directory, so the runs that
+only differ by them share one training.
+
+.. code-block:: python
+
+    class Objective(BaseObjective):
+        name = "my-objective"
+        parameters = {"reg": [0.1, 1], "n_eval": [100, 1000]}
+        eval_parameters = ("n_eval",)
+
+The code of the components is also left out. A new metric can thus be
+computed from the existing checkpoints, and fixing a solver does not lose
+them. A warning is raised the first time a checkpoint is reused after the file
+of its dataset or of its solver changed.
+
+The cache of the results is checked first: a run whose result is cached does
+not read its checkpoints. Force it with ``-f`` or ``--no-cache``.
+
+In a parallel run, the runs that share a training start together, and each
+one trains as it finds no checkpoint. To train once, first run with
+``--no-eval``, which only keeps one run per training, then run again without
+it:
+
+.. code-block:: bash
+
+    benchopt run . --no-eval   # one run per training
+    benchopt run .             # the other runs, from the checkpoints
+
+.. warning::
+
+    benchopt cannot check these choices. A checkpoint is reused when a
+    parameter listed in ``eval_parameters`` does change the training, or when
+    the training code changes. Use ``benchopt run --checkpoint refresh`` to
+    remove the checkpoints of the selected runs and train them again.
+
+The solver writes its files itself. Write to a temporary name, then rename it
+with ``os.replace``, so that a job killed while saving does not leave a
+corrupt checkpoint.
+
+.. _callback_checkpoints:
+
+Checkpoints with a callback
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+With ``sampling_strategy = "callback"``, one training gives a whole curve.
+Here benchopt stores the checkpoints itself, with the state of the callback,
+so that a restarted run gives the same curve as an uninterrupted one. The
+solver gives its checkpoint to the callback, and reads the one to restart
+from in ``self.checkpoint_``, which is ``None`` for a fresh start.
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        name = "my-solver"
+        sampling_strategy = "callback"
+
+        def run(self, callback):
+            model, optimizer = build(self.X)
+            if self.checkpoint_ is not None:
+                model.load_state_dict(self.checkpoint_["model"])
+                optimizer.load_state_dict(self.checkpoint_["optimizer"])
+
+            def checkpoint():
+                return dict(model=model.state_dict(),
+                            optimizer=optimizer.state_dict())
+
+            while callback(checkpoint=checkpoint):
+                train_one_step(model, optimizer)
+
+The checkpoint is any object that can be pickled, or a function without
+argument that returns it. The function is only called when benchopt stores the
+checkpoint: each time the solver is evaluated, and every 10 minutes in between
+(see ``checkpoint_interval`` below).
+It must hold all that the solver needs to continue: the model, the optimizer,
+the schedule and the state of the random generators.
+
+When a run starts and checkpoints exist for its training:
+
+- the points of the curve already evaluated for this run are reused. The
+  other ones are evaluated from their checkpoint, e.g. for a run that only
+  differs by a parameter listed in ``eval_parameters``. For this, ``run`` is
+  called with ``checkpoint_`` set and stopped at its first call to the
+  callback. The last point is always evaluated this way.
+- the solver then restarts from its last checkpoint, with the iteration and
+  the time of the callback restored.
+
+The callback must be called before the first step of the solver, as in the
+``while callback(...)`` loop above. Otherwise, a point evaluated from its
+checkpoint is one step late.
+
+The stored evaluations are reused even if the code of the objective changed
+since, with a warning. Use ``benchopt run --checkpoint rescore`` to evaluate
+all the checkpoints again, e.g. to add a metric to finished runs without
+training.
+
+Two class attributes tune what is stored. They are set on the ``Solver``, or
+on the ``Objective`` for all the solvers:
+
+- ``checkpoint_keep = k`` only keeps the checkpoints of the ``k`` last points
+  of the curve. By default, they are all kept. The points whose checkpoint
+  was removed cannot be evaluated again: they are missing from the curve of a
+  run that needs to.
+- ``checkpoint_interval`` is the time in seconds between two checkpoints
+  stored between the evaluations, 600 by default. A killed run loses at most
+  this training time.

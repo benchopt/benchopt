@@ -159,11 +159,13 @@ def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
             # If sampling_strategy is 'callback', only call once to get the
             # results up to convergence.
             callback = _Callback(
-                objective, solver, meta, stopping_criterion
+                objective, solver, meta, stopping_criterion, run_context
             )
             solver.pre_run_hook(callback)
-            callback.start()
-            solver.run(callback)
+            if callback.restore():
+                callback.start()
+                solver.run(callback)
+            run_context.checkpoint = None
             curve, ctx.status, last_result = callback.get_results()
         else:
 
@@ -215,7 +217,8 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
                    n_repetitions=1, timeout=100,
                    plot_result=True, display=True, html=True, collect=False,
                    output_file="None", parallel_config=None,
-                   show_progress=True, pdb=False):
+                   show_progress=True, pdb=False, checkpoint='resume',
+                   no_eval=False):
     """Run full benchmark.
 
     Parameters
@@ -261,6 +264,17 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         If pdb is set to True, open a debugger on error.
+    checkpoint : 'resume' | 'rescore' | 'refresh' | 'off'
+        With 'resume' (default), the runs reuse the checkpoints given to the
+        callback or stored in ``get_checkpoint_path()``. With 'rescore', the
+        ones given to the callback are also evaluated again. With 'refresh',
+        they are removed and the runs are forced. With 'off',
+        ``get_checkpoint_path()`` gives a temporary directory, so no
+        checkpoint is reused nor kept.
+    no_eval : bool
+        If set to True, only run the first of the runs that share their
+        checkpoints, i.e. that only differ by their ``eval_parameters``. The
+        other ones can then be run from its checkpoints.
     output_file : str
         Name or path for the result output. A bare name is stored at
         <BENCHMARK>/outputs/<name>.parquet. A value containing a path separator
@@ -299,6 +313,8 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     base_run_context = RunContext(
         pdb=pdb,
         run_output_base=output_path.parent / output_path.stem,
+        checkpoint_base=benchmark.get_cache_location() / 'checkpoints',
+        checkpoint_mode=checkpoint,
         # Copied, as `parallel_run` pops the run keys from `parallel_config`.
         parallel_config=dict(parallel_config or {}),
         base_seed=benchmark.seed,
@@ -336,7 +352,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         datasets=datasets, objectives=objectives,
         n_repetitions=n_repetitions, max_runs=max_runs, timeout=timeout,
         collect=collect, terminal=terminal, run_context=base_run_context,
-        group_by=group_by,
+        group_by=group_by, no_eval=no_eval,
     )
 
     run_statistics = []
@@ -385,7 +401,8 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
                   n_jobs=None, parallel_config=None,
                   plot_result=True, display=True, html=True,  collect=False,
                   show_progress=True, pdb=False, no_cache=False,
-                  output_file="None"):
+                  output_file="None", checkpoint='resume',
+                  no_eval=False):
     """Run full benchmark.
 
     Parameters
@@ -440,6 +457,17 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
     output_file : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.
+    checkpoint : 'resume' | 'rescore' | 'refresh' | 'off'
+        With 'resume' (default), the runs reuse the checkpoints given to the
+        callback or stored in ``get_checkpoint_path()``. With 'rescore', the
+        ones given to the callback are also evaluated again. With 'refresh',
+        they are removed and the runs are forced. With 'off',
+        ``get_checkpoint_path()`` gives a temporary directory, so no
+        checkpoint is reused nor kept.
+    no_eval : bool
+        If set to True, only run the first of the runs that share their
+        checkpoints, i.e. that only differ by their ``eval_parameters``. The
+        other ones can then be run from its checkpoints.
 
     Returns
     -------
@@ -479,7 +507,9 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         show_progress=show_progress,
         parallel_config=parallel_config,
         pdb=pdb,
-        output_file=output_file
+        output_file=output_file,
+        checkpoint=checkpoint,
+        no_eval=no_eval,
     )
     if exit_code != 0:
         raise RuntimeError("Benchmark failed, check the terminal output.")

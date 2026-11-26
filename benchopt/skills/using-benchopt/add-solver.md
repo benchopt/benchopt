@@ -95,6 +95,74 @@ it in `set_objective`) so `--n-repetitions N` gives N genuinely different but
 reproducible runs; a bare `self.get_seed()` returns the same seed every
 repetition. Add `use_dataset=True` / `use_solver=True` to further differentiate seeds.
 
+### Checkpointing a long training
+
+Store the state of a training in `self.get_checkpoint_path()`: this directory
+is the same from one `benchopt run` to the next, so `run` can load a checkpoint
+if it exists and resume or skip the training. Do not rebuild such a path from
+`get_run_output_path()`, which changes at each run. It needs no guard: with
+`--checkpoint off`, it is a temporary directory.
+
+```python
+def run(self, _):
+    checkpoint = self.get_checkpoint_path() / "checkpoint.pt"
+    self.model = fit(self.X, self.y, checkpoint=checkpoint)  # load or train
+```
+
+The directory depends on the seed, the repetition and the parameters of the
+three components. List the parameters that only change the evaluation in
+`eval_parameters = ("n_eval", ...)`, on the `Dataset`, `Objective` or `Solver`
+defining them: runs that differ only by them share one training. The code is
+not in the key, so a new metric is computed from the existing checkpoints and
+a fixed solver keeps them. benchopt only warns when the dataset or solver file
+changed since they were stored: after a change of training code, run with
+`--checkpoint refresh` to remove the checkpoints and train again. A cached
+result answers before any checkpoint is read (`-f` or `--no-cache` to force).
+Write files atomically (temporary name, then `os.replace`).
+
+In a parallel run, runs sharing a training start together and each one trains.
+Run `benchopt run --no-eval` first (one run per training), then the full
+`benchopt run`, which evaluates the other runs from the checkpoints.
+
+With `sampling_strategy = "callback"`, do not write the files yourself: give
+the checkpoint to the callback and restart from `self.checkpoint_` (`None` on
+a fresh start). benchopt stores it with the callback state (iteration, time),
+at each evaluation and every 10 minutes, so a restarted run gives the same
+curve.
+
+```python
+def run(self, callback):
+    model, optimizer = build(self.X)
+    if self.checkpoint_ is not None:
+        model.load_state_dict(self.checkpoint_["model"])
+        optimizer.load_state_dict(self.checkpoint_["optimizer"])
+
+    def checkpoint():  # only called when benchopt stores it
+        return dict(model=model.state_dict(),
+                    optimizer=optimizer.state_dict())
+
+    while callback(checkpoint=checkpoint):
+        train_one_step(model, optimizer)
+```
+
+- Put everything needed to continue in the checkpoint (optimizer, schedule,
+  step counter, RNG state), and keep it picklable.
+- Call the callback **before** the first step (`while callback(...)`): points
+  are re-evaluated by calling `run` with `checkpoint_` set and stopping it at
+  its first callback call.
+- `benchopt test` checks it (`test_solver_checkpoint`): it scores the
+  solver at each callback call, then checks that rescoring the stored points
+  gives the same scores and that a run resumed from its second point gives
+  the same curve. A solver that cannot be exact can skip it in
+  `test_config.py` with `check_test_solver_checkpoint`.
+- `--checkpoint rescore` evaluates all the stored points again without
+  training, e.g. after adding a metric. Without it, stored evaluations are
+  reused, with a warning if the objective code changed.
+- `checkpoint_keep = k` (solver, or objective for all solvers) keeps only the
+  `k` last points. Default keeps all, which `rescore` needs for a full curve.
+- `checkpoint_interval = seconds` (same places, default 600) sets how often
+  the checkpoint is stored between two evaluations.
+
 ### Optional methods
 
 - `skip(self) -> str | None`: declare incompatibility with

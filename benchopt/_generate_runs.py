@@ -1,3 +1,4 @@
+import shutil
 import inspect
 import itertools
 
@@ -179,12 +180,16 @@ def generate_run_kwargs(
     benchmark, solvers=None, forced_solvers=None, datasets=None,
     objectives=None, n_repetitions=1, max_runs=10, timeout=None,
     collect=False, terminal=None, run_context=None, group_by=None,
+    no_eval=False,
 ):
     """Yield kwargs for each ``run_one_to_cvg`` call in the benchmark.
 
     The ``group_by`` axes are the outermost loops, so runs sharing them are
     contiguous. ``repetition`` is the innermost axis unless it is in
     ``group_by``.
+
+    With ``no_eval``, only the first of the runs that share their checkpoints
+    is kept, i.e. one run per training.
     """
     group_by = group_by or []
     order = group_by + [a for a in GROUPABLE_AXES if a not in group_by]
@@ -193,6 +198,11 @@ def generate_run_kwargs(
     axis_items = _materialize_axes(order, datasets, objectives, solvers)
     terminal.set_levels(order if rep_is_level else order[:-1])
     base_ctx = run_context or RunContext(base_seed=benchmark.seed)
+    # With 'refresh', remove the checkpoints and force the runs. They are
+    # removed here and not in the run, which can be requeued. Runs can share
+    # their checkpoints, which are then removed once.
+    refresh = base_ctx.checkpoint_mode == 'refresh' and not collect
+    refreshed = set()
 
     # Each `skip` is checked once, at the first level where all the
     # components it receives are chosen.
@@ -241,11 +251,18 @@ def generate_run_kwargs(
         )
         with run_ctx:
             meta = _run_meta(benchmark, dataset, objective, solver, rep)
+        if refresh:
+            checkpoint_path = run_ctx.get_checkpoint_path()
+            if checkpoint_path not in refreshed:
+                shutil.rmtree(checkpoint_path)
+                refreshed.add(checkpoint_path)
         return dict(
             benchmark=benchmark, dataset=dataset, objective=objective,
             solver=solver, repetition=rep, meta=meta, timeout=timeout,
             max_runs=max_runs, terminal=terminal, run_context=run_ctx,
-            force=is_matched(str(solver), forced_solvers, default=False),
+            force=refresh or is_matched(
+                str(solver), forced_solvers, default=False
+            ),
         )
 
     def _rec(depth, chosen):
@@ -278,4 +295,12 @@ def generate_run_kwargs(
             else:
                 yield from _rec(depth + 1, chosen)
 
-    yield from _rec(0, {})
+    no_eval = no_eval and base_ctx.checkpoint_mode != 'off'
+    trainings = set()
+    for run_kwargs in _rec(0, {}):
+        if no_eval:
+            checkpoint_path = run_kwargs['run_context'].checkpoint_path
+            if checkpoint_path in trainings:
+                continue
+            trainings.add(checkpoint_path)
+        yield run_kwargs

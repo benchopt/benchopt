@@ -88,6 +88,9 @@ All three component classes share the following features:
   (models, plots, logs, …) scoped to the current
   (dataset x objective x solver x repetition) combination.
   See :ref:`controlling_randomness`.
+- ``get_checkpoint_path()``: get a directory to store the state of a
+  training, found again in the next runs to resume or reuse it.
+  See :ref:`checkpoints`.
 - ``dataset_``, ``objective_``, ``solver_``: the dataset, objective or
   solver of the current run, e.g. in ``skip``. See :ref:`current_run`.
 
