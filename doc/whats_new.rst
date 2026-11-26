@@ -69,6 +69,12 @@ FIX
 API
 ~~~
 
+- ``requirements`` and ``parameters`` are merged with those of the base
+  classes: a component installs the ``requirements`` of its bases and runs
+  their ``parameters``, updated by its own. Set ``"__inherit__": False`` in
+  ``parameters`` to drop the inherited ones. See :ref:`parametrized`.
+  By `Thomas Moreau`_ (:gh:`1054`)
+
 - Component classes are represented as ``Solver<name>``, e.g. in error
   messages, instead of the default class representation.
   By `Thomas Moreau`_ (:gh:`1032`)

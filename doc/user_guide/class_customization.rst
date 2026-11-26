@@ -57,6 +57,22 @@ the same arity:
 This keeps ``n_samples`` and ``n_features`` paired together, while still
 forming the cartesian product with ``reg``.
 
+A class inherits the ``parameters`` of its base classes, for instance a base
+class shared by several solvers in ``benchmark_utils``. Its own ``parameters``
+update the inherited ones, so it only lists the new or changed ones. To drop
+the inherited parameters, set ``"__inherit__": False`` in its ``parameters``.
+The classes deriving from it inherit its parameters as usual:
+
+.. code-block:: python
+
+   class Solver(StochasticSolver):
+       # Also runs the parameters of `StochasticSolver`, e.g. `batch_size`.
+       parameters = {"step_size": [0.1, 1.0]}
+
+   class TabularSolver(BaseFMSolver):
+       # Does not run the parameters of `BaseFMSolver`.
+       parameters = {"__inherit__": False, "n_estimators": [8]}
+
 Parameters can be overridden directly from the command line when selecting an
 objective, dataset, or solver:
 
@@ -183,6 +199,11 @@ repository, give pip a direct reference after the package name:
 .. code-block:: python
 
   requirements = ['pip::pkg @ git+https://github.com/org/pkg@branch']
+
+A class also installs the ``requirements`` of its base classes, so a base
+class in ``benchmark_utils`` can declare the dependencies shared by the
+components deriving from it. A list of requirements is added to both lists
+of a ``{'cpu': [...], 'gpu': [...]}`` requirement dict.
 
 
 .. _specify_python_version:

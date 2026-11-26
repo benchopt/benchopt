@@ -252,22 +252,23 @@ def test_ast_replacement_unreadable_base():
 
 def test_get_class_attrs_mro():
     # Attributes follow the MRO, which is Solver, B, B, C, A, Mixin here. The
-    # local `B` shadows the imported one, which is its base.
+    # local `B` shadows the imported one, which is its base. Requirements are
+    # merged from the last class of the MRO.
     utils = {"base": """
         class Mixin:
             install_cmd = 'Mixin'
             unknown = 'Mixin'
 
         class A(Mixin):
-            requirements = 'A'
+            requirements = ['A']
             parameters = 'A'
             test_config = 'A'
 
         class B(A):
-            requirements = 'B'
+            requirements = ['B']
 
         class C(A, Mixin):
-            requirements = 'C'
+            requirements = ['C']
             parameters = 'C'
             install_cmd = 'C'
     """}
@@ -292,8 +293,111 @@ def test_get_class_attrs_mro():
     assert isinstance(attrs.pop("run"), ast.FunctionDef)
     assert isinstance(attrs.pop("parameters"), AttributeError)
     assert attrs == {
-        'install_cmd': 'C', 'requirements': 'B', 'test_config': 'A'
+        'install_cmd': 'C', 'requirements': ['A', 'C', 'B'],
+        'test_config': 'A'
     }
+
+
+MERGE_BASE = """
+    from benchopt.utils.temp_benchmark import TempSolver
+
+    class Mixin:
+        requirements = ['mixin']
+
+    class MyBase(TempSolver):
+        requirements = ['base']
+        parameters = {'lr': [0.1], 'seed': [0]}
+
+    class Mid(MyBase):
+        parameters = {'lr': [0.5]}
+"""
+
+
+@pytest.mark.parametrize("bases, body, requirements, parameters", [
+    ("MyBase", "parameters = {'lr': [1]}", ['base'], {'lr': [1], 'seed': [0]}),
+    ("MyBase", "parameters = {'n': [1], **MyBase.parameters}", ['base'],
+     {'lr': [0.1], 'seed': [0], 'n': [1]}),
+    ("MyBase", "parameters = {'__inherit__': False, 'n': [1]}", ['base'],
+     {'n': [1]}),
+    ("MyBase", "parameters = {'lr': [1], **MyBase.parameters}", ['base'],
+     {'lr': [0.1], 'seed': [0]}),
+    ("Mid", "parameters = {'__inherit__': False, **MyBase.parameters}",
+     ['base'], {'lr': [0.1], 'seed': [0]}),
+    ("MyBase", "parameters = {'lr, n': [(1, 2)]}", ['base'],
+     {'seed': [0], 'lr, n': [(1, 2)]}),
+    ("Mixin, MyBase", "requirements = ['base', 'child']",
+     ['base', 'mixin', 'child'], {'lr': [0.1], 'seed': [0]}),
+    ("MyBase", "requirements = {'cpu': ['c'], 'gpu': ['g']}",
+     {'cpu': ['base', 'c'], 'gpu': ['base', 'g']}, {'lr': [0.1], 'seed': [0]}),
+])
+def test_merge_requirements_and_parameters(
+        bases, body, requirements, parameters
+):
+    # The merged attributes are the same with or without importing the class.
+    solver = f"""
+    from benchmark_utils.base import Mixin, MyBase, Mid
+
+    class Solver({bases}):
+        name = 'my-solver'
+        {body}
+    """
+    with temp_benchmark(
+        solvers=solver, benchmark_utils={"base": MERGE_BASE}
+    ) as bench:
+        Solver, _ = bench.check_solver_patterns(["my-solver"])[0]
+        attrs = get_class_attrs(
+            bench.benchmark_dir / "solvers" / "solver_0.py", BaseSolver,
+            bench.benchmark_dir
+        )
+    assert Solver.requirements == attrs['requirements'] == requirements
+    assert Solver.parameters == attrs['parameters'] == parameters
+
+
+def test_merge_requirements_non_literal_base():
+    # A child keeps its own requirements when those of a base cannot be read.
+    utils = {"base": """
+        from benchopt.utils.temp_benchmark import TempSolver
+
+        REQS = ['base']
+
+        class MyBase(TempSolver):
+            requirements = REQS
+    """}
+    solver = """
+    from benchmark_utils.base import MyBase
+
+    class Solver(MyBase):
+        requirements = ['child']
+    """
+    with temp_benchmark(solvers=solver, benchmark_utils=utils) as bench:
+        attrs = get_class_attrs(
+            bench.benchmark_dir / "solvers" / "solver_0.py", BaseSolver,
+            bench.benchmark_dir
+        )
+    assert attrs['requirements'] == ['child']
+
+
+def test_merge_parameters_inherit_only_cuts_its_class():
+    # `__inherit__` only applies to the class setting it, not its children.
+    solver = """
+    from benchmark_utils.base import MyBase
+
+    class Mid(MyBase):
+        parameters = {'__inherit__': False, 'n': [1]}
+
+    class Solver(Mid):
+        name = 'my-solver'
+        parameters = {'m': [2]}
+    """
+    with temp_benchmark(
+        solvers=solver, benchmark_utils={"base": MERGE_BASE}
+    ) as bench:
+        Solver, _ = bench.check_solver_patterns(["my-solver"])[0]
+        attrs = get_class_attrs(
+            bench.benchmark_dir / "solvers" / "solver_0.py", BaseSolver,
+            bench.benchmark_dir
+        )
+    assert Solver.parameters == attrs['parameters'] == {'n': [1], 'm': [2]}
 
 
 @pytest.mark.parametrize("params", [

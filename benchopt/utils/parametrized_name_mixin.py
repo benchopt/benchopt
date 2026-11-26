@@ -7,8 +7,77 @@ from abc import ABCMeta, abstractmethod
 import click
 
 
+def _union_requirements(base, reqs):
+    """Union of two `requirements`, lists or dicts of lists per device."""
+    if reqs is None:
+        return base
+    if not isinstance(base, (list, tuple, dict)) or \
+            not isinstance(reqs, (list, tuple, dict)):
+        # E.g. an error to raise when accessing `requirements`.
+        return reqs
+    if isinstance(base, dict) or isinstance(reqs, dict):
+        # A list applies to all devices.
+        keys = [k for r in (base, reqs) if isinstance(r, dict) for k in r]
+        return {
+            k: _union_requirements(
+                base.get(k, []) if isinstance(base, dict) else base,
+                reqs.get(k, []) if isinstance(reqs, dict) else reqs,
+            ) for k in dict.fromkeys(keys)
+        }
+    return list(dict.fromkeys([*base, *reqs]))
+
+
+def merge_declared_attrs(declared):
+    """Merge `requirements` and `parameters` declared along the MRO.
+
+    ``declared`` lists the attributes set by each class, from the last class
+    of the MRO to the first. ``requirements`` are united, and ``parameters``
+    are updated by each class, unless it sets ``"__inherit__": False``.
+    """
+    merged = {}
+    for attrs in declared:
+        if 'requirements' in attrs:
+            merged['requirements'] = _union_requirements(
+                merged.get('requirements'), attrs['requirements']
+            )
+        if 'parameters' in attrs:
+            params, base = attrs['parameters'], merged.get('parameters', {})
+            if isinstance(params, dict):
+                params = dict(params)
+                if params.pop('__inherit__', True) and isinstance(base, dict):
+                    # A key, maybe grouped as 'a, b', replaces the base keys
+                    # with the same parameter names.
+                    names = {n.strip() for k in params for n in k.split(',')}
+                    base = {
+                        k: v for k, v in base.items()
+                        if names.isdisjoint(n.strip() for n in k.split(','))
+                    }
+                    params = {**base, **params}
+            merged['parameters'] = params
+    return merged
+
+
 class ComponentMeta(ABCMeta):
-    """Metaclass of the components, to represent them as `Solver<name>`."""
+    """Metaclass of the components, to represent them as `Solver<name>`.
+
+    It also merges the `requirements` and `parameters` of the classes in the
+    MRO, see `merge_declared_attrs`.
+    """
+    def __new__(mcs, name, bases, namespace, **kwargs):
+        namespace['_declared_attrs'] = {
+            k: namespace[k] for k in ['requirements', 'parameters']
+            if k in namespace
+        }
+        cls = super().__new__(mcs, name, bases, namespace, **kwargs)
+        # Classes without this metaclass, e.g. mixins, declare in `vars`.
+        merged = merge_declared_attrs(
+            vars(k).get('_declared_attrs', vars(k))
+            for k in reversed(cls.__mro__)
+        )
+        for k, v in merged.items():
+            setattr(cls, k, v)
+        return cls
+
     def __repr__(cls):
         name, base_name = cls.name, getattr(cls, '_base_class_name', None)
         # Default repr for `ParametrizedNameMixin` and the 3 base classes,

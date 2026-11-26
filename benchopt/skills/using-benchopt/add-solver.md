@@ -29,8 +29,11 @@ benchopt decides a solver is installed by **importing the module and catching
   run time. This applies to imported `benchmark_utils` helpers too.
 - Set `requirements` to exactly what the solver needs (`["pip::pkg"]` for pip,
   `["chan::pkg"]` for a conda channel) as a **literal list of strings** —
-  benchopt reads it statically via `ast`, so a computed value
-  (`OtherSolver.requirements + [...]`) is not parsable.
+  benchopt reads it statically via `ast`, so a computed value is not parsable.
+- `requirements` and `parameters` are merged with those of the base classes, so
+  a shared base in `benchmark_utils` declares the common ones and each solver
+  lists only its own. `"__inherit__": False` in `parameters` drops the inherited
+  parameters.
 - Avoid `safe_import_context` except for class-body attributes that reference an
   imported name at definition time.
 
