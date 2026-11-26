@@ -1084,8 +1084,11 @@ def test_keep_state_until_solver_changes(n_jobs, n_solvers, group_by, n_loads,
             sampling_strategy = 'run_once'
             parameters = dict(q=list(range({n_solvers})))
             keep_state = ("model",)
+            def __init__(self, q):
+                self.q = q
+                self.model = None
             def set_objective(self, X, y, lmbd):
-                if not hasattr(self, "model"):
+                if self.model is None:
                     gc.collect()
                     alive = sum(r() is not None for r in REFS)
                     print(f"#LOAD#ALIVE#{{alive}}")
