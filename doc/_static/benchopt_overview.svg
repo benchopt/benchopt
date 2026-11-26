@@ -21,21 +21,80 @@
 .pline { stroke: #8a8f98; stroke-width: 1.6; stroke-dasharray: 7 6; }
 .pt { font: 600 11.5px 'IBM Plex Sans', sans-serif; letter-spacing: 1.5px; fill: #8a8f98; }
 #private { opacity: .55; transition: opacity .2s; }
-svg:has(#goal0:hover) #private { opacity: 0; }
-svg:has(#goal1:hover) #private { opacity: 1; }
-svg:has(#goal1:hover) .pline { stroke: #0b7a3e; }
-svg:has(#goal1:hover) .pt { fill: #0b7a3e; }
+svg:has(#goal0:hover) #private, svg[data-focus="0"] #private { opacity: 0; }
+svg:has(#goal1:hover) #private, svg[data-focus="1"] #private { opacity: 1; }
+svg:has(#goal1:hover) .pline, svg[data-focus="1"] .pline { stroke: #0b7a3e; }
+svg:has(#goal1:hover) .pt, svg[data-focus="1"] .pt { fill: #0b7a3e; }
 .tb { font: 600 12px 'IBM Plex Sans', sans-serif; letter-spacing: 1.5px; fill: #6b7078; }
 .tl { font: 400 13px 'IBM Plex Sans', sans-serif; fill: #3b4150; }
 .dim, .goal { transition: opacity .2s; }
 .goal { cursor: pointer; }
-svg:has(#goal0:hover) .dim:not(.rel0), svg:has(#goal1:hover) .dim:not(.rel1), svg:has(#goal2:hover) .dim:not(.rel2) { opacity: .15; }
+svg:has(#goal0:hover) .dim:not(.rel0), svg:has(#goal1:hover) .dim:not(.rel1), svg:has(#goal2:hover) .dim:not(.rel2),
+svg[data-focus="0"] .dim:not(.rel0), svg[data-focus="1"] .dim:not(.rel1), svg[data-focus="2"] .dim:not(.rel2) { opacity: .15; }
+.otl { font: 400 12.5px 'IBM Plex Sans', sans-serif; fill: #6b7078; }
+svg[data-theme="dark"] .bg { fill: transparent; }
+svg[data-theme="dark"] .ln { stroke: #e6e8ec; }
+svg[data-theme="dark"] .pline { stroke: #7d848f; }
+svg[data-theme="dark"] [fill="#ffffff"] { fill: #232833; } svg[data-theme="dark"] [stroke="#ffffff"] { stroke: #232833; }
+svg[data-theme="dark"] [fill="#fff"] { fill: #232833; } svg[data-theme="dark"] [stroke="#fff"] { stroke: #232833; }
+svg[data-theme="dark"] [fill="#fafaf8"] { fill: #1b1f27; } svg[data-theme="dark"] [stroke="#fafaf8"] { stroke: #1b1f27; }
+svg[data-theme="dark"] [fill="#1f2328"] { fill: #e6e8ec; } svg[data-theme="dark"] [stroke="#1f2328"] { stroke: #e6e8ec; }
+svg[data-theme="dark"] [fill="#3b4150"] { fill: #c3c8d0; } svg[data-theme="dark"] [stroke="#3b4150"] { stroke: #c3c8d0; }
+svg[data-theme="dark"] [fill="#6b7078"] { fill: #9aa1ab; } svg[data-theme="dark"] [stroke="#6b7078"] { stroke: #9aa1ab; }
+svg[data-theme="dark"] [fill="#5b616b"] { fill: #a7adb6; } svg[data-theme="dark"] [stroke="#5b616b"] { stroke: #a7adb6; }
+svg[data-theme="dark"] [fill="#8a8f98"] { fill: #7d848f; } svg[data-theme="dark"] [stroke="#8a8f98"] { stroke: #7d848f; }
+svg[data-theme="dark"] [fill="#a3a7ae"] { fill: #6f7680; } svg[data-theme="dark"] [stroke="#a3a7ae"] { stroke: #6f7680; }
+svg[data-theme="dark"] [fill="#dcdcd6"] { fill: #353a45; } svg[data-theme="dark"] [stroke="#dcdcd6"] { stroke: #353a45; }
+svg[data-theme="dark"] [fill="#fff3ea"] { fill: #33241a; } svg[data-theme="dark"] [stroke="#fff3ea"] { stroke: #33241a; }
+svg[data-theme="dark"] [fill="#eaf5ee"] { fill: #18291f; } svg[data-theme="dark"] [stroke="#eaf5ee"] { stroke: #18291f; }
+svg[data-theme="dark"] [fill="#ecf1fa"] { fill: #1b2436; } svg[data-theme="dark"] [stroke="#ecf1fa"] { stroke: #1b2436; }
+svg[data-theme="dark"] [fill="#e8601a"] { fill: #f07d3e; } svg[data-theme="dark"] [stroke="#e8601a"] { stroke: #f07d3e; }
+svg[data-theme="dark"] [fill="#0b7a3e"] { fill: #3db36f; } svg[data-theme="dark"] [stroke="#0b7a3e"] { stroke: #3db36f; }
+svg[data-theme="dark"] [fill="#2a5caa"] { fill: #5b8fe6; } svg[data-theme="dark"] [stroke="#2a5caa"] { stroke: #5b8fe6; }
+svg[data-theme="dark"] [fill="#0f2a5a"] { fill: #2d56a0; } svg[data-theme="dark"] [stroke="#0f2a5a"] { stroke: #2d56a0; }
+svg[data-theme="dark"] [fill="#0b6b37"] { fill: #2e9a5c; } svg[data-theme="dark"] [stroke="#0b6b37"] { stroke: #2e9a5c; }
+svg[data-theme="dark"] .gt, svg[data-theme="dark"] .mt, svg[data-theme="dark"] .ml, svg[data-theme="dark"] .ot { fill: #e6e8ec; }
+svg[data-theme="dark"] .gl, svg[data-theme="dark"] .mm2, svg[data-theme="dark"] .tl, svg[data-theme="dark"] .mm { fill: #c3c8d0; }
+svg[data-theme="dark"] .cap { fill: #a7adb6; }
+svg[data-theme="dark"] .ll, svg[data-theme="dark"] .plus, svg[data-theme="dark"] .strip, svg[data-theme="dark"] .pluss, svg[data-theme="dark"] .cap2, svg[data-theme="dark"] .cap3, svg[data-theme="dark"] .tb, svg[data-theme="dark"] .otl { fill: #9aa1ab; }
+svg[data-theme="dark"] .pt { fill: #7d848f; }
+@media (prefers-color-scheme: dark) {
+svg:not([data-theme="light"]) .bg { fill: transparent; }
+svg:not([data-theme="light"]) .ln { stroke: #e6e8ec; }
+svg:not([data-theme="light"]) .pline { stroke: #7d848f; }
+svg:not([data-theme="light"]) [fill="#ffffff"] { fill: #232833; } svg:not([data-theme="light"]) [stroke="#ffffff"] { stroke: #232833; }
+svg:not([data-theme="light"]) [fill="#fff"] { fill: #232833; } svg:not([data-theme="light"]) [stroke="#fff"] { stroke: #232833; }
+svg:not([data-theme="light"]) [fill="#fafaf8"] { fill: #1b1f27; } svg:not([data-theme="light"]) [stroke="#fafaf8"] { stroke: #1b1f27; }
+svg:not([data-theme="light"]) [fill="#1f2328"] { fill: #e6e8ec; } svg:not([data-theme="light"]) [stroke="#1f2328"] { stroke: #e6e8ec; }
+svg:not([data-theme="light"]) [fill="#3b4150"] { fill: #c3c8d0; } svg:not([data-theme="light"]) [stroke="#3b4150"] { stroke: #c3c8d0; }
+svg:not([data-theme="light"]) [fill="#6b7078"] { fill: #9aa1ab; } svg:not([data-theme="light"]) [stroke="#6b7078"] { stroke: #9aa1ab; }
+svg:not([data-theme="light"]) [fill="#5b616b"] { fill: #a7adb6; } svg:not([data-theme="light"]) [stroke="#5b616b"] { stroke: #a7adb6; }
+svg:not([data-theme="light"]) [fill="#8a8f98"] { fill: #7d848f; } svg:not([data-theme="light"]) [stroke="#8a8f98"] { stroke: #7d848f; }
+svg:not([data-theme="light"]) [fill="#a3a7ae"] { fill: #6f7680; } svg:not([data-theme="light"]) [stroke="#a3a7ae"] { stroke: #6f7680; }
+svg:not([data-theme="light"]) [fill="#dcdcd6"] { fill: #353a45; } svg:not([data-theme="light"]) [stroke="#dcdcd6"] { stroke: #353a45; }
+svg:not([data-theme="light"]) [fill="#fff3ea"] { fill: #33241a; } svg:not([data-theme="light"]) [stroke="#fff3ea"] { stroke: #33241a; }
+svg:not([data-theme="light"]) [fill="#eaf5ee"] { fill: #18291f; } svg:not([data-theme="light"]) [stroke="#eaf5ee"] { stroke: #18291f; }
+svg:not([data-theme="light"]) [fill="#ecf1fa"] { fill: #1b2436; } svg:not([data-theme="light"]) [stroke="#ecf1fa"] { stroke: #1b2436; }
+svg:not([data-theme="light"]) [fill="#e8601a"] { fill: #f07d3e; } svg:not([data-theme="light"]) [stroke="#e8601a"] { stroke: #f07d3e; }
+svg:not([data-theme="light"]) [fill="#0b7a3e"] { fill: #3db36f; } svg:not([data-theme="light"]) [stroke="#0b7a3e"] { stroke: #3db36f; }
+svg:not([data-theme="light"]) [fill="#2a5caa"] { fill: #5b8fe6; } svg:not([data-theme="light"]) [stroke="#2a5caa"] { stroke: #5b8fe6; }
+svg:not([data-theme="light"]) [fill="#0f2a5a"] { fill: #2d56a0; } svg:not([data-theme="light"]) [stroke="#0f2a5a"] { stroke: #2d56a0; }
+svg:not([data-theme="light"]) [fill="#0b6b37"] { fill: #2e9a5c; } svg:not([data-theme="light"]) [stroke="#0b6b37"] { stroke: #2e9a5c; }
+svg:not([data-theme="light"]) .gt, svg:not([data-theme="light"]) .mt, svg:not([data-theme="light"]) .ml, svg:not([data-theme="light"]) .ot { fill: #e6e8ec; }
+svg:not([data-theme="light"]) .gl, svg:not([data-theme="light"]) .mm2, svg:not([data-theme="light"]) .tl, svg:not([data-theme="light"]) .mm { fill: #c3c8d0; }
+svg:not([data-theme="light"]) .cap { fill: #a7adb6; }
+svg:not([data-theme="light"]) .ll, svg:not([data-theme="light"]) .plus, svg:not([data-theme="light"]) .strip, svg:not([data-theme="light"]) .pluss, svg:not([data-theme="light"]) .cap2, svg:not([data-theme="light"]) .cap3, svg:not([data-theme="light"]) .tb, svg:not([data-theme="light"]) .otl { fill: #9aa1ab; }
+svg:not([data-theme="light"]) .pt { fill: #7d848f; }
+}
+svg:has(#goal1:hover) .pline, svg[data-focus="1"] .pline { stroke: #0b7a3e; }
+svg[data-theme="dark"]:has(#goal1:hover) .pline, svg[data-theme="dark"][data-focus="1"] .pline { stroke: #3db36f; }
+svg[data-theme="dark"]:has(#goal1:hover) .pt, svg[data-theme="dark"][data-focus="1"] .pt { fill: #3db36f; }
 </style>
 <marker id="mg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a3a7ae"/></marker>
 <marker id="mk" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f2328"/></marker>
 <marker id="m0" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="13" markerHeight="13" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#e8601a"/></marker><marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="13" markerHeight="13" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0b7a3e"/></marker><marker id="m2" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="13" markerHeight="13" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2a5caa"/></marker>
 </defs>
-<rect width="1200" height="600" fill="#ffffff"/>
+<rect class="bg" width="1200" height="600" fill="#ffffff"/>
 <g id="goal0" class="dim rel0 goal">
 <rect x="24" y="50" width="268" height="140" rx="18" fill="#fff3ea" stroke="#e8601a" stroke-width="3"/>
 <text x="46" y="116" class="gt" text-anchor="start">Research</text>
@@ -193,41 +252,49 @@ svg:has(#goal0:hover) .dim:not(.rel0), svg:has(#goal1:hover) .dim:not(.rel1), sv
 <line x1="826" y1="502" x2="832" y2="502" stroke="#1f2328" stroke-width="1.8" stroke-linecap="round"/>
 <text x="826" y="532" class="tl" text-anchor="middle">agent skills</text>
 <g class="dim rel0">
-<rect x="972" y="80" width="206" height="64" rx="14" fill="#ffffff" stroke="#3b4150" stroke-width="2"/>
-<path d="M992,97.0 h17 l7,7 v23 h-24 z" fill="#fff" stroke="#1f2328" stroke-width="1.8" stroke-linejoin="round"/>
-<rect x="997.0" y="114.0" width="4" height="6" fill="#7b4fb3"/>
-<rect x="1002.5" y="109.0" width="4" height="11" fill="#7b4fb3"/>
-<rect x="1008.0" y="112.0" width="4" height="8" fill="#7b4fb3"/>
-<text x="1030" y="118.0" class="ot" text-anchor="start">Paper figures</text>
-<path d="M890,225.0 C935,225.0 917,112.0 952,112.0 L968,112.0" fill="none" stroke="#e8601a" stroke-width="2.6" marker-end="url(#m0)" class="dim rel0"/>
+<rect x="972" y="54" width="206" height="84" rx="14" fill="#ffffff" stroke="#3b4150" stroke-width="2"/>
+<path d="M992,81.0 h17 l7,7 v23 h-24 z" fill="#fff" stroke="#1f2328" stroke-width="1.8" stroke-linejoin="round"/>
+<rect x="997.0" y="98.0" width="4" height="6" fill="#7b4fb3"/>
+<rect x="1002.5" y="93.0" width="4" height="11" fill="#7b4fb3"/>
+<rect x="1008.0" y="96.0" width="4" height="8" fill="#7b4fb3"/>
+<text x="1030" y="84" class="ot" text-anchor="start">Paper results</text>
+<text x="1030" y="105" class="otl" text-anchor="start">figures, interactive</text>
+<text x="1030" y="121" class="otl" text-anchor="start">report, parquet files</text>
+<path d="M890,225.0 C935,225.0 917,96.0 952,96.0 L968,96.0" fill="none" stroke="#e8601a" stroke-width="2.6" marker-end="url(#m0)" class="dim rel0"/>
 </g>
 <g class="dim rel0 rel1 rel2">
-<rect x="972" y="205" width="206" height="64" rx="14" fill="#ffffff" stroke="#3b4150" stroke-width="2"/>
-<circle cx="997" cy="226.0" r="3.6" fill="none" stroke="#1f2328" stroke-width="1.8"/>
-<circle cx="1011" cy="226.0" r="3.6" fill="none" stroke="#1f2328" stroke-width="1.8"/>
-<circle cx="1004" cy="249.0" r="3.6" fill="none" stroke="#1f2328" stroke-width="1.8"/>
-<path d="M997,230.0 v4 q0,5 7,5 q7,0 7,-5 v-4 M1004,239.0 v6" fill="none" stroke="#1f2328" stroke-width="1.8"/>
-<text x="1030" y="243.0" class="ot" text-anchor="start">Reusable results</text>
-<path d="M890,268.0 C935,268.0 917,227.2 952,227.2 L968,227.2" fill="none" stroke="#e8601a" stroke-width="2.6" marker-end="url(#m0)" class="dim rel0"/>
-<path d="M890,275.0 C935,275.0 917,237.0 952,237.0 L968,237.0" fill="none" stroke="#0b7a3e" stroke-width="2.6" marker-end="url(#m1)" class="dim rel1"/>
-<path d="M890,282.0 C935,282.0 917,246.8 952,246.8 L968,246.8" fill="none" stroke="#2a5caa" stroke-width="2.6" marker-end="url(#m2)" class="dim rel2"/>
+<rect x="972" y="180" width="206" height="84" rx="14" fill="#ffffff" stroke="#3b4150" stroke-width="2"/>
+<circle cx="997" cy="211.0" r="3.6" fill="none" stroke="#1f2328" stroke-width="1.8"/>
+<circle cx="1011" cy="211.0" r="3.6" fill="none" stroke="#1f2328" stroke-width="1.8"/>
+<circle cx="1004" cy="234.0" r="3.6" fill="none" stroke="#1f2328" stroke-width="1.8"/>
+<path d="M997,215.0 v4 q0,5 7,5 q7,0 7,-5 v-4 M1004,224.0 v6" fill="none" stroke="#1f2328" stroke-width="1.8"/>
+<text x="1030" y="210" class="ot" text-anchor="start">Reusable results</text>
+<text x="1030" y="231" class="otl" text-anchor="start">build the next method,</text>
+<text x="1030" y="247" class="otl" text-anchor="start">add data, vary params</text>
+<path d="M890,268.0 C935,268.0 917,212.2 952,212.2 L968,212.2" fill="none" stroke="#e8601a" stroke-width="2.6" marker-end="url(#m0)" class="dim rel0"/>
+<path d="M890,275.0 C935,275.0 917,222.0 952,222.0 L968,222.0" fill="none" stroke="#0b7a3e" stroke-width="2.6" marker-end="url(#m1)" class="dim rel1"/>
+<path d="M890,282.0 C935,282.0 917,231.8 952,231.8 L968,231.8" fill="none" stroke="#2a5caa" stroke-width="2.6" marker-end="url(#m2)" class="dim rel2"/>
 </g>
 <g class="dim rel1 rel2">
-<rect x="972" y="330" width="206" height="64" rx="14" fill="#ffffff" stroke="#3b4150" stroke-width="2"/>
-<rect x="990.5" y="361.0" width="9" height="13" fill="#fff" stroke="#1f2328" stroke-width="1.6"/>
-<rect x="999.5" y="354.0" width="9" height="20" fill="#fff" stroke="#1f2328" stroke-width="1.6"/>
-<rect x="1008.5" y="365.0" width="9" height="9" fill="#fff" stroke="#1f2328" stroke-width="1.6"/>
-<path d="M1000,348.0 l4,-4 l4,4" fill="none" stroke="#e8a317" stroke-width="2"/>
-<text x="1030" y="368.0" class="ot" text-anchor="start">Leaderboard</text>
-<path d="M890,321.5 C935,321.5 917,357.1 952,357.1 L968,357.1" fill="none" stroke="#0b7a3e" stroke-width="2.6" marker-end="url(#m1)" class="dim rel1"/>
-<path d="M890,328.5 C935,328.5 917,366.9 952,366.9 L968,366.9" fill="none" stroke="#2a5caa" stroke-width="2.6" marker-end="url(#m2)" class="dim rel2"/>
+<rect x="972" y="306" width="206" height="84" rx="14" fill="#ffffff" stroke="#3b4150" stroke-width="2"/>
+<rect x="990.5" y="347.0" width="9" height="13" fill="#fff" stroke="#1f2328" stroke-width="1.6"/>
+<rect x="999.5" y="340.0" width="9" height="20" fill="#fff" stroke="#1f2328" stroke-width="1.6"/>
+<rect x="1008.5" y="351.0" width="9" height="9" fill="#fff" stroke="#1f2328" stroke-width="1.6"/>
+<path d="M1000,334.0 l4,-4 l4,4" fill="none" stroke="#e8a317" stroke-width="2"/>
+<text x="1030" y="336" class="ot" text-anchor="start">Leaderboard</text>
+<text x="1030" y="357" class="otl" text-anchor="start">rank submissions on</text>
+<text x="1030" y="373" class="otl" text-anchor="start">one shared score</text>
+<path d="M890,321.5 C935,321.5 917,343.1 952,343.1 L968,343.1" fill="none" stroke="#0b7a3e" stroke-width="2.6" marker-end="url(#m1)" class="dim rel1"/>
+<path d="M890,328.5 C935,328.5 917,352.9 952,352.9 L968,352.9" fill="none" stroke="#2a5caa" stroke-width="2.6" marker-end="url(#m2)" class="dim rel2"/>
 </g>
 <g class="dim rel2">
-<rect x="972" y="455" width="206" height="64" rx="14" fill="#ffffff" stroke="#3b4150" stroke-width="2"/>
-<rect x="989" y="475.0" width="30" height="24" rx="3" fill="#fff" stroke="#1f2328" stroke-width="1.8"/>
-<line x1="989" y1="481.0" x2="1019" y2="481.0" stroke="#1f2328" stroke-width="1.5"/>
-<path d="M993,495.0 C999,484.0 1004,491.0 1015,484.0" fill="none" stroke="#0e9aa7" stroke-width="1.8"/>
-<text x="1030" y="493.0" class="ot" text-anchor="start">Live results site</text>
-<path d="M890,375.0 C935,375.0 917,487.0 952,487.0 L968,487.0" fill="none" stroke="#2a5caa" stroke-width="2.6" marker-end="url(#m2)" class="dim rel2"/>
+<rect x="972" y="432" width="206" height="84" rx="14" fill="#ffffff" stroke="#3b4150" stroke-width="2"/>
+<rect x="989" y="462.0" width="30" height="24" rx="3" fill="#fff" stroke="#1f2328" stroke-width="1.8"/>
+<line x1="989" y1="468.0" x2="1019" y2="468.0" stroke="#1f2328" stroke-width="1.5"/>
+<path d="M993,482.0 C999,471.0 1004,478.0 1015,471.0" fill="none" stroke="#0e9aa7" stroke-width="1.8"/>
+<text x="1030" y="462" class="ot" text-anchor="start">Live results site</text>
+<text x="1030" y="483" class="otl" text-anchor="start">track new trends</text>
+<text x="1030" y="499" class="otl" text-anchor="start">as the field moves</text>
+<path d="M890,375.0 C935,375.0 917,474.0 952,474.0 L968,474.0" fill="none" stroke="#2a5caa" stroke-width="2.6" marker-end="url(#m2)" class="dim rel2"/>
 </g>
 </svg>

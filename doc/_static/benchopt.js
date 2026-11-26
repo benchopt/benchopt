@@ -39,3 +39,32 @@ window.addEventListener("load", function() {
     bodySummary.classList.add("folded-summary");
   }
 });
+
+// Sync the landing page overview figure with the page theme and the goal tabs
+function initOverviewFigure() {
+  const obj = document.querySelector("object.benchopt-overview");
+  const svg = obj?.contentDocument?.documentElement;
+  if (!svg || svg.dataset.synced) return;
+  svg.dataset.synced = "1";
+
+  const html = document.documentElement;
+  const setTheme = () => svg.setAttribute("data-theme", html.dataset.theme || "light");
+  setTheme();
+  new MutationObserver(setTheme).observe(html, {attributes: true, attributeFilter: ["data-theme"]});
+
+  // Hovering the tabs highlights the selected goal, hovering a goal selects its tab
+  const tabs = document.querySelector(".goal-tabs");
+  if (!tabs) return;
+  const inputs = [...tabs.querySelectorAll(":scope > input")];
+  const focus = () => svg.setAttribute("data-focus", inputs.findIndex(x => x.checked));
+  tabs.addEventListener("mouseenter", focus);
+  tabs.addEventListener("change", focus);
+  tabs.addEventListener("mouseleave", () => svg.removeAttribute("data-focus"));
+  inputs.forEach((input, i) => {
+    svg.getElementById("goal" + i)?.addEventListener("mouseenter", () => { input.checked = true; });
+  });
+}
+window.addEventListener("load", function() {
+  initOverviewFigure();
+  document.querySelector("object.benchopt-overview")?.addEventListener("load", initOverviewFigure);
+});

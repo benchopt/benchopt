@@ -26,56 +26,53 @@ One benchmark, three goals
 --------------------------
 
 The same benchmark serves very different goals. Hover a goal in the figure
-above to see what it uses and what it produces.
+above, or pick a tab below, to see what it uses and what it produces.
 
-.. grid:: 1 1 3 3
-    :gutter: 2
+.. tab-set::
+    :class: goal-tabs
 
-    .. grid-item-card::
+    .. tab-item:: :octicon:`person` Research
+        :sync: research
 
-        :octicon:`person` **Research**
-        ^^^
         Create a new method or answer a research question. Compare it to
         baselines without rewriting the evaluation, and get the figures for
         your paper.
 
-        *Example:* the `simulated benchmark
+        **Example:** the `simulated benchmark
         <https://github.com/soda-inria/crossing-the-validation-crisis/tree/main/simulated>`_
         behind the NeurIPS 2026 paper *Crossing the Validation Crisis*.
-        +++
-        Start from a template:
+
+        **Start from a template:**
         `ML <https://github.com/benchopt/template_benchmark_ml>`_ |
         `optimization <https://github.com/benchopt/template_benchmark>`_
 
-    .. grid-item-card::
+    .. tab-item:: :octicon:`people` Competition
+        :sync: competition
 
-        :octicon:`people` **Competition**
-        ^^^
         Evaluate the methods submitted by participants, with the same scoring
         for all. The test data and some methods can stay private, and the
         results feed a leaderboard.
 
-        *Example:* the `neural-interfaces 2026 competition
+        **Example:** the `neural-interfaces 2026 competition
         <https://github.com/neural-interfaces26/2026-competition>`_, run on
         Codabench.
-        +++
-        Start from the `Codabench template
-        <https://github.com/benchopt/template_codabench>`_
 
-    .. grid-item-card::
+        **Start from the** `Codabench template
+        <https://github.com/benchopt/template_codabench>`_.
 
-        :octicon:`organization` **Reference benchmark**
-        ^^^
+    .. tab-item:: :octicon:`organization` Reference benchmark
+        :sync: reference
+
         Give a consolidated view of a field, across many test cases. The
         community adds datasets, metrics and methods, and the results are
         published on a live site.
 
-        *Examples:* `L2-regularized logistic regression
+        **Examples:** `L2-regularized logistic regression
         <https://github.com/benchopt/benchmark_logreg_l2>`_,
         `unsupervised domain adaptation
         <https://github.com/scikit-adaptation/skada-bench>`_.
-        +++
-        See :ref:`publish_benchmark`
+
+        **Publish your results:** see :ref:`publish_benchmark`.
 
 
 A toolbox for benchmark campaigns
