@@ -40,6 +40,11 @@ benchopt run . --group-by dataset,objective    # hold these constant per batch
   come first: `--group-by solver` keeps the solver instance but reloads each
   dataset per solver. Don't rely on `self` attributes surviving across
   components; `warm_up` runs once per solver and process.
+- **`keep_state` for data-independent state:** list in a solver's
+  `keep_state = ("model",)` what does not depend on the data (model weights).
+  It survives a new dataset/objective for the same solver instance, and is
+  freed once the runs move to another solver. With the default order the
+  solver changes between runs, so pair it with `--group-by solver`.
 - `repetition` shares a cross-validation fold across solvers (e.g.
   `dataset,objective,repetition`; `dataset`/`objective` must precede it). The
   fold data must be solver-independent — if `set_data` calls

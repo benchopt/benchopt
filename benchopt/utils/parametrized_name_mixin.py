@@ -75,18 +75,23 @@ class ParametrizedNameMixin(metaclass=ComponentMeta):
 
         return obj
 
-    # Attributes kept by `_release_state`, e.g. to warm up only once.
+    # Internal attributes kept by every release, e.g. to warm up only once.
     _keep_state = ()
+    # Attributes that do not depend on the data (e.g. model weights), kept
+    # while the same instance runs with another dataset or objective.
+    keep_state = ()
 
-    def _release_state(self):
+    def _release_state(self, soft=False):
         """Reset the instance to its state after `get_instance`.
 
         This drops what the runs stored on it (data, fitted state), so it can
-        be garbage collected. Attributes listed in `_keep_state` are kept.
+        be garbage collected. Attributes listed in `_keep_state` are kept, and
+        also those in `keep_state` for a `soft` release, when the instance is
+        still used with another upstream component.
         """
         init_state = self._init_state
-        kept = {k: self.__dict__[k] for k in self._keep_state
-                if k in self.__dict__}
+        names = (*self._keep_state, *(self.keep_state if soft else ()))
+        kept = {k: self.__dict__[k] for k in names if k in self.__dict__}
         self.__dict__.clear()
         self.__dict__.update(**init_state, _init_state=init_state, **kept)
 

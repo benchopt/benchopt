@@ -231,13 +231,18 @@ def use_components(*components):
 
     Called when a run starts in this process, or when the front node sends it
     to another process. The state of a component depends on the ones before
-    it: the objective data on the dataset, the solver state on both. Called
-    without components, it releases them all.
+    it: the objective data on the dataset, the solver state on both. When the
+    same solver runs on a new dataset, it is reset but keeps the attributes
+    listed in its `keep_state`. Called without components, it releases them
+    all.
     """
     global _IN_USE
     for i, previous in enumerate(_IN_USE):
-        if previous is not None and (i >= len(components) or any(
-            a is not b for a, b in zip(_IN_USE[:i + 1], components)
-        )):
+        current = components[i] if i < len(components) else None
+        if previous is None:
+            continue
+        if previous is not current:
             previous._release_state()
+        elif any(a is not b for a, b in zip(_IN_USE[:i], components)):
+            previous._release_state(soft=True)
     _IN_USE = list(components)

@@ -263,6 +263,24 @@ same solver instance, but reloads each dataset for every solver.
 Attributes stored on an instance during a run do not survive a release. The
 warmup described above is kept, so it runs once per solver and process.
 
+A solver can list in ``keep_state`` the attributes that do not depend on the
+data, such as model weights. They are kept when the same solver instance runs
+with another dataset or objective, and released with the rest once the runs
+move to another solver:
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        keep_state = ("model",)
+
+        def set_objective(self, X, y):
+            if not hasattr(self, "model"):
+                self.model = load_weights()
+
+With the default order, each dataset runs all the solvers in turn, so the
+solver changes between runs and the weights are loaded again. Use
+``--group-by solver`` to load them once per solver.
+
 
 .. |update_params| replace:: ``update_parameters``
 .. _update_params: https://github.com/facebookincubator/submitit/blob/main/submitit/slurm/slurm.py#L386
