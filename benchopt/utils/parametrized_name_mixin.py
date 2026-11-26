@@ -75,7 +75,7 @@ class ParametrizedNameMixin(metaclass=ComponentMeta):
 
         return obj
 
-    # Attributes kept by `_release_state`, e.g. to warm up only once.
+    # Internal attributes kept by every release, e.g. to warm up only once.
     _keep_state = ()
     # Attributes that do not depend on the data (e.g. model weights), kept
     # while the same instance runs with another dataset or objective.

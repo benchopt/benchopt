@@ -231,9 +231,10 @@ def use_components(*components):
 
     Called when a run starts in this process, or when the front node sends it
     to another process. The state of a component depends on the ones before
-    it: the objective data on the dataset, the solver state on both. A
-    component still used after one before it changed keeps its `keep_state`
-    attributes. Called without components, it releases them all.
+    it: the objective data on the dataset, the solver state on both. When the
+    same solver runs on a new dataset, it is reset but keeps the attributes
+    listed in its `keep_state`. Called without components, it releases them
+    all.
     """
     global _IN_USE
     for i, previous in enumerate(_IN_USE):
