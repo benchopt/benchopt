@@ -86,6 +86,12 @@ svg:not([data-theme="light"]) .cap { fill: #a7adb6; }
 svg:not([data-theme="light"]) .ll, svg:not([data-theme="light"]) .plus, svg:not([data-theme="light"]) .strip, svg:not([data-theme="light"]) .pluss, svg:not([data-theme="light"]) .cap2, svg:not([data-theme="light"]) .cap3, svg:not([data-theme="light"]) .tb, svg:not([data-theme="light"]) .otl { fill: #9aa1ab; }
 svg:not([data-theme="light"]) .pt { fill: #7d848f; }
 }
+.hot { cursor: pointer; } .hit { fill: transparent; transition: fill .15s; }
+.hot:hover .hit { fill: #7a68c81a; }
+.hot:hover [stroke="#1f2328"], svg .hot:hover [stroke="#1f2328"] { stroke: #7a68c8; }
+svg .hot:hover [fill="#1f2328"] { fill: #7a68c8; } svg .hot:hover .ln { stroke: #7a68c8; }
+svg .hot:hover text { fill: #7a68c8; text-decoration: underline; }
+#mkh path { fill: #7a68c8; }
 svg:has(#goal1:hover) .pline, svg[data-focus="1"] .pline { stroke: #0b7a3e; }
 svg[data-theme="dark"]:has(#goal1:hover) .pline, svg[data-theme="dark"][data-focus="1"] .pline { stroke: #3db36f; }
 svg[data-theme="dark"]:has(#goal1:hover) .pt, svg[data-theme="dark"][data-focus="1"] .pt { fill: #3db36f; }
@@ -199,12 +205,21 @@ svg[data-theme="dark"]:has(#goal1:hover) .pt, svg[data-theme="dark"][data-focus=
 <circle cx="832.5" cy="295" r="3.4" fill="#cb3c33"/>
 <circle cx="837" cy="287.5" r="3.4" fill="#389826"/>
 <circle cx="841.5" cy="295" r="3.4" fill="#9558b2"/>
-<g class="link"><title>Dataset.get_data() → Objective.set_data()</title><path d="M484,192 L552,192" class="ln" marker-end="url(#mk)"/></g>
+<a href="../benchmark_workflow/write_benchmark.html#datasets" target="_top" class="hot"><title>Dataset.get_data() → Objective.set_data()</title>
+<path d="M484,192 L552,192" stroke="transparent" stroke-width="18" fill="none"/>
+<path d="M484,192 L552,192" class="ln" marker-end="url(#mk)"/>
 <text x="518" y="182" class="ll" text-anchor="middle">data</text>
-<g class="link"><title>Objective.get_objective() → Solver.set_objective()</title><path d="M696,186 L763,186" class="ln" marker-end="url(#mk)"/></g>
+</a>
+<a href="../benchmark_workflow/write_benchmark.html#objective" target="_top" class="hot"><title>Objective.get_objective() → Solver.set_objective()</title>
+<path d="M696,186 L763,186" stroke="transparent" stroke-width="18" fill="none"/>
+<path d="M696,186 L763,186" class="ln" marker-end="url(#mk)"/>
 <text x="729" y="176" class="ll" text-anchor="middle">task</text>
-<g class="link"><title>Solver.get_result() → Objective.evaluate_result()</title><path d="M763,230 L698,230" class="ln" marker-end="url(#mk)"/></g>
+</a>
+<a href="../benchmark_workflow/write_benchmark.html#solvers" target="_top" class="hot"><title>Solver.get_result() → Objective.evaluate_result()</title>
+<path d="M763,230 L698,230" stroke="transparent" stroke-width="18" fill="none"/>
+<path d="M763,230 L698,230" class="ln" marker-end="url(#mk)"/>
 <text x="729" y="252" class="ll" text-anchor="middle">result</text>
+</a>
 <g id="private">
 <line x1="384" y1="326" x2="866" y2="326" class="pline"/>
 <text x="390" y="347" class="pt" text-anchor="start">PRIVATE</text>
@@ -225,6 +240,8 @@ svg[data-theme="dark"]:has(#goal1:hover) .pt, svg[data-theme="dark"][data-focus=
 </g>
 <line x1="390" y1="430" x2="860" y2="430" stroke="#dcdcd6" stroke-width="1.5"/>
 <text x="390" y="454" class="tb" text-anchor="start">TOOLBOX</text>
+<a href="../user_guide/controlling_randomness.html" target="_top" class="hot"><title>Control randomness with seeds</title>
+<rect x="378" y="476" width="88" height="66" rx="10" class="hit"/>
 <rect x="411" y="487" width="22" height="22" rx="5" fill="none" stroke="#1f2328" stroke-width="1.8"/>
 <circle cx="417" cy="493" r="1.8" fill="#1f2328"/>
 <circle cx="427" cy="503" r="1.8" fill="#1f2328"/>
@@ -232,25 +249,41 @@ svg[data-theme="dark"]:has(#goal1:hover) .pt, svg[data-theme="dark"][data-focus=
 <circle cx="427" cy="493" r="1.8" fill="#1f2328"/>
 <circle cx="417" cy="503" r="1.8" fill="#1f2328"/>
 <text x="422" y="532" class="tl" text-anchor="middle">seeded</text>
+</a>
+<a href="../user_guide/distributed_run.html" target="_top" class="hot"><title>Run in parallel, locally or on SLURM</title>
+<rect x="462" y="476" width="88" height="66" rx="10" class="hit"/>
 <rect x="493" y="487" width="26" height="6" rx="2" fill="none" stroke="#1f2328" stroke-width="1.8"/>
 <rect x="493" y="495" width="26" height="6" rx="2" fill="none" stroke="#1f2328" stroke-width="1.8"/>
 <rect x="493" y="503" width="26" height="6" rx="2" fill="none" stroke="#1f2328" stroke-width="1.8"/>
 <text x="506" y="532" class="tl" text-anchor="middle">parallel, SLURM</text>
+</a>
+<a href="../benchmark_workflow/run_benchmark.html#run-caching" target="_top" class="hot"><title>Cache results and skip recomputation</title>
+<rect x="548" y="476" width="88" height="66" rx="10" class="hit"/>
 <path d="M602,494 A11,11 0 1 0 601,504" fill="none" stroke="#1f2328" stroke-width="1.8"/>
 <path d="M604,486 L603,495 L595,493" fill="none" stroke="#1f2328" stroke-width="1.8" stroke-linejoin="round"/>
 <text x="592" y="532" class="tl" text-anchor="middle">cached</text>
+</a>
+<a href="../benchmark_workflow/test_benchmark.html" target="_top" class="hot"><title>Test every dataset, solver and objective</title>
+<rect x="622" y="476" width="88" height="66" rx="10" class="hit"/>
 <circle cx="666" cy="498" r="11" fill="none" stroke="#1f2328" stroke-width="1.8"/>
 <path d="M661,498 L665,502 L672,494" fill="none" stroke="#1f2328" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="666" y="532" class="tl" text-anchor="middle">tested</text>
+</a>
+<a href="../user_guide/CLI_ref.html#cmdoption-benchopt-run-profile" target="_top" class="hot"><title>Profile solvers line by line</title>
+<rect x="700" y="476" width="88" height="66" rx="10" class="hit"/>
 <rect x="731.0" y="505" width="26" height="5" rx="1.2" fill="none" stroke="#1f2328" stroke-width="1.6"/>
 <rect x="731.0" y="499" width="18" height="5" rx="1.2" fill="none" stroke="#1f2328" stroke-width="1.6"/>
 <rect x="733.0" y="493" width="10" height="5" rx="1.2" fill="none" stroke="#1f2328" stroke-width="1.6"/>
 <rect x="743.0" y="487" width="6" height="5" rx="1.2" fill="none" stroke="#1f2328" stroke-width="1.6"/>
 <text x="744" y="532" class="tl" text-anchor="middle">profiled</text>
+</a>
+<a href="../user_guide/agent_skills.html" target="_top" class="hot"><title>Teach your coding agent to use benchopt</title>
+<rect x="782" y="476" width="88" height="66" rx="10" class="hit"/>
 <rect x="813" y="488" width="26" height="20" rx="4" fill="none" stroke="#1f2328" stroke-width="1.8"/>
 <path d="M819,495 L823,498 L819,501" fill="none" stroke="#1f2328" stroke-width="1.8" stroke-linecap="round"/>
 <line x1="826" y1="502" x2="832" y2="502" stroke="#1f2328" stroke-width="1.8" stroke-linecap="round"/>
 <text x="826" y="532" class="tl" text-anchor="middle">agent skills</text>
+</a>
 <g class="dim rel0">
 <rect x="972" y="54" width="206" height="84" rx="14" fill="#ffffff" stroke="#3b4150" stroke-width="2"/>
 <path d="M992,81.0 h17 l7,7 v23 h-24 z" fill="#fff" stroke="#1f2328" stroke-width="1.8" stroke-linejoin="round"/>

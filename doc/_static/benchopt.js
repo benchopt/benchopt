@@ -52,16 +52,26 @@ function initOverviewFigure() {
   setTheme();
   new MutationObserver(setTheme).observe(html, {attributes: true, attributeFilter: ["data-theme"]});
 
-  // Hovering the tabs highlights the selected goal, hovering a goal selects its tab
+  // The figure highlights the selected goal tab once the reader interacts,
+  // except while the pointer is over the figure, where the hover takes over.
   const tabs = document.querySelector(".goal-tabs");
   if (!tabs) return;
   const inputs = [...tabs.querySelectorAll(":scope > input")];
-  const focus = () => svg.setAttribute("data-focus", inputs.findIndex(x => x.checked));
-  tabs.addEventListener("mouseenter", focus);
-  tabs.addEventListener("change", focus);
-  tabs.addEventListener("mouseleave", () => svg.removeAttribute("data-focus"));
+  let active = false, over = false;
+  const apply = () => (active && !over)
+    ? svg.setAttribute("data-focus", inputs.findIndex(x => x.checked))
+    : svg.removeAttribute("data-focus");
+  tabs.addEventListener("change", () => { active = true; apply(); });
+  svg.addEventListener("mouseenter", () => { over = true; apply(); });
+  svg.addEventListener("mouseleave", () => { over = false; apply(); });
   inputs.forEach((input, i) => {
-    svg.getElementById("goal" + i)?.addEventListener("mouseenter", () => { input.checked = true; });
+    const goal = svg.getElementById("goal" + i);
+    goal?.addEventListener("mouseenter", () => { input.checked = true; active = true; });
+    // Touch screens have no hover: a tap selects the goal
+    goal?.addEventListener("pointerup", (e) => {
+      if (e.pointerType !== "touch") return;
+      input.checked = true; active = true; over = false; apply();
+    });
   });
 }
 window.addEventListener("load", function() {
