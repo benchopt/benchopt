@@ -63,13 +63,12 @@ function initOverviewFigure() {
     : svg.removeAttribute("data-focus");
   tabs.addEventListener("change", () => { active = true; apply(); });
   // Clicking the selected tab again, or the figure background, shows everything
-  const reset = () => { active = false; apply(); };
   tabs.querySelectorAll(":scope > label").forEach((label) => {
     let wasChecked = false;
     label.addEventListener("pointerdown", () => { wasChecked = label.control.checked; });
     label.addEventListener("click", () => { if (wasChecked) { active = !active; apply(); } });
   });
-  svg.addEventListener("click", (e) => { if (!e.target.closest(".goal, a")) reset(); });
+  svg.addEventListener("click", (e) => { if (!e.target.closest(".goal, a")) { active = false; apply(); } });
   svg.addEventListener("mouseenter", () => { over = true; apply(); });
   svg.addEventListener("mouseleave", () => { over = false; apply(); });
   inputs.forEach((input, i) => {
