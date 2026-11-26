@@ -21,16 +21,16 @@
 .pline { stroke: #8a8f98; stroke-width: 1.6; stroke-dasharray: 7 6; }
 .pt { font: 600 11.5px 'IBM Plex Sans', sans-serif; letter-spacing: 1.5px; fill: #8a8f98; }
 #private { opacity: .55; transition: opacity .2s; }
-svg:has(#goal0:hover) #private, svg[data-focus="0"] #private { opacity: 0; }
-svg:has(#goal1:hover) #private, svg[data-focus="1"] #private { opacity: 1; }
-svg:has(#goal1:hover) .pline, svg[data-focus="1"] .pline { stroke: #0b7a3e; }
-svg:has(#goal1:hover) .pt, svg[data-focus="1"] .pt { fill: #0b7a3e; }
+svg:has(#goal0:hover) #private, svg[data-focus="0"]:not(:hover) #private { opacity: 0; }
+svg:has(#goal1:hover) #private, svg[data-focus="1"]:not(:hover) #private { opacity: 1; }
+svg:has(#goal1:hover) .pline, svg[data-focus="1"]:not(:hover) .pline { stroke: #0b7a3e; }
+svg:has(#goal1:hover) .pt, svg[data-focus="1"]:not(:hover) .pt { fill: #0b7a3e; }
 .tb { font: 600 12px 'IBM Plex Sans', sans-serif; letter-spacing: 1.5px; fill: #6b7078; }
 .tl { font: 400 13px 'IBM Plex Sans', sans-serif; fill: #3b4150; }
 .dim, .goal { transition: opacity .2s; }
 .goal { cursor: pointer; }
 svg:has(#goal0:hover) .dim:not(.rel0), svg:has(#goal1:hover) .dim:not(.rel1), svg:has(#goal2:hover) .dim:not(.rel2),
-svg[data-focus="0"] .dim:not(.rel0), svg[data-focus="1"] .dim:not(.rel1), svg[data-focus="2"] .dim:not(.rel2) { opacity: .15; }
+svg[data-focus="0"]:not(:hover) .dim:not(.rel0), svg[data-focus="1"]:not(:hover) .dim:not(.rel1), svg[data-focus="2"]:not(:hover) .dim:not(.rel2) { opacity: .15; }
 .otl { font: 400 12.5px 'IBM Plex Sans', sans-serif; fill: #6b7078; }
 svg[data-theme="dark"] .bg { fill: transparent; }
 svg[data-theme="dark"] .ln { stroke: #e6e8ec; }
@@ -92,9 +92,9 @@ svg:not([data-theme="light"]) .pt { fill: #7d848f; }
 svg .hot:hover [fill="#1f2328"] { fill: #7a68c8; } svg .hot:hover .ln { stroke: #7a68c8; }
 svg .hot:hover text { fill: #7a68c8; text-decoration: underline; }
 #mkh path { fill: #7a68c8; }
-svg:has(#goal1:hover) .pline, svg[data-focus="1"] .pline { stroke: #0b7a3e; }
-svg[data-theme="dark"]:has(#goal1:hover) .pline, svg[data-theme="dark"][data-focus="1"] .pline { stroke: #3db36f; }
-svg[data-theme="dark"]:has(#goal1:hover) .pt, svg[data-theme="dark"][data-focus="1"] .pt { fill: #3db36f; }
+svg:has(#goal1:hover) .pline, svg[data-focus="1"]:not(:hover) .pline { stroke: #0b7a3e; }
+svg[data-theme="dark"]:has(#goal1:hover) .pline, svg[data-theme="dark"][data-focus="1"]:not(:hover) .pline { stroke: #3db36f; }
+svg[data-theme="dark"]:has(#goal1:hover) .pt, svg[data-theme="dark"][data-focus="1"]:not(:hover) .pt { fill: #3db36f; }
 </style>
 <marker id="mg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a3a7ae"/></marker>
 <marker id="mk" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f2328"/></marker>

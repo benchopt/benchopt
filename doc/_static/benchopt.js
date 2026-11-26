@@ -44,7 +44,7 @@ window.addEventListener("load", function() {
 function initOverviewFigure() {
   const obj = document.querySelector("object.benchopt-overview");
   const svg = obj?.contentDocument?.documentElement;
-  if (!svg || svg.dataset.synced) return;
+  if (!svg || svg.tagName.toLowerCase() !== "svg" || svg.dataset.synced) return;
   svg.dataset.synced = "1";
 
   const html = document.documentElement;
@@ -52,13 +52,21 @@ function initOverviewFigure() {
   setTheme();
   new MutationObserver(setTheme).observe(html, {attributes: true, attributeFilter: ["data-theme"]});
 
-  // The figure highlights the selected goal tab once the reader interacts,
-  // except while the pointer is over the figure, where the hover takes over.
+  // Links open in the page, resolved against the figure's own URL
+  svg.querySelectorAll("a[href]").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.location.href = new URL(a.getAttribute("href"), obj.data).href;
+    });
+  });
+
+  // The figure highlights the selected goal tab once the reader interacts.
+  // The SVG styles let a hover take over, so no pointer state is kept here.
   const tabs = document.querySelector(".goal-tabs");
   if (!tabs) return;
   const inputs = [...tabs.querySelectorAll(":scope > input")];
-  let active = false, over = false;
-  const apply = () => (active && !over)
+  let active = false;
+  const apply = () => active
     ? svg.setAttribute("data-focus", inputs.findIndex(x => x.checked))
     : svg.removeAttribute("data-focus");
   tabs.addEventListener("change", () => { active = true; apply(); });
@@ -69,16 +77,11 @@ function initOverviewFigure() {
     label.addEventListener("click", () => { if (wasChecked) { active = !active; apply(); } });
   });
   svg.addEventListener("click", (e) => { if (!e.target.closest(".goal, a")) { active = false; apply(); } });
-  svg.addEventListener("mouseenter", () => { over = true; apply(); });
-  svg.addEventListener("mouseleave", () => { over = false; apply(); });
   inputs.forEach((input, i) => {
     const goal = svg.getElementById("goal" + i);
-    goal?.addEventListener("mouseenter", () => { input.checked = true; active = true; });
-    // Touch screens have no hover: a tap selects the goal
-    goal?.addEventListener("pointerup", (e) => {
-      if (e.pointerType !== "touch") return;
-      input.checked = true; active = true; over = false; apply();
-    });
+    const select = () => { input.checked = true; active = true; apply(); };
+    goal?.addEventListener("mouseenter", select);
+    goal?.addEventListener("pointerup", (e) => { if (e.pointerType === "touch") select(); });
   });
 }
 window.addEventListener("load", function() {
