@@ -165,3 +165,10 @@ object.benchopt-overview {
     margin: 1.5rem auto;
     border-radius: 12px;
 }
+
+p.overview-hint {
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--pst-color-text-muted);
+    margin-top: -0.8rem;
+}

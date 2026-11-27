@@ -69,6 +69,31 @@ function initOverviewFigure() {
   const apply = () => active
     ? svg.setAttribute("data-focus", inputs.findIndex(x => x.checked))
     : svg.removeAttribute("data-focus");
+  // On first view, highlight each goal in turn to show the figure reacts;
+  // any interaction stops the demo.
+  let demo = null;
+  const stopDemo = () => { if (demo) { clearTimeout(demo); demo = null; apply(); } };
+  const runDemo = (i) => {
+    if (i < inputs.length) {
+      inputs[i].checked = true;
+      svg.setAttribute("data-focus", i);
+      demo = setTimeout(() => runDemo(i + 1), 1400);
+    } else {
+      inputs[0].checked = true;
+      apply();
+      demo = null;
+    }
+  };
+  new IntersectionObserver((entries, observer) => {
+    if (entries[0].isIntersecting) {
+      observer.disconnect();
+      demo = setTimeout(() => runDemo(0), 600);
+    }
+  }, {threshold: 0.6}).observe(obj);
+  ["pointerdown", "mouseover"].forEach((ev) => {
+    svg.addEventListener(ev, stopDemo);
+    tabs.addEventListener(ev, stopDemo);
+  });
   tabs.addEventListener("change", () => { active = true; apply(); });
   // Clicking the selected tab again, or the figure background, shows everything
   tabs.querySelectorAll(":scope > label").forEach((label) => {

@@ -3,6 +3,69 @@
 Available benchmarks
 ====================
 
+Featured benchmarks
+-------------------
+
+Reproducing an existing benchmark should be as easy as running the following commands:
+
+.. tab-set::
+
+   .. tab-item:: NanoGPT
+
+      A benchmark comparing various optimizers on training ``NanoGPT`` models.
+
+      .. prompt:: bash $
+
+         git clone https://github.com/benchopt/benchmark_nanogpt.git
+         benchopt run benchmark_nanogpt
+
+      which will produce an interactive HTML report to visualize the results.
+
+      .. raw:: html
+
+         <iframe class="benchmark_result"
+               src="https://benchopt.github.io/results/benchmark_nanogpt_benchmark_nanogpt_benchopt_run_2025-10-31_13h48m48.html"
+            frameBorder='0' style="position: relative; width: 100%;">
+         </iframe>
+
+   .. tab-item:: Unsupervised Domain Adaptation
+
+      A benchmark comparing various methods for unsupervised domain adaptation.
+
+      .. prompt:: bash $
+
+         git clone https://github.com/scikit-adaptation/skada-bench.git
+         benchopt run skada-bench --config configs/Simulated.yml --no-plot
+
+      which will produce a parquet file with the results that can be visualized
+      using instruction on the ``README.md`` of the https://github.com/scikit-adaptation/skada-bench.
+
+   .. tab-item:: Minimal benchmark
+
+      A minimal benchmark comparing various solvers on a toy problem.
+
+      .. prompt:: bash $
+
+         benchopt run examples/minimal_benchmark
+
+      which will produce an interactive HTML report to visualize the results.
+
+      .. raw:: html
+
+         <iframe class="benchmark_result"
+               src="auto_examples/html_results/sphx_glr_run_minimal_benchmark_002.html"
+            frameBorder='0' style="position: relative; width: 100%;">
+         </iframe>
+
+
+These different tabs illustrate the diversity of benchmarks that can be built
+with benchopt, from deep learning optimization to more classical machine
+learning tasks.
+
+
+More benchmarks
+---------------
+
 .. note::
     Some benchmarks are briefly described in the list below. For a complete
     list of benchmarks, see GitHub repositories of the form `benchopt/benchmark_*

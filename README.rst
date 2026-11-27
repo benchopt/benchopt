@@ -2,18 +2,17 @@
    :width: 350
    :align: center
 
-**Standardized benchmarks for AI and optimization.**
-*Same data, same metrics, every method.*
+**Compare methods fairly, on benchmarks you can share.**
+*For AI and optimization: same data, same metrics, every method.*
 
 ----
 
 |Test Status| |codecov| |Documentation| |Python 3.10+| |install-per-months| |discord| |SWH|
 
-``Benchopt`` turns an evaluation protocol into shared code. A benchmark fixes
-**the data** (datasets) and **the evaluation** (an objective and its metrics),
-and runs every **method** (called a *solver*) under exactly the same
-conditions. Because the evaluation lives in one place, a new metric or a fixed
-bug applies to all methods at once.
+``Benchopt`` is a Python framework to build and run benchmarks. You write the
+**datasets** and the **evaluation** once, and every **method** (called a
+*solver*) is run and scored the same way, on your laptop or on a cluster.
+Adding a dataset, a metric or a method updates the whole comparison.
 
 .. image:: https://raw.githubusercontent.com/benchopt/benchopt/main/doc/_static/benchopt_overview.svg
    :width: 100%
