@@ -94,6 +94,9 @@ const config_mapping = {
   'plot_kind': 'plot_kind',
   'scale': 'change_scale',
   'with_quantiles': 'change_shades',
+  'with_markers': 'change_markers',
+  'line_width': 'change_line_width',
+  'font_size': 'change_font_size',
   'hidden_curves': '',
 };
 
@@ -355,9 +358,10 @@ const getScatterData = () => {
     curves.push({
       type: 'scatter',
       name: label,
-      mode: 'lines+markers',
+      mode: state().with_markers === false ? 'lines' : 'lines+markers',
       line: {
         color: curveData.color,
+        width: state().line_width ?? 2,
       },
       marker: {
         symbol: curveData.marker % N_SYMBOLS,
@@ -452,6 +456,9 @@ const DEFAULT_CONFIG_OPTIONS = [
   "hidden_curves",
   "scale",
   "with_quantiles",
+  "with_markers",
+  "line_width",
+  "font_size",
 ];
 
 const setConfig = (config_item) => {
@@ -1123,6 +1130,12 @@ const renderWithQuantilesToggle = () => {
   } else {
     hide(document.querySelectorAll("#change-shades-form-group"));
   }
+  const scatterStyleSelectors = "#change-markers-form-group, #change-line-width-form-group, #change-font-size-form-group";
+  if (isChart('scatter')) {
+    show(document.querySelectorAll(scatterStyleSelectors), 'flex');
+  } else {
+    hide(document.querySelectorAll(scatterStyleSelectors));
+  }
 };
 
 // True if any curve in the current plot carries quantile bounds.
@@ -1151,6 +1164,12 @@ const mapSelectorsToState = () => {
   document.getElementById('plot_kind').value = currentState.plot_kind;
   document.getElementById('change_scale').value = currentState.scale;
   document.getElementById('change_shades').checked = currentState.with_quantiles;
+  const markersEl = document.getElementById('change_markers');
+  if (markersEl) markersEl.checked = currentState.with_markers !== false;
+  const lineWidthEl = document.getElementById('change_line_width');
+  if (lineWidthEl && currentState.line_width != null) lineWidthEl.value = currentState.line_width;
+  const fontSizeEl = document.getElementById('change_font_size');
+  if (fontSizeEl && currentState.font_size != null) fontSizeEl.value = currentState.font_size;
 };
 
 /*
@@ -1438,6 +1457,7 @@ const getScatterChartLayout = () => {
     },
     ...titleLayout(`${customData.title}`),
     ...MPL_LAYOUT,
+    ...(state().font_size ? { font: { ...(MPL_LAYOUT.font || {}), size: state().font_size } } : {}),
   };
 
   if (isSmallScreen()) {
