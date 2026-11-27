@@ -70,6 +70,21 @@
                                 <span class="slider round"></span>
                             </label>
                         </div>
+                        <div id="change-markers-form-group" class="flex items-center justify-between mt-4 px-8">
+                            <div class="block text-sm font-medium text-white">Markers</div>
+                            <label class="block switch">
+                                <input id="change_markers" type="checkbox" checked onchange="setState({with_markers: this.checked})">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div id="change-line-width-form-group" class="flex items-center justify-between mt-4 px-8">
+                            <label for="change_line_width" class="block text-sm font-medium text-white">Line width</label>
+                            <input id="change_line_width" type="number" value="2" min="0.5" max="10" step="0.5" class="w-20 h-8 px-2 sm:text-sm border-gray-300 rounded-md" onchange="setState({line_width: parseFloat(this.value) || 2})">
+                        </div>
+                        <div id="change-font-size-form-group" class="flex items-center justify-between mt-4 px-8">
+                            <label for="change_font_size" class="block text-sm font-medium text-white">Font size</label>
+                            <input id="change_font_size" type="number" value="14" min="8" max="32" step="1" class="w-20 h-8 px-2 sm:text-sm border-gray-300 rounded-md" onchange="setState({font_size: parseInt(this.value, 10) || 14})">
+                        </div>
                         % for kind, params in result["plot_options"].items():
                             <div id="${kind}-custom-params-container">
                             % for param, options in params.items():
@@ -219,6 +234,21 @@
                                     <input id="change_shades" type="checkbox" checked onchange="setState({with_quantiles: this.checked})">
                                     <span class="slider round"></span>
                                 </label>
+                            </div>
+                            <div id="change-markers-form-group" class="flex items-center justify-between mt-4 px-8">
+                                <div class="block text-sm font-medium text-white">Markers</div>
+                                <label class="block switch">
+                                    <input id="change_markers" type="checkbox" checked onchange="setState({with_markers: this.checked})">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <div id="change-line-width-form-group" class="flex items-center justify-between mt-4 px-8">
+                                <label for="change_line_width" class="block text-sm font-medium text-white">Line width</label>
+                                <input id="change_line_width" type="number" value="2" min="0.5" max="10" step="0.5" class="w-20 h-8 px-2 sm:text-sm border-gray-300 rounded-md" onchange="setState({line_width: parseFloat(this.value) || 2})">
+                            </div>
+                            <div id="change-font-size-form-group" class="flex items-center justify-between mt-4 px-8">
+                                <label for="change_font_size" class="block text-sm font-medium text-white">Font size</label>
+                                <input id="change_font_size" type="number" value="14" min="8" max="32" step="1" class="w-20 h-8 px-2 sm:text-sm border-gray-300 rounded-md" onchange="setState({font_size: parseInt(this.value, 10) || 14})">
                             </div>
                             <div>
                             <div>
@@ -514,6 +544,9 @@
                     'plot_kind': document.getElementById('plot_kind').value,
                     'scale': document.getElementById('change_scale').value,
                     'with_quantiles': document.getElementById('change_shades').checked,
+                    'with_markers': document.getElementById('change_markers').checked,
+                    'line_width': parseFloat(document.getElementById('change_line_width').value) || 2,
+                    'font_size': parseInt(document.getElementById('change_font_size').value, 10) || 14,
                     'hidden_curves': [],
                     % for kind, params in result["plot_options"].items():
                         % for param in params:
