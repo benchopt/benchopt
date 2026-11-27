@@ -1052,6 +1052,61 @@ def test_components_share_state_then_release(parallel, no_debug_log):
     out.check_output("#ALIVE#[2-9]", repetition=0)
 
 
+@pytest.mark.parametrize("n_jobs, n_solvers, group_by, n_loads", [
+    (1, 1, None, 1), (1, 2, None, 4), (1, 2, "solver", 2), (2, 2, "solver", 2)
+])
+def test_keep_state_until_solver_changes(n_jobs, n_solvers, group_by, n_loads,
+                                         no_debug_log):
+    """`keep_state` survives a new dataset, not a new solver instance.
+
+    One solver loads its model once for both datasets. Two solvers alternate
+    on each dataset, so each run loads it again unless the runs are grouped
+    by solver, and old models are freed.
+    """
+    dataset = """from benchopt import BaseDataset
+
+    class Dataset(BaseDataset):
+        name = "test-dataset"
+        parameters = {"n": [1, 2]}
+        def get_data(self):
+            return dict(X=None, y=None)
+    """
+    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
+        import gc, weakref
+
+        REFS = []
+
+        class Model:
+            pass
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            sampling_strategy = 'run_once'
+            parameters = dict(q=list(range({n_solvers})))
+            keep_state = ("model",)
+            def set_objective(self, X, y, lmbd):
+                if not hasattr(self, "model"):
+                    gc.collect()
+                    alive = sum(r() is not None for r in REFS)
+                    print(f"#LOAD#ALIVE#{{alive}}")
+                    self.model = Model()
+                    REFS.append(weakref.ref(self.model))
+    """
+    with temp_benchmark(
+        datasets=[dataset], solvers=[solver]
+    ) as bench, CaptureCmdOutput() as out:
+        extra = [] if group_by is None else ["--group-by", group_by]
+        run([str(bench.benchmark_dir), "-d", "test-dataset", "--no-plot",
+             "--no-cache", "-j", str(n_jobs), *extra], standalone_mode=False)
+
+        from joblib.externals.loky import get_reusable_executor
+        get_reusable_executor().shutdown(wait=True)
+
+    out.check_output("#LOAD#", repetition=n_loads)
+    # The previous model may linger, but models must not pile up.
+    out.check_output("#LOAD#ALIVE#[2-9]", repetition=0)
+
+
 def test_repetition_reloads_seeded_data(no_debug_log):
     """A repetition reloads the data when the dataset seed depends on it."""
     dataset = """from benchopt import BaseDataset
@@ -1087,3 +1142,41 @@ def test_repetition_reloads_seeded_data(no_debug_log):
 
     seeds = set(re.findall(r"#SET_OBJECTIVE#(\d+)", out.output))
     assert len(seeds) == 3, out.output
+
+
+def test_evaluation_time_recorded_in_results():
+    """Results should record evaluation_time covering get_result and objective."""
+    import time
+
+    from benchopt.runner import run_one_resolution
+
+    class DummySolver:
+        __module__ = "dummy_solver"
+
+        def is_installed(self):
+            return True
+
+        def pre_run_hook(self, stop_val):
+            pass
+
+        def run(self, stop_val):
+            pass
+
+        def get_result(self):
+            time.sleep(0.01)
+            return {"beta": 1.0}
+
+    def dummy_objective(result):
+        time.sleep(0.01)
+        return [{"objective_value": result["beta"]}]
+
+    rows, res = run_one_resolution(
+        dummy_objective,
+        DummySolver(),
+        meta={"solver_name": "dummy", "dataset_name": "d", "objective_name": "o"},
+        stop_val=1,
+    )
+    assert res == {"beta": 1.0}
+    assert len(rows) == 1
+    assert "evaluation_time" in rows[0]
+    assert rows[0]["evaluation_time"] >= 0.015

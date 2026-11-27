@@ -63,14 +63,23 @@ def run_one_resolution(objective, solver, meta, stop_val):
     t_start = time.perf_counter()
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
+    t_eval_start = time.perf_counter()
     result = solver.get_result()
     objective_list = objective(result)
+    eval_t = time.perf_counter() - t_eval_start
 
     # Add system info in results
     info = get_sys_info()
 
     return [
-        dict(**meta, stop_val=stop_val, time=delta_t, **objective_dict, **info)
+        dict(
+            **meta,
+            stop_val=stop_val,
+            time=delta_t,
+            evaluation_time=eval_t,
+            **objective_dict,
+            **info,
+        )
         for objective_dict in objective_list
     ], result
 
