@@ -1142,3 +1142,41 @@ def test_repetition_reloads_seeded_data(no_debug_log):
 
     seeds = set(re.findall(r"#SET_OBJECTIVE#(\d+)", out.output))
     assert len(seeds) == 3, out.output
+
+
+def test_evaluation_time_recorded_in_results():
+    """Results should record evaluation_time covering get_result and objective."""
+    import time
+
+    from benchopt.runner import run_one_resolution
+
+    class DummySolver:
+        __module__ = "dummy_solver"
+
+        def is_installed(self):
+            return True
+
+        def pre_run_hook(self, stop_val):
+            pass
+
+        def run(self, stop_val):
+            pass
+
+        def get_result(self):
+            time.sleep(0.01)
+            return {"beta": 1.0}
+
+    def dummy_objective(result):
+        time.sleep(0.01)
+        return [{"objective_value": result["beta"]}]
+
+    rows, res = run_one_resolution(
+        dummy_objective,
+        DummySolver(),
+        meta={"solver_name": "dummy", "dataset_name": "d", "objective_name": "o"},
+        stop_val=1,
+    )
+    assert res == {"beta": 1.0}
+    assert len(rows) == 1
+    assert "evaluation_time" in rows[0]
+    assert rows[0]["evaluation_time"] >= 0.015

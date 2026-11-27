@@ -87,12 +87,15 @@ class _Callback:
         Return True if the solver should be stopped.
         """
         self._last_it_log = self.it
+        t_eval_start = time.perf_counter()
         result = self.solver.get_result()
         self._last_result = result
         objective_list = self.objective(result)
+        eval_t = time.perf_counter() - t_eval_start
         self.curve.extend(dict(
             **self.meta, stop_val=self.it,
             time=self.time_iter,
+            evaluation_time=eval_t,
             **objective_dict, **self.info
         ) for objective_dict in objective_list)
 
