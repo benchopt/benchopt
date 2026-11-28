@@ -93,7 +93,7 @@ class ParametrizedNameMixin(metaclass=ComponentMeta):
         names = (*self._keep_state, *(self.keep_state if soft else ()))
         kept = {k: self.__dict__[k] for k in names if k in self.__dict__}
         self.__dict__.clear()
-        self.__dict__.update(**init_state, _init_state=init_state, **kept)
+        self.__dict__.update({**init_state, **kept}, _init_state=init_state)
 
     @property
     @abstractmethod
