@@ -174,5 +174,6 @@ p.overview-hint {
 }
 
 object.benchopt-add {
-    aspect-ratio: 1200 / 450;
+    aspect-ratio: 1200 / 550;
+    margin-top: 0.5rem;
 }
