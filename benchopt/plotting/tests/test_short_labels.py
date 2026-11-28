@@ -199,3 +199,14 @@ def test_shorten_names_uses_default_names():
     assert list(short_df["solver_name"]) == ["S[newton-cg]", "S[lbfgs]"]
     # Templated names get their parameters table from the default names.
     assert "newton-cg" in short_df["solver_description"].iloc[0]
+
+
+def test_shorten_names_solver_tag():
+    df = pd.DataFrame({
+        "solver_name": ["S[a=1]", "S[a=3]", "T[a=1]"],
+        "dataset_name": ["d1"] * 3,
+        "objective_name": ["obj1"] * 3,
+    })
+    short_df = shorten_names(df)
+    # Only the base names shared by several solvers are tags.
+    assert list(short_df["solver_tag"]) == ["S", "S", None]

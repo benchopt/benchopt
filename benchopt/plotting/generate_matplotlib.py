@@ -53,13 +53,22 @@ def get_plot_figure(plot_datas, output_dir):
 
 def get_plot_scatter(plot_data):
     fig = plt.figure()
-    tags = plot_data.get("highlight") or []
-    tags = [tags] if isinstance(tags, str) else tags
+    terms = plot_data.get("highlight") or []
+    terms = [terms] if isinstance(terms, str) else terms
+    terms = [t.lower() for t in terms]
+    all_tags = {
+        t.lower() for c in plot_data["data"] for t in c.get("tags", [])
+    }
     for curve_data in plot_data["data"]:
-        # Curves tagged 'all' are never dimmed nor labelled.
-        always = "all" in curve_data.get("tags", [])
-        tagged = not always and (
-            "all" in tags or bool(set(tags) & set(curve_data.get("tags", [])))
+        # A term is a tag, or part of the label when it is no tag, and 'all'
+        # takes every curve. Curves tagged 'all' are never dimmed nor
+        # labelled.
+        tags = [t.lower() for t in curve_data.get("tags", [])]
+        label = curve_data["label"].lower()
+        always = "all" in tags
+        tagged = not always and any(
+            t == "all" or t in tags or (t not in all_tags and t in label)
+            for t in terms
         )
         plt.plot(
             curve_data["x"], curve_data["y"],
@@ -67,7 +76,7 @@ def get_plot_scatter(plot_data):
             marker=curve_data["marker"],
             label=curve_data["label"],
             linewidth=3,
-            alpha=.3 if tags and not tagged and not always else 1,
+            alpha=.3 if terms and not tagged and not always else 1,
         )
         if tagged:
             plt.annotate(

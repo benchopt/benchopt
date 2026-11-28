@@ -20,7 +20,8 @@ const UNDEFINED_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  *   - scale (string)
  *   - with_quantiles (boolean)
  *   - hidden_curves (array)
- *   - highlight_tags (array, the plot's default if unset)
+ *   - group (array of terms), group_label and group_highlight (booleans),
+ *     the plot's default `highlight` if unset
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
@@ -39,7 +40,7 @@ const setState = (partialState) => {
 
   // When changing chart type, apply the default scale defined by the plot data
   if (plotKindChanged) {
-    delete window._state.highlight_tags;
+    GROUP_KEYS.filter(k => !(k in partialState)).forEach(k => delete window._state[k]);
     const plotData = getPlotData();
     if (plotData && "scale" in plotData) {
       window._state.scale = plotData.scale;
@@ -97,6 +98,9 @@ const config_mapping = {
   'scale': 'change_scale',
   'with_quantiles': 'change_shades',
   'hidden_curves': '',
+  'group': '',
+  'group_label': '',
+  'group_highlight': '',
 };
 
 /*
@@ -342,18 +346,16 @@ const getPlotData = () => {
 const getScatterData = () => {
   // create a list of object to plot in plotly
   const curves = [];
-  const tags = highlightTags();
+  const terms = groupTerms();
 
   getPlotData().data.forEach(curveData => {
     label = curveData.label;
     y = curveData.y;
-    // Curves with a highlighted tag get their label next to their last
-    // point, the others are dimmed. Curves tagged 'all' are never dimmed nor
-    // labelled.
+    // Curves in the group get their label next to their last point, the
+    // others are dimmed. Curves tagged 'all' are never dimmed nor labelled.
     const always = (curveData.tags ?? []).includes('all');
-    const tagged = !always && (
-      tags.includes('all') || (curveData.tags ?? []).some(t => tags.includes(t))
-    );
+    const grouped = inGroup(curveData, terms);
+    const tagged = grouped && groupLabel();
     if ("y_low" in curveData && "y_high" in curveData && state().with_quantiles) {
       y_low = curveData.y_low;
       y_high = curveData.y_high;
@@ -368,7 +370,7 @@ const getScatterData = () => {
       mode: tagged ? 'lines+markers+text' : 'lines+markers',
       text: tagged ? curveData.x.map((_, i) => i === curveData.x.length - 1 ? label : '') : undefined,
       textposition: 'top right',
-      opacity: tags.length && !tagged && !always ? 0.3 : 1,
+      opacity: groupHighlight() && terms.length && !grouped && !always ? 0.3 : 1,
       line: {
         color: curveData.color,
       },
@@ -550,6 +552,11 @@ const saveView = () => {
   }
   for (let option of DEFAULT_CONFIG_OPTIONS) {
     config[option] = state()[option];
+  }
+  if (isChart('scatter')) {
+    Object.assign(config, {
+      group: groupTerms(), group_label: groupLabel(), group_highlight: groupHighlight()
+    });
   }
 
   // Persist the table order and hidden columns when viewing a table.
@@ -1211,9 +1218,29 @@ const isChart = chart => {
 
 const isVisible = curve => !state().hidden_curves.includes(curve);
 
-// The tags whose curves are highlighted: the user's choice, else the plot's
-// default `highlight`, a tag or a list of tags.
-const highlightTags = () => state().highlight_tags ?? [getPlotData().highlight ?? []].flat();
+// The legend group: a list of terms, each a tag, a solver name or part of
+// one, and whether to label and highlight its curves. A plot sets the default
+// group with its `highlight` metadata, a tag or a list of tags.
+const GROUP_KEYS = ['group', 'group_label', 'group_highlight'];
+const groupTerms = () => state().group ?? [getPlotData().highlight ?? []].flat();
+const groupLabel = () => state().group_label ?? true;
+const groupHighlight = () => state().group_highlight ?? true;
+
+// A curve is in the group if a term is one of its tags, or part of its label
+// for a term that is no tag, ignoring case. The term 'all' takes every curve.
+// Curves tagged 'all' never are.
+const inGroup = (curveData, terms) => {
+  const allTags = getTags().map(t => t.toLowerCase());
+  const tags = (curveData.tags ?? []).map(t => t.toLowerCase());
+  const label = curveData.label.toLowerCase();
+  return !tags.includes('all') && terms.some(term => {
+    term = term.toLowerCase();
+    if (term === 'all' || allTags.includes(term)) {
+      return term === 'all' || tags.includes(term);
+    }
+    return label.includes(term);
+  });
+};
 
 // The tags of the current plot's curves, in order of appearance.
 const getTags = () => [...new Set(
@@ -2061,7 +2088,7 @@ const renderLegend = () => {
   show(container);
 
   legend.innerHTML = '';
-  renderHighlightSelector();
+  renderGroupSelector();
 
   getCurves().forEach(curve => {
     const curve_data = data(curve);
@@ -2076,50 +2103,108 @@ const renderLegend = () => {
   legend.style.width = legendWidth;
 }
 
-// Whether the tag menu is open, kept across the legend re-renders.
-let highlightMenuOpen = false;
+// Whether to give the focus back to the group box after a re-render.
+let groupInputRefocus = false;
 
-// Menu of the curve tags to highlight, hidden when no curve has a tag.
-const renderHighlightSelector = () => {
-  const container = document.getElementById('legend_highlight');
-  const tags = getTags();
+const chip = (text, onClick, active = false) => {
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.textContent = text;
+  el.className = 'text-sm rounded-full px-2 mr-1 mb-1 border '
+    + (active ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300');
+  el.addEventListener('click', onClick);
+  return el;
+};
+
+const toggle = (text, checked, key) => {
+  const label = document.createElement('label');
+  label.className = 'text-sm text-gray-700';
+  label.style.margin = '0 0.25rem 0.25rem 0.75rem';
+  const box = document.createElement('input');
+  box.type = 'checkbox';
+  box.checked = checked;
+  box.className = 'mr-1';
+  box.addEventListener('change', () => setState({[key]: box.checked}));
+  label.append(box, text);
+  return label;
+};
+
+// Group controls of the legend: a box to type terms, chips for the terms and
+// the tags, and actions on the curves of the group.
+const renderGroupSelector = () => {
+  const container = document.getElementById('legend_group');
+  const terms = groupTerms();
+  const setTerms = group => setState({group});
+  // From the keyboard, keep typing in the box after the re-render.
+  const typeTerms = group => { groupInputRefocus = true; setTerms(group); };
   container.innerHTML = '';
-  (tags.length ? show : hide)(container);
-  if (!tags.length) return;
 
-  const selected = highlightTags();
-  const menu = document.createElement('details');
-  menu.style.display = 'inline-block';
-  menu.style.position = 'relative';
-  menu.open = highlightMenuOpen;
-  menu.addEventListener('toggle', () => { highlightMenuOpen = menu.open; });
+  const row = document.createElement('div');
+  row.className = 'flex flex-wrap items-center';
+  terms.forEach(term => row.appendChild(
+    chip(`${term} ×`, () => setTerms(terms.filter(t => t !== term)), true)
+  ));
 
-  const summary = document.createElement('summary');
-  summary.style.cursor = 'pointer';
-  summary.textContent = `Label: ${selected.join(', ') || 'none'}`;
-  menu.appendChild(summary);
-
-  const panel = document.createElement('div');
-  panel.className = 'bg-white shadow rounded py-1 px-3';
-  panel.style.position = 'absolute';
-  panel.style.zIndex = 50;
-  panel.style.whiteSpace = 'nowrap';
-  ['all', ...tags].forEach(tag => {
-    const label = document.createElement('label');
-    label.style.display = 'block';
-    const box = document.createElement('input');
-    box.type = 'checkbox';
-    box.value = tag;
-    box.checked = selected.includes(tag);
-    box.style.marginRight = '0.4rem';
-    box.addEventListener('change', () => setState({
-      highlight_tags: [...panel.querySelectorAll('input:checked')].map(b => b.value)
-    }));
-    label.append(box, tag);
-    panel.appendChild(label);
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = 'Type a tag or solver name, Enter to add';
+  input.className = 'text-sm rounded border border-gray-300 px-2 py-1 mb-1 mr-1';
+  input.style.minWidth = '18rem';
+  input.setAttribute('list', 'legend_group_options');
+  const options = document.createElement('datalist');
+  options.id = 'legend_group_options';
+  ['all', ...getTags(), ...getCurves()].forEach(value => {
+    const option = document.createElement('option');
+    option.value = value;
+    options.appendChild(option);
   });
-  menu.appendChild(panel);
-  container.appendChild(menu);
+  const addTerm = () => {
+    const term = input.value.trim();
+    if (term && !terms.includes(term)) typeTerms([...terms, term]);
+  };
+  // The legend items matching the typed text get a ring, as a preview.
+  const preview = () => {
+    const typed = input.value.trim();
+    document.querySelectorAll('#plot_legend .curve').forEach(text => {
+      const match = typed && inGroup(data(text.dataset.curve), [typed]);
+      text.parentElement.style.boxShadow = match ? '0 0 0 2px #2563eb' : '';
+    });
+  };
+  input.addEventListener('input', () => {
+    // Picking a suggestion adds it right away.
+    if ([...options.options].some(o => o.value === input.value)) addTerm();
+    else preview();
+  });
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Enter') addTerm();
+    if (event.key === 'Backspace' && !input.value && terms.length) {
+      typeTerms(terms.slice(0, -1));
+    }
+  });
+  row.append(input, options);
+
+  row.appendChild(toggle('Label', groupLabel(), 'group_label'));
+  row.appendChild(toggle('Highlight', groupHighlight(), 'group_highlight'));
+  const hideOthers = chip('Hide others', () => setState({
+    hidden_curves: getCurves().filter(curve => {
+      const curveData = data(curve);
+      return !(curveData.tags ?? []).includes('all') && !inGroup(curveData, terms);
+    })
+  }));
+  hideOthers.style.marginLeft = '0.75rem';
+  row.append(hideOthers, chip('Show all', purgeHiddenCurves));
+  container.appendChild(row);
+
+  const tags = getTags().filter(tag => !terms.includes(tag));
+  if (tags.length) {
+    const tagRow = document.createElement('div');
+    tagRow.className = 'flex flex-wrap items-center text-sm text-gray-500';
+    tagRow.append('Tags:\u00a0');
+    tags.forEach(tag => tagRow.appendChild(chip(tag, () => setTerms([...terms, tag]))));
+    container.appendChild(tagRow);
+  }
+  if (groupInputRefocus) input.focus();
+  groupInputRefocus = false;
 };
 
 // Width the user dragged the legend to ('' until they do).

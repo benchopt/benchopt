@@ -225,6 +225,31 @@ def test_scatter_and_options_descriptions():
     }
 
 
+def test_scatter_solver_tags():
+    # Traces of solvers sharing a base name get it as a tag.
+    class Plot(BasePlot):
+        name = 'scatter'
+        type = 'scatter'
+        options = {}
+
+        def plot(self, df):
+            return [
+                {'x': [0], 'y': [0], 'label': 'S[a=1]', 'tags': ['GPU']},
+                {'x': [0], 'y': [0], 'label': 'S[a=2]'},
+                {'x': [0], 'y': [0], 'label': 'T'},
+            ]
+
+        def get_metadata(self, df):
+            return {'title': 'scatter'}
+
+    df = pd.DataFrame({
+        'solver_name': ['S[a=1]', 'S[a=2]', 'T'],
+        'solver_tag': ['S', 'S', None],
+    })
+    traces = next(iter(Plot()._get_all_plots(df)[0].values()))['data']
+    assert [t.get('tags') for t in traces] == [['GPU', 'S'], ['S'], None]
+
+
 def test_table_cells_descriptions():
     # String cells naming an object get its description, in any column and
     # through markup; explicit `{value, description}` cells are kept.
@@ -269,3 +294,13 @@ def test_scatter_highlight_tag_matplotlib():
     plot_data["highlight"] = "all"
     ax = get_plot_scatter(plot_data).axes[0]
     assert [t.get_text() for t in ax.texts] == ["tagged", "other", "no_tags"]
+
+    # A term that is no tag can be part of a label, and a tag only matches
+    # tags, even if it is part of a label.
+    plot_data["highlight"] = "OTH"
+    ax = get_plot_scatter(plot_data).axes[0]
+    assert [t.get_text() for t in ax.texts] == ["other"]
+    plot_data["data"][1]["label"] = "other_gpu"
+    plot_data["highlight"] = "gpu"
+    ax = get_plot_scatter(plot_data).axes[0]
+    assert [t.get_text() for t in ax.texts] == ["tagged"]

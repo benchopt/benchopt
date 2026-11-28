@@ -184,6 +184,13 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             k: [v['value'] for v in values] for k, values in options.items()
         })
 
+        # Solvers sharing a base name are tagged with it in scatter plots.
+        solver_tags = {}
+        if "solver_tag" in df:
+            solver_tags = df.dropna(subset=["solver_tag"]).drop_duplicates(
+                "solver_name"
+            ).set_index("solver_name")["solver_tag"].to_dict()
+
         plots = {}
         for kwargs in combinations:
             data = self.get_metadata(df, **kwargs)
@@ -194,6 +201,9 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                     trace.setdefault(
                         "description", descriptions.get(trace["label"])
                     )
+                    tag = solver_tags.get(trace["label"])
+                    if tag and tag not in trace.setdefault("tags", []):
+                        trace["tags"].append(tag)
             elif self.type == "table":
                 data["data"] = [
                     [_describe_cell(c, descriptions) for c in row]
