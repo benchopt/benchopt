@@ -2,14 +2,36 @@
    :width: 350
    :align: center
 
-*—A framework for reproducible, comparable benchmarks—*
+**Compare methods fairly, on benchmarks you can share.**
+*For AI and optimization: same data, same metrics, every method.*
 
 ----
 
 |Test Status| |codecov| |Documentation| |Python 3.10+| |install-per-months| |discord| |SWH|
 
-``Benchopt`` is a benchmarking suite tailored for machine learning workflows.
-It is built for simplicity, transparency, and reproducibility.
+You have datasets, a way to score results, and a few methods to compare.
+``Benchopt`` makes that comparison easy: write the **datasets** and the
+**evaluation** once, plug in the **methods** (called *solvers*), and every
+result is scored the same way. The comparison is fairer by design, and
+benchopt provides the tools to run it efficiently, from your laptop to a
+cluster.
+
+.. image:: https://raw.githubusercontent.com/benchopt/benchopt/main/doc/_static/benchopt_overview.svg
+   :width: 100%
+   :alt: Research, competitions and reference benchmarks all rely on one benchopt benchmark.
+
+The same benchmark serves three goals:
+
+- **Research:** create a new method or answer a research question, compared
+  to baselines on a fixed evaluation.
+- **Competition:** evaluate the methods submitted by participants, with the
+  same scoring for all and private test data.
+- **Reference benchmark:** give a consolidated view of a field across many
+  test cases, maintained by its community.
+
+Benchopt provides the toolbox for these campaigns: parallel runs locally or on
+SLURM, caching and checkpointing, seeded and tested runs, profiling,
+interactive reports, and agent skills for coding agents.
 It is implemented in Python but can run algorithms written in **many programming languages**.
 
 

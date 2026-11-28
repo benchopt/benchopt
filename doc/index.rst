@@ -1,25 +1,81 @@
-
 ``Benchopt``
 =============
 
-*—A framework for reproducible, comparable benchmarks—*
+**Compare machine learning and optimization methods side by side.**
+*Same data, same metrics, every method.*
+
+Benchopt runs each method on the same data, scores it with the same metrics,
+and plots the results. Start from an existing benchmark and add your method in
+one file, or turn the protocol of a paper into a benchmark that others can
+rerun and extend. Your coding agent can do most of the work.
+
+:ref:`See a comparison <featured_benchmarks>` · :ref:`Run your first benchmark <get_started>`
+
+.. raw:: html
+
+   <object class="benchopt-figure benchopt-add" data="_static/benchopt_add_method.svg"
+           type="image/svg+xml"
+           aria-label="Add your method or your data to an existing benchmark: benchopt runs every method with the same data and metric, and shows how they compare.">
+   </object>
 
 
-|Python 3.10+| |PyPI version| |License|
+One benchmark, three uses
+-------------------------
 
-Benchopt is a benchmarking framework for **machine learning and optimization**.
-You bring **datasets**, **metrics**, and the **methods** to compare —
-Benchopt provides the loop that connects them and runs reproducible comparisons
-at scale. Out of the box:
+.. tab-set::
+    :class: goal-tabs
 
-* **Scale experiments:** loop over grid of parameters, run in parallel locally or on HPC clusters, with native SLURM support.
-* **Save time:** cache results to avoid recomputing unchanged runs.
-* **Trust comparisons:** control randomness with seeds and stable protocols.
-* **Integrate broadly:** use implementations from Python, R, Julia, or binaries.
-* **Share outcomes:** merge and publish results from multiple runs, with easy interactive visualization.
-* **Maintain and Extend:** modular design to easily add new datasets, solvers, and metrics, and CI tools to test them.
+    .. tab-item:: :octicon:`person` Compare my method
+        :sync: research
 
-Learn how to construct and run a benchmark with the following pages!
+        Pick the experimental protocol of a paper, turn it into a reproducible
+        benchmark (typically with your coding agent), then add the missing
+        baselines, your method, or the use cases you think matter. You get
+        figures for your paper and results others can rerun.
+
+        **Example:** the `simulated benchmark
+        <https://github.com/soda-inria/crossing-the-validation-crisis/tree/main/simulated>`_
+        behind the NeurIPS 2026 paper *Crossing the Validation Crisis*.
+
+        **Start from a template:**
+        `ML <https://github.com/benchopt/template_benchmark_ml>`_ |
+        `optimization <https://github.com/benchopt/template_benchmark>`_
+
+    .. tab-item:: :octicon:`people` Run a competition
+        :sync: competition
+
+        Evaluate the methods submitted by participants, with the same scoring
+        for all. The test data and some methods can stay private, and the
+        results feed a leaderboard.
+
+        **Example:** the `neural-interfaces 2026 competition
+        <https://github.com/neural-interfaces26/2026-competition>`_, run on
+        Codabench.
+
+        **Start from the** `Codabench template
+        <https://github.com/benchopt/template_codabench>`_.
+
+    .. tab-item:: :octicon:`organization` Maintain a reference benchmark
+        :sync: reference
+
+        Give a consolidated view of a field, across many test cases. The
+        community adds datasets, metrics and methods, and the results are
+        published on a live site.
+
+        **Examples:** `L2-regularized logistic regression
+        <https://github.com/benchopt/benchmark_logreg_l2>`_,
+        `unsupervised domain adaptation
+        <https://github.com/scikit-adaptation/skada-bench>`_.
+
+        **Publish your results:** see :ref:`publish_benchmark`.
+
+
+Use benchopt
+------------
+
+Start small and grow when needed: run one of the :ref:`available_benchmarks`, add your method
+as one file, write your own benchmark from a template, then scale it to a
+cluster or open it to others.
 
 .. grid:: 2
     :gutter: 1
@@ -58,77 +114,23 @@ Learn how to construct and run a benchmark with the following pages!
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         Gallery of use-cases crafted by the benchopt community
 
-.. tip::
-   **Want to create a new benchmark with benchopt?** Use our templates to get started:
-   `ML benchmarks <https://github.com/benchopt/template_benchmark_ml>`_ |
-   `Optimization benchmarks <https://github.com/benchopt/template_benchmark>`_
-
 
 .. _faq:
 
 .. Frequently Asked Questions (FAQ) subsection
 .. include:: faq.rst
 
-Example benchmarks
-------------------
+Explore benchopt
+----------------
 
-Reproducing an existing benchmark should be as easy as running the following commands:
+.. raw:: html
 
-.. tab-set::
-
-   .. tab-item:: NanoGPT
-
-      A benchmark comparing various optimizers on training ``NanoGPT`` models.
-
-      .. prompt:: bash $
-
-         git clone https://github.com/benchopt/benchmark_nanogpt.git
-         benchopt run benchmark_nanogpt
-
-      which will produce an interactive HTML report to visualize the results.
-
-      .. raw:: html
-
-         <iframe class="benchmark_result"
-               src="https://benchopt.github.io/results/benchmark_nanogpt_benchmark_nanogpt_benchopt_run_2025-10-31_13h48m48.html"
-            frameBorder='0' style="position: relative; width: 100%;">
-         </iframe>
-
-   .. tab-item:: Unsupervised Domain Adaptation
-
-      A benchmark comparing various methods for unsupervised domain adaptation.
-
-      .. prompt:: bash $
-
-         git clone https://github.com/scikit-adaptation/skada-bench.git
-         benchopt run skada-bench --config configs/Simulated.yml --no-plot
-
-      which will produce a parquet file with the results that can be visualized
-      using instruction on the ``README.md`` of the https://github.com/scikit-adaptation/skada-bench.
-
-   .. tab-item:: Minimal benchmark
-
-      A minimal benchmark comparing various solvers on a toy problem.
-
-      .. prompt:: bash $
-
-         benchopt run examples/minimal_benchmark
-
-      which will produce an interactive HTML report to visualize the results.
-
-      .. raw:: html
-
-         <iframe class="benchmark_result"
-               src="auto_examples/html_results/sphx_glr_run_minimal_benchmark_002.html"
-            frameBorder='0' style="position: relative; width: 100%;">
-         </iframe>
-
-
-These different tabs illustrate the diversity of benchmarks that can be built
-with benchopt, from deep learning optimization to more classical machine
-learning tasks.
-
-There are already many :ref:`available_benchmarks` that have been created using benchopt.
+   <object class="benchopt-figure benchopt-overview" data="_static/benchopt_overview.svg"
+           type="image/svg+xml"
+           aria-label="Research, competitions and reference benchmarks all rely on one benchopt benchmark, which produces paper figures, reusable results, leaderboards and a live results site.">
+   </object>
+   <p class="overview-hint">Hover a use to see what it relies on and produces,
+   click a tool or an arrow to open its documentation.</p>
 
 
 Join the community
@@ -161,14 +163,6 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
       booktitle = {NeurIPS},
       url       = {https://arxiv.org/abs/2206.13424}
    }
-
-
-.. |Python 3.10+| image:: https://img.shields.io/badge/python-3.10%2B-blue
-   :target: https://www.python.org/downloads/release/python-3100/
-.. |License| image:: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
-   :target: https://github.com/benchopt/benchopt/blob/main/LICENSE
-.. |PyPI version| image:: https://badge.fury.io/py/benchopt.svg
-   :target: https://pypi.org/project/benchopt/
 
 
 .. it mandatory to keep the toctree here although it doesn't show up in the page

@@ -155,3 +155,25 @@ html[data-theme="dark"] details.sd-dropdown.has-folded-summary .folded-summary {
     color: #d6e2f2;
 }
 
+
+/* Overview figure on the landing page */
+object.benchopt-figure {
+    display: block;
+    width: 100%;
+    max-width: 1200px;
+    aspect-ratio: 2 / 1;
+    margin: 1.5rem auto;
+    border-radius: 12px;
+}
+
+p.overview-hint {
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--pst-color-text-muted);
+    margin-top: -0.8rem;
+}
+
+object.benchopt-add {
+    aspect-ratio: 1200 / 580;
+    margin-top: 0.5rem;
+}

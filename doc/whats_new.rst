@@ -21,6 +21,14 @@ CLI
   :ref:`run_grouping`. By `Bruno Aristimunha`_ and `Thomas Moreau`_ (:gh:`903`)
 
 
+DOC
+~~~
+
+- Rework the landing page and the README around the goals benchopt serves
+  (research, competitions and reference benchmarks), with an interactive
+  overview figure. By `Thomas Moreau`_ (:gh:`1056`)
+
+
 FIX
 ~~~
 
