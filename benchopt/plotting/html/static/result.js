@@ -20,7 +20,7 @@ const UNDEFINED_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  *   - scale (string)
  *   - with_quantiles (boolean)
  *   - hidden_curves (array)
- *   - highlight_tag (string, '' for none, the plot's default if unset)
+ *   - highlight_tags (array, the plot's default if unset)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
@@ -39,7 +39,7 @@ const setState = (partialState) => {
 
   // When changing chart type, apply the default scale defined by the plot data
   if (plotKindChanged) {
-    delete window._state.highlight_tag;
+    delete window._state.highlight_tags;
     const plotData = getPlotData();
     if (plotData && "scale" in plotData) {
       window._state.scale = plotData.scale;
@@ -342,14 +342,18 @@ const getPlotData = () => {
 const getScatterData = () => {
   // create a list of object to plot in plotly
   const curves = [];
-  const tag = highlightTag();
+  const tags = highlightTags();
 
   getPlotData().data.forEach(curveData => {
     label = curveData.label;
     y = curveData.y;
-    // Curves with the highlighted tag get their label next to their last
-    // point, the others are dimmed.
-    const tagged = (curveData.tags ?? []).includes(tag);
+    // Curves with a highlighted tag get their label next to their last
+    // point, the others are dimmed. Curves tagged 'all' are never dimmed nor
+    // labelled.
+    const always = (curveData.tags ?? []).includes('all');
+    const tagged = !always && (
+      tags.includes('all') || (curveData.tags ?? []).some(t => tags.includes(t))
+    );
     if ("y_low" in curveData && "y_high" in curveData && state().with_quantiles) {
       y_low = curveData.y_low;
       y_high = curveData.y_high;
@@ -364,7 +368,7 @@ const getScatterData = () => {
       mode: tagged ? 'lines+markers+text' : 'lines+markers',
       text: tagged ? curveData.x.map((_, i) => i === curveData.x.length - 1 ? label : '') : undefined,
       textposition: 'top right',
-      opacity: tag && !tagged ? 0.3 : 1,
+      opacity: tags.length && !tagged && !always ? 0.3 : 1,
       line: {
         color: curveData.color,
       },
@@ -1207,14 +1211,14 @@ const isChart = chart => {
 
 const isVisible = curve => !state().hidden_curves.includes(curve);
 
-// The tag whose curves are highlighted: the user's choice, else the plot's
-// default `highlight`. '' highlights nothing.
-const highlightTag = () => state().highlight_tag ?? getPlotData().highlight ?? '';
+// The tags whose curves are highlighted: the user's choice, else the plot's
+// default `highlight`, a tag or a list of tags.
+const highlightTags = () => state().highlight_tags ?? [getPlotData().highlight ?? []].flat();
 
 // The tags of the current plot's curves, in order of appearance.
 const getTags = () => [...new Set(
   getPlotData().data.flatMap(curveData => curveData.tags ?? [])
-)];
+)].filter(tag => tag !== 'all');
 
 const isSolverAvailable = solver => data(solver) !== null;
 
@@ -2072,6 +2076,9 @@ const renderLegend = () => {
   legend.style.width = legendWidth;
 }
 
+// Whether the tag menu is open, kept across the legend re-renders.
+let highlightMenuOpen = false;
+
 // Menu of the curve tags to highlight, hidden when no curve has a tag.
 const renderHighlightSelector = () => {
   const container = document.getElementById('legend_highlight');
@@ -2080,17 +2087,39 @@ const renderHighlightSelector = () => {
   (tags.length ? show : hide)(container);
   if (!tags.length) return;
 
-  const select = document.createElement('select');
-  select.className = 'ml-2 text-sm rounded border-gray-300 py-0';
-  ['', ...tags].forEach(tag => {
-    const option = document.createElement('option');
-    option.value = tag;
-    option.textContent = tag || 'none';
-    select.appendChild(option);
+  const selected = highlightTags();
+  const menu = document.createElement('details');
+  menu.style.display = 'inline-block';
+  menu.style.position = 'relative';
+  menu.open = highlightMenuOpen;
+  menu.addEventListener('toggle', () => { highlightMenuOpen = menu.open; });
+
+  const summary = document.createElement('summary');
+  summary.style.cursor = 'pointer';
+  summary.textContent = `Label: ${selected.join(', ') || 'none'}`;
+  menu.appendChild(summary);
+
+  const panel = document.createElement('div');
+  panel.className = 'bg-white shadow rounded py-1 px-3';
+  panel.style.position = 'absolute';
+  panel.style.zIndex = 50;
+  panel.style.whiteSpace = 'nowrap';
+  ['all', ...tags].forEach(tag => {
+    const label = document.createElement('label');
+    label.style.display = 'block';
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.value = tag;
+    box.checked = selected.includes(tag);
+    box.style.marginRight = '0.4rem';
+    box.addEventListener('change', () => setState({
+      highlight_tags: [...panel.querySelectorAll('input:checked')].map(b => b.value)
+    }));
+    label.append(box, tag);
+    panel.appendChild(label);
   });
-  select.value = highlightTag();
-  select.addEventListener('change', () => setState({highlight_tag: select.value}));
-  container.append('Label:', select);
+  menu.appendChild(panel);
+  container.appendChild(menu);
 };
 
 // Width the user dragged the legend to ('' until they do).

@@ -254,13 +254,18 @@ def test_scatter_highlight_tag_matplotlib():
 
     trace = dict(x=[1, 2], y=[1, 2], color="C0", marker="o")
     plot_data = dict(
-        title="", xlabel="", ylabel="", highlight="GPU", data=[
+        title="", xlabel="", ylabel="", highlight=["GPU", "pareto"], data=[
             dict(trace, label="tagged", tags=["GPU"]),
             dict(trace, label="other", tags=["CPU"]),
             dict(trace, label="no_tags"),
+            dict(trace, label="frontier", tags=["all"]),
         ]
     )
     fig = get_plot_scatter(plot_data)
     ax = fig.axes[0]
     assert [t.get_text() for t in ax.texts] == ["tagged"]
-    assert [line.get_alpha() for line in ax.lines] == [1, .3, .3]
+    assert [line.get_alpha() for line in ax.lines] == [1, .3, .3, 1]
+
+    plot_data["highlight"] = "all"
+    ax = get_plot_scatter(plot_data).axes[0]
+    assert [t.get_text() for t in ax.texts] == ["tagged", "other", "no_tags"]

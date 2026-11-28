@@ -107,9 +107,9 @@ PLOT
   ``marker_size``. By `Thomas Moreau`_ (:gh:`1052`)
 
 - Traces of custom ``scatter`` plots can have ``tags``. A menu in the legend
-  of the HTML report highlights the traces with a tag and shows their label
-  on the figure, and the plot metadata can set the default with
-  ``highlight``. Hovering a legend item highlights its trace.
+  of the HTML report highlights the traces with any of the chosen tags and
+  shows their label on the figure, and the plot metadata can set the default
+  with ``highlight``. Hovering a legend item highlights its trace.
   By `Thomas Moreau`_ (:gh:`1061`)
 
 - The "Suboptimal Curve" and "Relative Curve" toggles are replaced by a
