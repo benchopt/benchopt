@@ -114,10 +114,10 @@ svg[data-theme="dark"]:has(#goal1:hover) .pt, svg[data-theme="dark"][data-focus=
 .pill-lab { font: 500 13.5px 'IBM Plex Sans', sans-serif; fill: #3b4150; pointer-events: none; }
 .pill-btn:hover .pill-bg { fill: #f1f2f4; }
 svg:not([data-example]) .pill-house .pill-bg, svg[data-example="house"] .pill-house .pill-bg,
-svg[data-example="llm"] .pill-llm .pill-bg, svg[data-example="ts"] .pill-ts .pill-bg { fill: #1f2328; stroke: #1f2328; }
+svg[data-example="llm"] .pill-llm .pill-bg, svg[data-example="ts"] .pill-ts .pill-bg, svg[data-example="bci"] .pill-bci .pill-bg { fill: #1f2328; stroke: #1f2328; }
 svg:not([data-example]) .pill-house .pill-lab, svg[data-example="house"] .pill-house .pill-lab,
-svg[data-example="llm"] .pill-llm .pill-lab, svg[data-example="ts"] .pill-ts .pill-lab { fill: #ffffff; }
-svg:not([data-example]) .ex-house, svg[data-example="house"] .ex-house, svg[data-example="llm"] .ex-llm, svg[data-example="ts"] .ex-ts { display: inline; }
+svg[data-example="llm"] .pill-llm .pill-lab, svg[data-example="ts"] .pill-ts .pill-lab, svg[data-example="bci"] .pill-bci .pill-lab { fill: #ffffff; }
+svg:not([data-example]) .ex-house, svg[data-example="house"] .ex-house, svg[data-example="llm"] .ex-llm, svg[data-example="ts"] .ex-ts, svg[data-example="bci"] .ex-bci { display: inline; }
 .ttl { font: 600 24px 'IBM Plex Sans', sans-serif; fill: #1f2328; }
 .step { font: 500 15px 'IBM Plex Sans', sans-serif; fill: #6b7078; letter-spacing: .3px; }
 .card { font: 600 17px 'IBM Plex Sans', sans-serif; fill: #1f2328; }
@@ -143,9 +143,9 @@ svg[data-theme="dark"] .pill-bg { fill: #20242c; stroke: #4a505c; }
 svg[data-theme="dark"] .pill-lab { fill: #c3c8d0; }
 svg[data-theme="dark"] .pill-btn:hover .pill-bg { fill: #2a2f3a; }
 svg[data-theme="dark"]:not([data-example]) .pill-house .pill-bg, svg[data-theme="dark"][data-example="house"] .pill-house .pill-bg,
-svg[data-theme="dark"][data-example="llm"] .pill-llm .pill-bg, svg[data-theme="dark"][data-example="ts"] .pill-ts .pill-bg { fill: #e6e8ec; stroke: #e6e8ec; }
+svg[data-theme="dark"][data-example="llm"] .pill-llm .pill-bg, svg[data-theme="dark"][data-example="ts"] .pill-ts .pill-bg, svg[data-theme="dark"][data-example="bci"] .pill-bci .pill-bg { fill: #e6e8ec; stroke: #e6e8ec; }
 svg[data-theme="dark"]:not([data-example]) .pill-house .pill-lab, svg[data-theme="dark"][data-example="house"] .pill-house .pill-lab,
-svg[data-theme="dark"][data-example="llm"] .pill-llm .pill-lab, svg[data-theme="dark"][data-example="ts"] .pill-ts .pill-lab { fill: #14181e; }
+svg[data-theme="dark"][data-example="llm"] .pill-llm .pill-lab, svg[data-theme="dark"][data-example="ts"] .pill-ts .pill-lab, svg[data-theme="dark"][data-example="bci"] .pill-bci .pill-lab { fill: #14181e; }
 @media (prefers-color-scheme: dark) {
 svg:not([data-theme="light"]) .ttl, svg:not([data-theme="light"]) .card, svg:not([data-theme="light"]) .pill, svg:not([data-theme="light"]) .fixed { fill: #e6e8ec; }
 svg:not([data-theme="light"]) .run { fill: #7fa8ee; }
@@ -158,9 +158,9 @@ svg:not([data-theme="light"]) .pill-bg { fill: #20242c; stroke: #4a505c; }
 svg:not([data-theme="light"]) .pill-lab { fill: #c3c8d0; }
 svg:not([data-theme="light"]) .pill-btn:hover .pill-bg { fill: #2a2f3a; }
 svg:not([data-theme="light"]):not([data-example]) .pill-house .pill-bg, svg:not([data-theme="light"])[data-example="house"] .pill-house .pill-bg,
-svg:not([data-theme="light"])[data-example="llm"] .pill-llm .pill-bg, svg:not([data-theme="light"])[data-example="ts"] .pill-ts .pill-bg { fill: #e6e8ec; stroke: #e6e8ec; }
+svg:not([data-theme="light"])[data-example="llm"] .pill-llm .pill-bg, svg:not([data-theme="light"])[data-example="ts"] .pill-ts .pill-bg, svg:not([data-theme="light"])[data-example="bci"] .pill-bci .pill-bg { fill: #e6e8ec; stroke: #e6e8ec; }
 svg:not([data-theme="light"]):not([data-example]) .pill-house .pill-lab, svg:not([data-theme="light"])[data-example="house"] .pill-house .pill-lab,
-svg:not([data-theme="light"])[data-example="llm"] .pill-llm .pill-lab, svg:not([data-theme="light"])[data-example="ts"] .pill-ts .pill-lab { fill: #14181e; }
+svg:not([data-theme="light"])[data-example="llm"] .pill-llm .pill-lab, svg:not([data-theme="light"])[data-example="ts"] .pill-ts .pill-lab, svg:not([data-theme="light"])[data-example="bci"] .pill-bci .pill-lab { fill: #14181e; }
 }
 </style>
 <marker id="mgr" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9aa1ab"/></marker>
@@ -174,18 +174,22 @@ svg:not([data-theme="light"])[data-example="llm"] .pill-llm .pill-lab, svg:not([
 <rect class="bg" width="1200" height="580" fill="#ffffff"/>
 <text x="600" y="40" class="ttl" text-anchor="middle">Compare methods on your data. Or add your own method.</text>
 <g class="pill-btn pill-house" data-key="house"><title>Show the house prices benchmark</title>
-<rect x="470" y="62" width="110" height="28" rx="14" class="pill-bg"/>
-<text x="525" y="81" class="pill-lab" text-anchor="middle">House prices</text>
+<rect x="372" y="62" width="122" height="28" rx="14" class="pill-bg"/>
+<text x="433" y="81" class="pill-lab" text-anchor="middle">House prices</text>
 </g>
 <g class="pill-btn pill-llm" data-key="llm"><title>Show the llm training benchmark</title>
-<rect x="590" y="62" width="110" height="28" rx="14" class="pill-bg"/>
-<text x="645" y="81" class="pill-lab" text-anchor="middle">LLM training</text>
+<rect x="502" y="62" width="122" height="28" rx="14" class="pill-bg"/>
+<text x="563" y="81" class="pill-lab" text-anchor="middle">LLM training</text>
 </g>
 <g class="pill-btn pill-ts" data-key="ts"><title>Show the time series benchmark</title>
-<rect x="710" y="62" width="110" height="28" rx="14" class="pill-bg"/>
-<text x="765" y="81" class="pill-lab" text-anchor="middle">Time series</text>
+<rect x="632" y="62" width="122" height="28" rx="14" class="pill-bg"/>
+<text x="693" y="81" class="pill-lab" text-anchor="middle">Time series</text>
 </g>
-<text x="460" y="81" class="exlab" text-anchor="end">Examples:</text>
+<g class="pill-btn pill-bci" data-key="bci"><title>Show the bci competition benchmark</title>
+<rect x="762" y="62" width="122" height="28" rx="14" class="pill-bg"/>
+<text x="823" y="81" class="pill-lab" text-anchor="middle">BCI competition</text>
+</g>
+<text x="362" y="81" class="exlab" text-anchor="end">Examples:</text>
 <text x="175" y="120" class="step" text-anchor="middle">Start with an existing benchmark</text>
 <text x="600" y="120" class="step" text-anchor="middle">Benchopt runs each method</text>
 <text x="1020" y="120" class="step" text-anchor="middle">Compare the results</text>
@@ -344,6 +348,33 @@ svg:not([data-theme="light"])[data-example="llm"] .pill-llm .pill-lab, svg:not([
 <text x="1064.8600208623236" y="365.5" class="barval" text-anchor="end">0.125</text>
 <rect x="880" y="372" width="223.1" height="17" rx="3" fill="url(#mixed)" stroke="none" stroke-width="2"/>
 <text x="1109.076923076923" y="385.5" class="barout" text-anchor="start">0.146</text>
+</g>
+<g class="ex ex-bci">
+<text x="112" y="182" class="card" text-anchor="start">MeanLogReg</text>
+<text x="112" y="282" class="card" text-anchor="start">EEGNet</text>
+<text x="112" y="394" class="cardsub" text-anchor="start">e.g. REVE, a foundation model</text>
+<text x="600" y="370" class="fixed" text-anchor="middle">Every submission decodes the same</text>
+<text x="600" y="394" class="fixed" text-anchor="middle">held-out EEG sessions.</text>
+<a href="https://github.com/neural-interfaces26/2026-competition" target="_top" class="runlink"><text x="1020" y="421" text-anchor="middle" class="run">View the benchmark run →</text></a>
+<text x="548" y="518" class="cardsub" text-anchor="start">e.g. hidden test sessions</text>
+<text x="1020" y="140" class="pill" text-anchor="middle">Mental command decoding</text>
+<text x="1020" y="161" class="cardsub" text-anchor="middle">balanced accuracy · higher is better</text>
+<rect x="980" y="176" width="12" height="12" rx="2" fill="#9aa1ab"/>
+<text x="998" y="186.5" class="legend" text-anchor="start">PROTEUS warm-up</text>
+<text x="880" y="212" class="barlab" text-anchor="start">MeanLogReg</text>
+<rect x="880" y="220" width="199.1" height="26" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
+<text x="1073.06840319831" y="238.0" class="barval" text-anchor="end">39.6%</text>
+<text x="880" y="278" class="barlab" text-anchor="start">EEGNet</text>
+<rect x="880" y="286" width="129.6" height="26" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
+<text x="1003.5946291119697" y="304.0" class="barval" text-anchor="end">36.2%</text>
+<text x="880" y="344" class="barlab hl" text-anchor="start">REVE (your submission)</text>
+<rect x="880" y="352" width="157.1" height="26" rx="3" fill="#0b7a3e" stroke="none" stroke-width="2"/>
+<text x="1031.091586928945" y="370.0" class="barval" text-anchor="end">37.5%</text>
+<line x1="949.4" y1="216" x2="949.4" y2="250" stroke="#1f2328" stroke-width="1.6" stroke-dasharray="3 3"/>
+<line x1="949.4" y1="282" x2="949.4" y2="316" stroke="#1f2328" stroke-width="1.6" stroke-dasharray="3 3"/>
+<line x1="949.4" y1="348" x2="949.4" y2="382" stroke="#1f2328" stroke-width="1.6" stroke-dasharray="3 3"/>
+<text x="949.3579463159929" y="398" class="tick" text-anchor="middle">chance</text>
+<text x="1150" y="398" class="tick" text-anchor="end">axis starts at 30%</text>
 </g>
 </g>
 </svg>

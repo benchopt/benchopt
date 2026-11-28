@@ -60,7 +60,7 @@ function initFigure(obj) {
 
   if (obj.classList.contains("benchopt-add")) {
     // The pills in the figure choose the benchmark it shows.
-    const keys = ["house", "llm", "ts"];
+    const keys = ["house", "llm", "ts", "bci"];
     const show = (key) => svg.setAttribute("data-example", key);
     // On first view, show each example in turn; any interaction stops it.
     let demo = null;
