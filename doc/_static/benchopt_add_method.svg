@@ -105,7 +105,7 @@ svg[data-theme="dark"]:has(#goal1:hover) .pt, svg[data-theme="dark"][data-focus=
 
 .ex { display: none; }
 .pill-btn { cursor: pointer; }
-.barhalo { font: 600 12.5px 'IBM Plex Sans', sans-serif; fill: #ffffff; stroke: #1f2328; stroke-width: 3px; paint-order: stroke; stroke-linejoin: round; }
+.barout { font: 600 12.5px 'IBM Plex Sans', sans-serif; fill: #1f2328; }
 .fixed { font: 600 16px 'IBM Plex Sans', sans-serif; fill: #1f2328; }
 .run { font: 500 13px 'IBM Plex Sans', sans-serif; fill: #2a5caa; }
 .runlink { cursor: pointer; } .runlink:hover .run { text-decoration: underline; }
@@ -134,6 +134,7 @@ svg:not([data-example]) .ex-house, svg[data-example="house"] .ex-house, svg[data
 
 svg[data-theme="dark"] .ttl, svg[data-theme="dark"] .card, svg[data-theme="dark"] .pill, svg[data-theme="dark"] .fixed { fill: #e6e8ec; }
 svg[data-theme="dark"] .run { fill: #7fa8ee; }
+svg[data-theme="dark"] .barout { fill: #e6e8ec; }
 
 svg[data-theme="dark"] .inbox, svg[data-theme="dark"] .legend, svg[data-theme="dark"] .barlab { fill: #c3c8d0; }
 svg[data-theme="dark"] .card.hl, svg[data-theme="dark"] .barlab.hl { fill: #3db36f; }
@@ -148,6 +149,7 @@ svg[data-theme="dark"][data-example="llm"] .pill-llm .pill-lab, svg[data-theme="
 @media (prefers-color-scheme: dark) {
 svg:not([data-theme="light"]) .ttl, svg:not([data-theme="light"]) .card, svg:not([data-theme="light"]) .pill, svg:not([data-theme="light"]) .fixed { fill: #e6e8ec; }
 svg:not([data-theme="light"]) .run { fill: #7fa8ee; }
+svg:not([data-theme="light"]) .barout { fill: #e6e8ec; }
 
 svg:not([data-theme="light"]) .inbox, svg:not([data-theme="light"]) .legend, svg:not([data-theme="light"]) .barlab { fill: #c3c8d0; }
 svg:not([data-theme="light"]) .card.hl, svg:not([data-theme="light"]) .barlab.hl { fill: #3db36f; }
@@ -265,21 +267,20 @@ svg:not([data-theme="light"])[data-example="llm"] .pill-llm .pill-lab, svg:not([
 <rect x="1013" y="176" width="12" height="12" rx="2" fill="#a9c0e8"/>
 <text x="1031" y="186.5" class="legend dt" text-anchor="start">California · your data</text>
 <text x="880" y="212" class="barlab" text-anchor="start">Linear regression</text>
-<rect x="880" y="220" width="138.5" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
-<text x="1012.4865186752014" y="233.5" class="barval" text-anchor="end">$28.6k</text>
-<rect x="880" y="240" width="259.6" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
-<text x="1133.6153846153848" y="253.5" class="barval2" text-anchor="end">$53.7k</text>
+<rect x="880" y="220" width="119.0" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
+<text x="992.9958234542471" y="233.5" class="barval" text-anchor="end">$28.6k</text>
+<rect x="880" y="240" width="223.1" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
+<text x="1097.076923076923" y="253.5" class="barval2" text-anchor="end">$53.7k</text>
 <text x="880" y="278" class="barlab" text-anchor="start">Random forest</text>
-<rect x="880" y="286" width="123.7" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
-<text x="997.7369726000782" y="299.5" class="barval" text-anchor="end">$25.6k</text>
-<rect x="880" y="306" width="163.0" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
-<text x="1036.9984798644125" y="319.5" class="barval2" text-anchor="end">$33.7k</text>
+<rect x="880" y="286" width="106.3" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
+<text x="980.3221394193264" y="299.5" class="barval" text-anchor="end">$25.6k</text>
+<rect x="880" y="306" width="140.1" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
+<text x="1014.0579530686805" y="319.5" class="barval2" text-anchor="end">$33.7k</text>
 <text x="880" y="344" class="barlab hl" text-anchor="start">TabICL (your method)</text>
-<rect x="880" y="352" width="109.4" height="17" rx="3" fill="#0b7a3e" stroke="none" stroke-width="2"/>
-<text x="983.4334111555753" y="365.5" class="barval" text-anchor="end">$22.6k</text>
-<rect x="880" y="372" width="118.7" height="17" rx="3" fill="url(#mixed)" stroke="none" stroke-width="2"/>
-<rect x="942.3" y="374" width="54.4" height="13" rx="3" fill="#15191f" fill-opacity=".82"/>
-<text x="991.7255909402323" y="385.5" class="barval" text-anchor="end">$24.6k</text>
+<rect x="880" y="352" width="94.0" height="17" rx="3" fill="#0b7a3e" stroke="none" stroke-width="2"/>
+<text x="968.0316718077536" y="365.5" class="barval" text-anchor="end">$22.6k</text>
+<rect x="880" y="372" width="102.0" height="17" rx="3" fill="url(#mixed)" stroke="none" stroke-width="2"/>
+<text x="988.0160633264219" y="385.5" class="barout" text-anchor="start">$24.6k</text>
 </g>
 <g class="ex ex-llm">
 <text x="112" y="182" class="card" text-anchor="start">Adam</text>
@@ -329,21 +330,20 @@ svg:not([data-theme="light"])[data-example="llm"] .pill-llm .pill-lab, svg:not([
 <rect x="1013" y="176" width="12" height="12" rx="2" fill="#a9c0e8"/>
 <text x="1031" y="186.5" class="legend dt" text-anchor="start">fev-bench · your data</text>
 <text x="880" y="212" class="barlab" text-anchor="start">Chronos-2</text>
-<rect x="880" y="220" width="198.4" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
-<text x="1072.3699889256977" y="233.5" class="barval" text-anchor="end">0.112</text>
-<rect x="880" y="240" width="214.6" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
-<text x="1088.6340894904936" y="253.5" class="barval2" text-anchor="end">0.121</text>
+<rect x="880" y="220" width="170.5" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
+<text x="1044.4512497435624" y="233.5" class="barval" text-anchor="end">0.112</text>
+<rect x="880" y="240" width="184.4" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
+<text x="1058.426328747387" y="253.5" class="barval2" text-anchor="end">0.121</text>
 <text x="880" y="278" class="barlab" text-anchor="start">Toto-2.0</text>
-<rect x="880" y="286" width="213.9" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
-<text x="1087.8617448868786" y="299.5" class="barval" text-anchor="end">0.120</text>
-<rect x="880" y="306" width="229.5" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
-<text x="1103.5091371007188" y="319.5" class="barval2" text-anchor="end">0.129</text>
+<rect x="880" y="286" width="183.8" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
+<text x="1057.762684495392" y="299.5" class="barval" text-anchor="end">0.120</text>
+<rect x="880" y="306" width="197.2" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
+<text x="1071.2078511383952" y="319.5" class="barval2" text-anchor="end">0.129</text>
 <text x="880" y="344" class="barlab hl" text-anchor="start">TabICL (your model)</text>
-<rect x="880" y="352" width="222.1" height="17" rx="3" fill="#0b7a3e" stroke="none" stroke-width="2"/>
-<text x="1096.1215760035664" y="365.5" class="barval" text-anchor="end">0.125</text>
-<rect x="880" y="372" width="259.6" height="17" rx="3" fill="url(#mixed)" stroke="none" stroke-width="2"/>
-<rect x="1090.6" y="374" width="47.0" height="13" rx="3" fill="#15191f" fill-opacity=".82"/>
-<text x="1132.6153846153848" y="385.5" class="barval" text-anchor="end">0.146</text>
+<rect x="880" y="352" width="190.9" height="17" rx="3" fill="#0b7a3e" stroke="none" stroke-width="2"/>
+<text x="1064.8600208623236" y="365.5" class="barval" text-anchor="end">0.125</text>
+<rect x="880" y="372" width="223.1" height="17" rx="3" fill="url(#mixed)" stroke="none" stroke-width="2"/>
+<text x="1109.076923076923" y="385.5" class="barout" text-anchor="start">0.146</text>
 </g>
 </g>
 </svg>
