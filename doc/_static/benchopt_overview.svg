@@ -33,13 +33,13 @@ svg:has(#goal0:hover) .dim:not(.rel0), svg:has(#goal1:hover) .dim:not(.rel1), sv
 svg[data-focus="0"]:not(:hover) .dim:not(.rel0), svg[data-focus="1"]:not(:hover) .dim:not(.rel1), svg[data-focus="2"]:not(:hover) .dim:not(.rel2) { opacity: .15; }
 .otl { font: 400 12.5px 'IBM Plex Sans', sans-serif; fill: #6b7078; }
 svg[data-theme="dark"] .bg { fill: transparent; }
-svg[data-theme="dark"] .ln { stroke: #e6e8ec; }
+svg[data-theme="dark"] .ln { stroke: #aab0ba; }
 svg[data-theme="dark"] .pline { stroke: #7d848f; }
-svg[data-theme="dark"] [fill="#ffffff"] { fill: #232833; } svg[data-theme="dark"] [stroke="#ffffff"] { stroke: #232833; }
-svg[data-theme="dark"] [fill="#fff"] { fill: #232833; } svg[data-theme="dark"] [stroke="#fff"] { stroke: #232833; }
+svg[data-theme="dark"] [fill="#ffffff"] { fill: #20242c; } svg[data-theme="dark"] [stroke="#ffffff"] { stroke: #20242c; }
+svg[data-theme="dark"] [fill="#fff"] { fill: #20242c; } svg[data-theme="dark"] [stroke="#fff"] { stroke: #20242c; }
 svg[data-theme="dark"] [fill="#fafaf8"] { fill: #1b1f27; } svg[data-theme="dark"] [stroke="#fafaf8"] { stroke: #1b1f27; }
-svg[data-theme="dark"] [fill="#1f2328"] { fill: #e6e8ec; } svg[data-theme="dark"] [stroke="#1f2328"] { stroke: #e6e8ec; }
-svg[data-theme="dark"] [fill="#3b4150"] { fill: #c3c8d0; } svg[data-theme="dark"] [stroke="#3b4150"] { stroke: #c3c8d0; }
+svg[data-theme="dark"] [fill="#1f2328"] { fill: #e6e8ec; } svg[data-theme="dark"] [stroke="#1f2328"] { stroke: #8b929d; }
+svg[data-theme="dark"] [fill="#3b4150"] { fill: #c3c8d0; } svg[data-theme="dark"] [stroke="#3b4150"] { stroke: #7d848f; }
 svg[data-theme="dark"] [fill="#6b7078"] { fill: #9aa1ab; } svg[data-theme="dark"] [stroke="#6b7078"] { stroke: #9aa1ab; }
 svg[data-theme="dark"] [fill="#5b616b"] { fill: #a7adb6; } svg[data-theme="dark"] [stroke="#5b616b"] { stroke: #a7adb6; }
 svg[data-theme="dark"] [fill="#8a8f98"] { fill: #7d848f; } svg[data-theme="dark"] [stroke="#8a8f98"] { stroke: #7d848f; }
@@ -60,13 +60,13 @@ svg[data-theme="dark"] .ll, svg[data-theme="dark"] .plus, svg[data-theme="dark"]
 svg[data-theme="dark"] .pt { fill: #7d848f; }
 @media (prefers-color-scheme: dark) {
 svg:not([data-theme="light"]) .bg { fill: transparent; }
-svg:not([data-theme="light"]) .ln { stroke: #e6e8ec; }
+svg:not([data-theme="light"]) .ln { stroke: #aab0ba; }
 svg:not([data-theme="light"]) .pline { stroke: #7d848f; }
-svg:not([data-theme="light"]) [fill="#ffffff"] { fill: #232833; } svg:not([data-theme="light"]) [stroke="#ffffff"] { stroke: #232833; }
-svg:not([data-theme="light"]) [fill="#fff"] { fill: #232833; } svg:not([data-theme="light"]) [stroke="#fff"] { stroke: #232833; }
+svg:not([data-theme="light"]) [fill="#ffffff"] { fill: #20242c; } svg:not([data-theme="light"]) [stroke="#ffffff"] { stroke: #20242c; }
+svg:not([data-theme="light"]) [fill="#fff"] { fill: #20242c; } svg:not([data-theme="light"]) [stroke="#fff"] { stroke: #20242c; }
 svg:not([data-theme="light"]) [fill="#fafaf8"] { fill: #1b1f27; } svg:not([data-theme="light"]) [stroke="#fafaf8"] { stroke: #1b1f27; }
-svg:not([data-theme="light"]) [fill="#1f2328"] { fill: #e6e8ec; } svg:not([data-theme="light"]) [stroke="#1f2328"] { stroke: #e6e8ec; }
-svg:not([data-theme="light"]) [fill="#3b4150"] { fill: #c3c8d0; } svg:not([data-theme="light"]) [stroke="#3b4150"] { stroke: #c3c8d0; }
+svg:not([data-theme="light"]) [fill="#1f2328"] { fill: #e6e8ec; } svg:not([data-theme="light"]) [stroke="#1f2328"] { stroke: #8b929d; }
+svg:not([data-theme="light"]) [fill="#3b4150"] { fill: #c3c8d0; } svg:not([data-theme="light"]) [stroke="#3b4150"] { stroke: #7d848f; }
 svg:not([data-theme="light"]) [fill="#6b7078"] { fill: #9aa1ab; } svg:not([data-theme="light"]) [stroke="#6b7078"] { stroke: #9aa1ab; }
 svg:not([data-theme="light"]) [fill="#5b616b"] { fill: #a7adb6; } svg:not([data-theme="light"]) [stroke="#5b616b"] { stroke: #a7adb6; }
 svg:not([data-theme="light"]) [fill="#8a8f98"] { fill: #7d848f; } svg:not([data-theme="light"]) [stroke="#8a8f98"] { stroke: #7d848f; }
