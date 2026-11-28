@@ -110,7 +110,7 @@ PLOT
   of the HTML report highlights the traces with a tag and shows their label
   on the figure, and the plot metadata can set the default with
   ``highlight``. Hovering a legend item highlights its trace.
-  By `Thomas Moreau`_ (:gh:`XXXX`)
+  By `Thomas Moreau`_ (:gh:`1061`)
 
 - The "Suboptimal Curve" and "Relative Curve" toggles are replaced by a
   ``Y_axis`` option of the ``objective_curve`` plot, so they no longer apply
