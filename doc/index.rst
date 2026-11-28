@@ -70,19 +70,6 @@ One benchmark, three uses
         **Publish your results:** see :ref:`publish_benchmark`.
 
 
-Explore benchopt
-----------------
-
-.. raw:: html
-
-   <object class="benchopt-figure benchopt-overview" data="_static/benchopt_overview.svg"
-           type="image/svg+xml"
-           aria-label="Research, competitions and reference benchmarks all rely on one benchopt benchmark, which produces paper figures, reusable results, leaderboards and a live results site.">
-   </object>
-   <p class="overview-hint">Hover a use to see what it relies on and produces,
-   click a tool or an arrow to open its documentation.</p>
-
-
 Use benchopt
 ------------
 
@@ -132,6 +119,19 @@ cluster or open it to others.
 
 .. Frequently Asked Questions (FAQ) subsection
 .. include:: faq.rst
+
+Explore benchopt
+----------------
+
+.. raw:: html
+
+   <object class="benchopt-figure benchopt-overview" data="_static/benchopt_overview.svg"
+           type="image/svg+xml"
+           aria-label="Research, competitions and reference benchmarks all rely on one benchopt benchmark, which produces paper figures, reusable results, leaderboards and a live results site.">
+   </object>
+   <p class="overview-hint">Hover a use to see what it relies on and produces,
+   click a tool or an arrow to open its documentation.</p>
+
 
 Join the community
 ------------------
