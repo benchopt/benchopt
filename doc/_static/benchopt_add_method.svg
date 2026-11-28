@@ -105,6 +105,9 @@ svg[data-theme="dark"]:has(#goal1:hover) .pt, svg[data-theme="dark"][data-focus=
 
 .ex { display: none; }
 .pill-btn { cursor: pointer; }
+.fixed { font: 600 16px 'IBM Plex Sans', sans-serif; fill: #1f2328; }
+.run { font: 500 13px 'IBM Plex Sans', sans-serif; fill: #2a5caa; }
+.runlink { cursor: pointer; } .runlink:hover .run { text-decoration: underline; }
 .exlab { font: 500 14px 'IBM Plex Sans', sans-serif; fill: #6b7078; }
 .pill-bg { fill: #ffffff; stroke: #c9ccd2; stroke-width: 1.5; transition: fill .15s; }
 .pill-lab { font: 500 13.5px 'IBM Plex Sans', sans-serif; fill: #3b4150; pointer-events: none; }
@@ -128,7 +131,8 @@ svg:not([data-example]) .ex-house, svg[data-example="house"] .ex-house, svg[data
 .barval2 { font: 600 12.5px 'IBM Plex Sans', sans-serif; fill: #1d3768; }
 .tick { font: 400 11.5px 'IBM Plex Sans', sans-serif; fill: #6b7078; }
 
-svg[data-theme="dark"] .ttl, svg[data-theme="dark"] .card, svg[data-theme="dark"] .pill { fill: #e6e8ec; }
+svg[data-theme="dark"] .ttl, svg[data-theme="dark"] .card, svg[data-theme="dark"] .pill, svg[data-theme="dark"] .fixed { fill: #e6e8ec; }
+svg[data-theme="dark"] .run { fill: #7fa8ee; }
 svg[data-theme="dark"] .inbox, svg[data-theme="dark"] .legend, svg[data-theme="dark"] .barlab { fill: #c3c8d0; }
 svg[data-theme="dark"] .card.hl, svg[data-theme="dark"] .barlab.hl { fill: #f07d3e; }
 svg[data-theme="dark"] .card.dt, svg[data-theme="dark"] .legend.dt { fill: #5b8fe6; }
@@ -140,7 +144,8 @@ svg[data-theme="dark"][data-example="llm"] .pill-llm .pill-bg, svg[data-theme="d
 svg[data-theme="dark"]:not([data-example]) .pill-house .pill-lab, svg[data-theme="dark"][data-example="house"] .pill-house .pill-lab,
 svg[data-theme="dark"][data-example="llm"] .pill-llm .pill-lab, svg[data-theme="dark"][data-example="ts"] .pill-ts .pill-lab { fill: #14181e; }
 @media (prefers-color-scheme: dark) {
-svg:not([data-theme="light"]) .ttl, svg:not([data-theme="light"]) .card, svg:not([data-theme="light"]) .pill { fill: #e6e8ec; }
+svg:not([data-theme="light"]) .ttl, svg:not([data-theme="light"]) .card, svg:not([data-theme="light"]) .pill, svg:not([data-theme="light"]) .fixed { fill: #e6e8ec; }
+svg:not([data-theme="light"]) .run { fill: #7fa8ee; }
 svg:not([data-theme="light"]) .inbox, svg:not([data-theme="light"]) .legend, svg:not([data-theme="light"]) .barlab { fill: #c3c8d0; }
 svg:not([data-theme="light"]) .card.hl, svg:not([data-theme="light"]) .barlab.hl { fill: #f07d3e; }
 svg:not([data-theme="light"]) .card.dt, svg:not([data-theme="light"]) .legend.dt { fill: #5b8fe6; }
@@ -161,7 +166,7 @@ svg:not([data-theme="light"])[data-example="llm"] .pill-llm .pill-lab, svg:not([
 <marker id="m0" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="13" markerHeight="13" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#e8601a"/></marker><marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="13" markerHeight="13" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0b7a3e"/></marker><marker id="m2" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="13" markerHeight="13" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2a5caa"/></marker>
 </defs>
 <rect class="bg" width="1200" height="580" fill="#ffffff"/>
-<text x="600" y="40" class="ttl" text-anchor="middle">Add your method or your data. See how it compares.</text>
+<text x="600" y="40" class="ttl" text-anchor="middle">Compare methods on your data. Or add your own method.</text>
 <g class="pill-btn pill-house" data-key="house"><title>Show the house prices benchmark</title>
 <rect x="470" y="62" width="110" height="28" rx="14" class="pill-bg"/>
 <text x="525" y="81" class="pill-lab" text-anchor="middle">House prices</text>
@@ -177,7 +182,7 @@ svg:not([data-theme="light"])[data-example="llm"] .pill-llm .pill-lab, svg:not([
 <text x="460" y="81" class="exlab" text-anchor="end">Examples:</text>
 <text x="175" y="120" class="step" text-anchor="middle">Start with an existing benchmark</text>
 <text x="600" y="120" class="step" text-anchor="middle">Benchopt runs each method</text>
-<text x="1020" y="120" class="step" text-anchor="middle">See how it compares</text>
+<text x="1020" y="120" class="step" text-anchor="middle">Compare the results</text>
 <g transform="translate(0,34)">
 <rect x="40" y="140" width="270" height="70" rx="14" fill="#ffffff" stroke="#9aa1ab" stroke-width="2"/>
 <path d="M95.3,175.0 L96.4,175.4 L97.0,175.8 L97.0,176.2 L96.9,176.6 L96.9,177.0 L96.8,177.4 L96.7,177.7 L96.7,178.1 L96.6,178.5 L96.5,178.9 L96.4,179.3 L96.3,179.7 L96.1,180.0 L95.4,180.2 L94.3,180.1 L93.2,180.0 L92.6,180.1 L92.4,180.3 L92.3,180.6 L92.1,180.9 L92.0,181.1 L91.8,181.4 L91.6,181.7 L91.4,181.9 L91.3,182.1 L91.1,182.4 L90.9,182.6 L90.7,182.9 L91.0,183.6 L91.5,184.6 L92.0,185.6 L92.0,186.2 L91.7,186.4 L91.4,186.7 L91.1,186.9 L90.8,187.2 L90.4,187.4 L90.1,187.6 L89.8,187.8 L89.4,188.0 L89.1,188.2 L88.7,188.4 L88.4,188.6 L87.7,188.0 L87.0,187.2 L86.3,186.3 L85.8,186.0 L85.6,186.1 L85.3,186.2 L85.0,186.3 L84.7,186.4 L84.4,186.5 L84.1,186.5 L83.8,186.6 L83.5,186.6 L83.2,186.6 L82.8,186.7 L82.5,186.7 L82.2,187.6 L81.9,188.6 L81.5,189.6 L81.1,190.0 L80.7,189.9 L80.3,189.9 L79.9,189.9 L79.5,189.8 L79.2,189.7 L78.8,189.6 L78.4,189.6 L78.0,189.5 L77.6,189.3 L77.3,189.2 L76.9,189.1 L76.9,188.1 L76.9,187.0 L77.0,185.9 L76.9,185.5 L76.6,185.4 L76.3,185.2 L76.1,185.1 L75.8,184.9 L75.5,184.8 L75.3,184.6 L75.0,184.4 L74.8,184.2 L74.6,184.0 L74.3,183.8 L74.1,183.6 L73.2,184.1 L72.2,184.6 L71.2,185.1 L70.8,184.9 L70.5,184.6 L70.2,184.3 L70.0,184.0 L69.8,183.7 L69.5,183.4 L69.3,183.0 L69.1,182.7 L68.9,182.4 L68.7,182.0 L68.6,181.7 L68.4,181.3 L69.2,180.5 L70.0,179.8 L70.9,179.1 L70.9,178.8 L70.8,178.5 L70.7,178.2 L70.7,177.9 L70.6,177.6 L70.5,177.3 L70.5,177.0 L70.4,176.7 L70.4,176.4 L70.3,176.1 L70.3,175.8 L70.2,175.5 L69.2,175.2 L68.1,174.8 L67.1,174.4 L67.0,174.0 L67.1,173.6 L67.1,173.2 L67.2,172.8 L67.2,172.4 L67.3,172.1 L67.4,171.7 L67.5,171.3 L67.6,170.9 L67.7,170.5 L67.8,170.2 L68.1,169.8 L69.2,169.9 L70.3,169.9 L71.3,170.1 L71.5,169.8 L71.7,169.5 L71.8,169.3 L72.0,169.0 L72.1,168.7 L72.3,168.5 L72.5,168.2 L72.6,168.0 L72.8,167.7 L73.0,167.5 L73.2,167.3 L73.3,166.9 L72.7,165.9 L72.3,164.9 L71.9,164.0 L72.2,163.7 L72.5,163.4 L72.8,163.2 L73.1,162.9 L73.4,162.7 L73.7,162.5 L74.0,162.3 L74.4,162.1 L74.7,161.9 L75.1,161.7 L75.4,161.5 L75.9,161.6 L76.7,162.4 L77.4,163.2 L78.0,164.0 L78.3,163.9 L78.6,163.8 L78.9,163.7 L79.2,163.6 L79.5,163.6 L79.8,163.5 L80.1,163.5 L80.4,163.4 L80.7,163.4 L81.0,163.3 L81.3,163.3 L81.6,162.9 L81.9,161.9 L82.3,160.9 L82.7,160.0 L83.1,160.0 L83.5,160.1 L83.9,160.1 L84.3,160.2 L84.6,160.2 L85.0,160.3 L85.4,160.4 L85.8,160.5 L86.2,160.6 L86.6,160.7 L86.9,160.8 L87.2,161.4 L87.1,162.5 L87.0,163.5 L87.0,164.4 L87.3,164.6 L87.5,164.7 L87.8,164.8 L88.1,165.0 L88.3,165.2 L88.6,165.3 L88.8,165.5 L89.1,165.7 L89.3,165.9 L89.6,166.1 L89.8,166.3 L90.4,166.1 L91.3,165.6 L92.3,165.2 L93.1,164.9 L93.4,165.2 L93.6,165.5 L93.9,165.8 L94.1,166.2 L94.3,166.5 L94.6,166.8 L94.8,167.1 L95.0,167.5 L95.2,167.8 L95.4,168.2 L95.5,168.5 L95.2,169.1 L94.4,169.8 L93.6,170.5 L93.0,171.1 L93.1,171.4 L93.2,171.7 L93.3,172.0 L93.4,172.3 L93.4,172.6 L93.5,172.9 L93.6,173.2 L93.6,173.5 L93.6,173.8 L93.7,174.1 L93.7,174.4 L94.3,174.7 L95.3,175.0Z" fill="#9aa1ab"/>
@@ -219,7 +224,6 @@ svg:not([data-theme="light"])[data-example="llm"] .pill-llm .pill-lab, svg:not([
 <rect x="700" y="250" width="14" height="30" rx="2" fill="#6e2a8f"/>
 <line x1="632" y1="281" x2="728" y2="281" stroke="#1f2328" stroke-width="1.6"/>
 <text x="680" y="305" class="inbox" text-anchor="middle">same metric</text>
-<text x="600" y="362" class="pill" text-anchor="middle">Same data · Same metric</text>
 <path d="M790,235 L846,235" fill="none" stroke="#9aa1ab" stroke-width="2.6" marker-end="url(#mgr)"/>
 <path d="M790,265 L846,265" fill="none" stroke="#9aa1ab" stroke-width="2.6" marker-end="url(#mgr)"/>
 <path d="M790,295 L846,295" fill="none" stroke="#e8601a" stroke-width="3.4" marker-end="url(#mh)"/>
@@ -246,8 +250,9 @@ svg:not([data-theme="light"])[data-example="llm"] .pill-llm .pill-lab, svg:not([
 <text x="112" y="182" class="card" text-anchor="start">Linear regression</text>
 <text x="112" y="282" class="card" text-anchor="start">Random forest</text>
 <text x="112" y="394" class="cardsub" text-anchor="start">e.g. TabICL, a foundation model</text>
-<text x="600" y="388" class="cardsub" text-anchor="middle">Predict the sale price of homes from</text>
-<text x="600" y="406" class="cardsub" text-anchor="middle">floor area, location and bedrooms.</text>
+<text x="600" y="370" class="fixed" text-anchor="middle">Every method predicts prices</text>
+<text x="600" y="394" class="fixed" text-anchor="middle">for the same held-out homes.</text>
+<a href="https://github.com/benchopt/benchmark_house_prices" target="_top" class="runlink"><text x="1020" y="421" text-anchor="middle" class="run">View the benchmark run →</text></a>
 <text x="548" y="518" class="cardsub" text-anchor="start">e.g. California homes</text>
 <text x="1020" y="140" class="pill" text-anchor="middle">Average price error ($)</text>
 <text x="1020" y="161" class="cardsub" text-anchor="middle">on held-out homes · lower is better</text>
@@ -255,59 +260,62 @@ svg:not([data-theme="light"])[data-example="llm"] .pill-llm .pill-lab, svg:not([
 <text x="926" y="186.5" class="legend" text-anchor="start">Ames</text>
 <rect x="1013" y="176" width="12" height="12" rx="2" fill="#a9c0e8"/>
 <text x="1031" y="186.5" class="legend dt" text-anchor="start">California · your data</text>
-<text x="880" y="216" class="barlab" text-anchor="start">Linear regression</text>
-<rect x="880" y="224" width="138.5" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
-<text x="1012.4865186752014" y="237.5" class="barval" text-anchor="end">$28.6k</text>
-<rect x="880" y="244" width="259.6" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
-<text x="1133.6153846153848" y="257.5" class="barval2" text-anchor="end">$53.7k</text>
-<text x="880" y="286" class="barlab" text-anchor="start">Random forest</text>
-<rect x="880" y="294" width="123.7" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
-<text x="997.7369726000782" y="307.5" class="barval" text-anchor="end">$25.6k</text>
-<rect x="880" y="314" width="163.0" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
-<text x="1036.9984798644125" y="327.5" class="barval2" text-anchor="end">$33.7k</text>
-<text x="880" y="356" class="barlab hl" text-anchor="start">your method (TabICL)</text>
-<rect x="880" y="364" width="109.4" height="17" rx="3" fill="#e8601a" stroke="none" stroke-width="2"/>
-<text x="983.4334111555753" y="377.5" class="barval" text-anchor="end">$22.6k</text>
-<rect x="880" y="384" width="118.7" height="17" rx="3" fill="#f6b48f" stroke="#2a5caa" stroke-width="2"/>
-<text x="992.7255909402323" y="397.5" class="barval2" text-anchor="end">$24.6k</text>
+<text x="880" y="212" class="barlab" text-anchor="start">Linear regression</text>
+<rect x="880" y="220" width="138.5" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
+<text x="1012.4865186752014" y="233.5" class="barval" text-anchor="end">$28.6k</text>
+<rect x="880" y="240" width="259.6" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
+<text x="1133.6153846153848" y="253.5" class="barval2" text-anchor="end">$53.7k</text>
+<text x="880" y="278" class="barlab" text-anchor="start">Random forest</text>
+<rect x="880" y="286" width="123.7" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
+<text x="997.7369726000782" y="299.5" class="barval" text-anchor="end">$25.6k</text>
+<rect x="880" y="306" width="163.0" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
+<text x="1036.9984798644125" y="319.5" class="barval2" text-anchor="end">$33.7k</text>
+<text x="880" y="344" class="barlab hl" text-anchor="start">TabICL (your method)</text>
+<rect x="880" y="352" width="109.4" height="17" rx="3" fill="#e8601a" stroke="none" stroke-width="2"/>
+<text x="983.4334111555753" y="365.5" class="barval" text-anchor="end">$22.6k</text>
+<rect x="880" y="372" width="118.7" height="17" rx="3" fill="#f6b48f" stroke="#2a5caa" stroke-width="2"/>
+<text x="992.7255909402323" y="385.5" class="barval2" text-anchor="end">$24.6k</text>
 </g>
 <g class="ex ex-llm">
 <text x="112" y="182" class="card" text-anchor="start">Adam</text>
 <text x="112" y="282" class="card" text-anchor="start">Muon</text>
 <text x="112" y="394" class="cardsub" text-anchor="start">e.g. Scion, a new optimizer</text>
-<text x="600" y="388" class="cardsub" text-anchor="middle">Train a small GPT on the same text,</text>
-<text x="600" y="406" class="cardsub" text-anchor="middle">and track its loss on held-out text.</text>
+<text x="600" y="370" class="fixed" text-anchor="middle">Each optimizer trains the same</text>
+<text x="600" y="394" class="fixed" text-anchor="middle">model on the same text.</text>
+<a href="https://benchopt.github.io/results/benchmark_nanogpt_benchmark_nanogpt_benchopt_run_2026-02-20_22h18m17.html" target="_top" class="runlink"><text x="1020" y="421" text-anchor="middle" class="run">View the benchmark run →</text></a>
 <text x="548" y="518" class="cardsub" text-anchor="start">e.g. another text corpus</text>
 <text x="1020" y="140" class="pill" text-anchor="middle">Validation loss</text>
 <text x="1020" y="161" class="cardsub" text-anchor="middle">during training · lower is better</text>
-<line x1="925" y1="348.0" x2="1155" y2="348.0" stroke="#dcdcd6" stroke-width="1"/>
-<text x="917" y="351.96296296296293" class="tick" text-anchor="end">3.5</text>
-<line x1="925" y1="273.9" x2="1155" y2="273.9" stroke="#dcdcd6" stroke-width="1"/>
-<text x="917" y="277.88888888888886" class="tick" text-anchor="end">4.0</text>
-<line x1="925" y1="199.8" x2="1155" y2="199.8" stroke="#dcdcd6" stroke-width="1"/>
-<text x="917" y="203.81481481481475" class="tick" text-anchor="end">4.5</text>
-<text x="925.0" y="402" class="tick" text-anchor="middle">0</text>
-<text x="1020.8333333333334" y="402" class="tick" text-anchor="middle">10</text>
-<text x="1116.6666666666667" y="402" class="tick" text-anchor="middle">20</text>
-<line x1="925" y1="385" x2="1155" y2="385" stroke="#1f2328" stroke-width="1.4"/>
-<line x1="925" y1="185" x2="925" y2="385" stroke="#1f2328" stroke-width="1.4"/>
-<text x="1040.0" y="419" class="tick" text-anchor="middle">training time (min)</text>
-<polyline points="957.0,217.5 963.4,240.0 969.8,255.8 976.2,268.5 982.5,278.1 988.9,285.6 995.3,292.1 1001.6,297.0 1008.0,302.4 1014.3,305.9 1020.8,309.5 1027.1,313.1 1033.5,313.7 1039.8,318.2 1046.2,321.0 1052.6,324.0 1058.9,327.3 1065.3,329.6 1071.6,332.0 1078.0,333.9 1084.3,336.5 1090.7,335.0 1097.0,332.3 1103.4,334.1" fill="none" stroke="#9aa1ab" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
-<polyline points="939.2,209.1 946.1,247.2 952.9,266.5 959.7,279.5 966.6,289.7 973.4,296.9 980.2,302.8 987.1,307.4 993.9,312.0 1000.7,315.9 1007.6,319.2 1014.4,322.8 1021.2,325.5 1028.1,328.0 1034.9,330.2 1041.8,332.2 1048.6,333.8 1055.5,335.6 1062.3,337.2 1069.1,339.6 1076.0,341.8 1082.8,343.9 1089.6,345.9 1096.4,347.8 1103.3,349.9 1110.1,351.5 1117.0,353.1 1123.8,354.5 1130.6,355.7 1137.5,356.8 1144.3,357.4" fill="none" stroke="#9aa1ab" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
-<polyline points="946.0,245.7 952.9,260.3 959.8,271.9 966.7,276.8 973.6,296.6 980.5,302.8 987.4,306.9 994.4,306.8 1001.3,314.1 1008.2,313.7 1015.2,317.6 1022.1,318.2 1029.0,320.0 1035.9,323.3 1042.9,325.2 1049.8,324.4 1056.7,325.5 1063.6,329.7 1070.5,334.7 1077.4,338.7 1084.3,342.4 1091.2,346.0 1098.1,349.8 1105.0,353.5 1112.0,357.6 1118.9,361.4 1125.8,364.7 1132.7,368.0 1139.6,370.9 1146.5,372.8" fill="none" stroke="#e8601a" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/>
-<line x1="1048" y1="201" x2="1066" y2="201" stroke="#9aa1ab" stroke-width="2.6" stroke-linecap="round"/>
-<text x="1072" y="205" class="barlab" text-anchor="start">Adam</text>
-<line x1="1048" y1="221" x2="1066" y2="221" stroke="#9aa1ab" stroke-width="2.6" stroke-linecap="round"/>
-<text x="1072" y="225" class="barlab" text-anchor="start">Muon</text>
-<line x1="1048" y1="241" x2="1066" y2="241" stroke="#e8601a" stroke-width="3.6" stroke-linecap="round"/>
-<text x="1072" y="245" class="barlab hl" text-anchor="start">your method</text>
+<line x1="925" y1="329.2" x2="1155" y2="329.2" stroke="#dcdcd6" stroke-width="1"/>
+<text x="917" y="333.22222222222223" class="tick" text-anchor="end">3.5</text>
+<line x1="925" y1="263.7" x2="1155" y2="263.7" stroke="#dcdcd6" stroke-width="1"/>
+<text x="917" y="267.66666666666663" class="tick" text-anchor="end">4.0</text>
+<line x1="925" y1="198.1" x2="1155" y2="198.1" stroke="#dcdcd6" stroke-width="1"/>
+<text x="917" y="202.11111111111106" class="tick" text-anchor="end">4.5</text>
+<text x="925.0" y="379" class="tick" text-anchor="middle">0</text>
+<text x="1020.8333333333334" y="379" class="tick" text-anchor="middle">10</text>
+<text x="1116.6666666666667" y="379" class="tick" text-anchor="middle">20</text>
+<line x1="925" y1="362" x2="1155" y2="362" stroke="#1f2328" stroke-width="1.4"/>
+<line x1="925" y1="185" x2="925" y2="362" stroke="#1f2328" stroke-width="1.4"/>
+<text x="1040.0" y="396" class="tick" text-anchor="middle">training time (min)</text>
+<polyline points="957.0,213.7 963.4,233.7 969.8,247.6 976.2,258.9 982.5,267.4 988.9,274.0 995.3,279.8 1001.6,284.1 1008.0,288.9 1014.3,292.0 1020.8,295.2 1027.1,298.3 1033.5,298.9 1039.8,302.9 1046.2,305.4 1052.6,308.0 1058.9,310.9 1065.3,313.0 1071.6,315.1 1078.0,316.8 1084.3,319.1 1090.7,317.8 1097.0,315.4 1103.4,317.0" fill="none" stroke="#9aa1ab" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="939.2,206.3 946.1,240.1 952.9,257.2 959.7,268.6 966.6,277.6 973.4,284.0 980.2,289.2 987.1,293.4 993.9,297.4 1000.7,300.8 1007.6,303.8 1014.4,306.9 1021.2,309.3 1028.1,311.5 1034.9,313.5 1041.8,315.2 1048.6,316.7 1055.5,318.2 1062.3,319.7 1069.1,321.8 1076.0,323.8 1082.8,325.7 1089.6,327.4 1096.4,329.1 1103.3,330.9 1110.1,332.4 1117.0,333.8 1123.8,335.0 1130.6,336.1 1137.5,337.0 1144.3,337.6" fill="none" stroke="#9aa1ab" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="946.0,238.7 952.9,251.7 959.8,261.9 966.7,266.2 973.6,283.7 980.5,289.3 987.4,292.9 994.4,292.8 1001.3,299.3 1008.2,298.9 1015.2,302.3 1022.1,302.9 1029.0,304.4 1035.9,307.4 1042.9,309.1 1049.8,308.4 1056.7,309.3 1063.6,313.1 1070.5,317.5 1077.4,321.1 1084.3,324.3 1091.2,327.5 1098.1,330.8 1105.0,334.1 1112.0,337.8 1118.9,341.1 1125.8,344.0 1132.7,346.9 1139.6,349.6 1146.5,351.2" fill="none" stroke="#e8601a" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="1030" y1="201" x2="1048" y2="201" stroke="#9aa1ab" stroke-width="2.6" stroke-linecap="round"/>
+<text x="1054" y="205" class="barlab" text-anchor="start">Adam</text>
+<line x1="1030" y1="221" x2="1048" y2="221" stroke="#9aa1ab" stroke-width="2.6" stroke-linecap="round"/>
+<text x="1054" y="225" class="barlab" text-anchor="start">Muon</text>
+<line x1="1030" y1="241" x2="1048" y2="241" stroke="#e8601a" stroke-width="3.6" stroke-linecap="round"/>
+<text x="1054" y="245" class="barlab hl" text-anchor="start">Scion</text>
+<text x="1054" y="262" class="barlab hl" text-anchor="start">(your optimizer)</text>
 </g>
 <g class="ex ex-ts">
 <text x="112" y="182" class="card" text-anchor="start">Chronos-2</text>
 <text x="112" y="282" class="card" text-anchor="start">Toto-2.0</text>
 <text x="112" y="394" class="cardsub" text-anchor="start">e.g. TabICL, a tabular model</text>
-<text x="600" y="388" class="cardsub" text-anchor="middle">Forecast the next values of many</text>
-<text x="600" y="406" class="cardsub" text-anchor="middle">time series, from their past.</text>
+<text x="600" y="370" class="fixed" text-anchor="middle">Every model forecasts the same</text>
+<text x="600" y="394" class="fixed" text-anchor="middle">held-out stretches of each series.</text>
+<a href="https://github.com/benchopt/benchmark_tsfm" target="_top" class="runlink"><text x="1020" y="421" text-anchor="middle" class="run">View the benchmark run →</text></a>
 <text x="548" y="518" class="cardsub" text-anchor="start">e.g. fev-bench series</text>
 <text x="1020" y="140" class="pill" text-anchor="middle">Forecast error (WQL)</text>
 <text x="1020" y="161" class="cardsub" text-anchor="middle">median over series · lower is better</text>
@@ -315,21 +323,21 @@ svg:not([data-theme="light"])[data-example="llm"] .pill-llm .pill-lab, svg:not([
 <text x="926" y="186.5" class="legend" text-anchor="start">GiftEval</text>
 <rect x="1013" y="176" width="12" height="12" rx="2" fill="#a9c0e8"/>
 <text x="1031" y="186.5" class="legend dt" text-anchor="start">fev-bench · your data</text>
-<text x="880" y="216" class="barlab" text-anchor="start">Chronos-2</text>
-<rect x="880" y="224" width="198.4" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
-<text x="1072.3699889256977" y="237.5" class="barval" text-anchor="end">0.112</text>
-<rect x="880" y="244" width="214.6" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
-<text x="1088.6340894904936" y="257.5" class="barval2" text-anchor="end">0.121</text>
-<text x="880" y="286" class="barlab" text-anchor="start">Toto-2.0</text>
-<rect x="880" y="294" width="213.9" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
-<text x="1087.8617448868786" y="307.5" class="barval" text-anchor="end">0.120</text>
-<rect x="880" y="314" width="229.5" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
-<text x="1103.5091371007188" y="327.5" class="barval2" text-anchor="end">0.129</text>
-<text x="880" y="356" class="barlab hl" text-anchor="start">your method (TabICL-v2)</text>
-<rect x="880" y="364" width="222.1" height="17" rx="3" fill="#e8601a" stroke="none" stroke-width="2"/>
-<text x="1096.1215760035664" y="377.5" class="barval" text-anchor="end">0.125</text>
-<rect x="880" y="384" width="259.6" height="17" rx="3" fill="#f6b48f" stroke="#2a5caa" stroke-width="2"/>
-<text x="1133.6153846153848" y="397.5" class="barval2" text-anchor="end">0.146</text>
+<text x="880" y="212" class="barlab" text-anchor="start">Chronos-2</text>
+<rect x="880" y="220" width="198.4" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
+<text x="1072.3699889256977" y="233.5" class="barval" text-anchor="end">0.112</text>
+<rect x="880" y="240" width="214.6" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
+<text x="1088.6340894904936" y="253.5" class="barval2" text-anchor="end">0.121</text>
+<text x="880" y="278" class="barlab" text-anchor="start">Toto-2.0</text>
+<rect x="880" y="286" width="213.9" height="17" rx="3" fill="#9aa1ab" stroke="none" stroke-width="2"/>
+<text x="1087.8617448868786" y="299.5" class="barval" text-anchor="end">0.120</text>
+<rect x="880" y="306" width="229.5" height="17" rx="3" fill="#a9c0e8" stroke="none" stroke-width="2"/>
+<text x="1103.5091371007188" y="319.5" class="barval2" text-anchor="end">0.129</text>
+<text x="880" y="344" class="barlab hl" text-anchor="start">TabICL-v2 (your model)</text>
+<rect x="880" y="352" width="222.1" height="17" rx="3" fill="#e8601a" stroke="none" stroke-width="2"/>
+<text x="1096.1215760035664" y="365.5" class="barval" text-anchor="end">0.125</text>
+<rect x="880" y="372" width="259.6" height="17" rx="3" fill="#f6b48f" stroke="#2a5caa" stroke-width="2"/>
+<text x="1133.6153846153848" y="385.5" class="barval2" text-anchor="end">0.146</text>
 </g>
 </g>
 </svg>

@@ -50,6 +50,14 @@ function initFigure(obj) {
   const setTheme = () => svg.setAttribute("data-theme", html.dataset.theme || "light");
   setTheme();
   new MutationObserver(setTheme).observe(html, {attributes: true, attributeFilter: ["data-theme"]});
+  // Links open in the page, resolved against the figure's own URL
+  svg.querySelectorAll("a[href]").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.location.href = new URL(a.getAttribute("href"), obj.data).href;
+    });
+  });
+
   if (obj.classList.contains("benchopt-add")) {
     // The pills in the figure choose the benchmark it shows.
     const keys = ["house", "llm", "ts"];
@@ -74,14 +82,6 @@ function initFigure(obj) {
     return;
   }
   if (!obj.classList.contains("benchopt-overview")) return;
-
-  // Links open in the page, resolved against the figure's own URL
-  svg.querySelectorAll("a[href]").forEach((a) => {
-    a.addEventListener("click", (e) => {
-      e.preventDefault();
-      window.location.href = new URL(a.getAttribute("href"), obj.data).href;
-    });
-  });
 
   // The figure highlights the selected goal tab once the reader interacts.
   // The SVG styles let a hover take over, so no pointer state is kept here.
