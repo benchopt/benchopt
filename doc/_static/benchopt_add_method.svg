@@ -105,6 +105,7 @@ svg[data-theme="dark"]:has(#goal1:hover) .pt, svg[data-theme="dark"][data-focus=
 
 .ex { display: none; }
 .pill-btn { cursor: pointer; }
+.exlab { font: 500 14px 'IBM Plex Sans', sans-serif; fill: #6b7078; }
 .pill-bg { fill: #ffffff; stroke: #c9ccd2; stroke-width: 1.5; transition: fill .15s; }
 .pill-lab { font: 500 13.5px 'IBM Plex Sans', sans-serif; fill: #3b4150; pointer-events: none; }
 .pill-btn:hover .pill-bg { fill: #f1f2f4; }
@@ -162,17 +163,18 @@ svg:not([data-theme="light"])[data-example="llm"] .pill-llm .pill-lab, svg:not([
 <rect class="bg" width="1200" height="580" fill="#ffffff"/>
 <text x="600" y="40" class="ttl" text-anchor="middle">Add your method or your data. See how it compares.</text>
 <g class="pill-btn pill-house" data-key="house"><title>Show the house prices benchmark</title>
-<rect x="430" y="62" width="110" height="28" rx="14" class="pill-bg"/>
-<text x="485" y="81" class="pill-lab" text-anchor="middle">House prices</text>
+<rect x="470" y="62" width="110" height="28" rx="14" class="pill-bg"/>
+<text x="525" y="81" class="pill-lab" text-anchor="middle">House prices</text>
 </g>
 <g class="pill-btn pill-llm" data-key="llm"><title>Show the llm training benchmark</title>
-<rect x="550" y="62" width="110" height="28" rx="14" class="pill-bg"/>
-<text x="605" y="81" class="pill-lab" text-anchor="middle">LLM training</text>
+<rect x="590" y="62" width="110" height="28" rx="14" class="pill-bg"/>
+<text x="645" y="81" class="pill-lab" text-anchor="middle">LLM training</text>
 </g>
 <g class="pill-btn pill-ts" data-key="ts"><title>Show the time series benchmark</title>
-<rect x="670" y="62" width="110" height="28" rx="14" class="pill-bg"/>
-<text x="725" y="81" class="pill-lab" text-anchor="middle">Time series</text>
+<rect x="710" y="62" width="110" height="28" rx="14" class="pill-bg"/>
+<text x="765" y="81" class="pill-lab" text-anchor="middle">Time series</text>
 </g>
+<text x="460" y="81" class="exlab" text-anchor="end">Examples:</text>
 <text x="175" y="120" class="step" text-anchor="middle">Start with an existing benchmark</text>
 <text x="600" y="120" class="step" text-anchor="middle">Benchopt runs each method</text>
 <text x="1020" y="120" class="step" text-anchor="middle">See how it compares</text>
