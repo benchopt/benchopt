@@ -1,39 +1,37 @@
 ``Benchopt``
 =============
 
-**Compare methods fairly, on benchmarks you can share.**
-*For AI and optimization: same data, same metrics, every method.*
+**Compare machine learning and optimization methods side by side.**
+*Same data, same metrics, every method.*
 
+Benchopt runs each method on the same data, scores it with the same metrics,
+and plots the results. Start from an existing benchmark and add your method in
+one file, or turn the protocol of a paper into a benchmark that others can
+rerun and extend. Your coding agent can do most of the work.
 
-You have datasets, a way to score results, and a few methods to compare.
-Benchopt makes that comparison easy: write the **datasets** and the
-**evaluation** once, plug in the **methods** (called *solvers*), and every
-result is scored the same way. The comparison is fairer by design, and
-benchopt provides the tools to run it efficiently, from your laptop to a
-cluster.
+:ref:`See a comparison <featured_benchmarks>` · :ref:`Run your first benchmark <get_started>`
 
 .. raw:: html
 
-   <object class="benchopt-overview" data="_static/benchopt_overview.svg"
+   <object class="benchopt-figure benchopt-add" data="_static/benchopt_add_method.svg"
            type="image/svg+xml"
-           aria-label="Research, competitions and reference benchmarks all rely on one benchopt benchmark, which produces paper figures, reusable results, leaderboards and a live results site.">
+           aria-label="Add your method to an existing benchmark: benchopt runs it with the same data and metrics as the other methods, and plots how it compares.">
    </object>
-   <p class="overview-hint">Hover a goal to see what it uses and produces,
-   click a tool or an arrow to open its documentation.</p>
 
 
-One benchmark, three goals
---------------------------
+One benchmark, three uses
+-------------------------
 
 .. tab-set::
     :class: goal-tabs
 
-    .. tab-item:: :octicon:`person` Research
+    .. tab-item:: :octicon:`person` Compare my method
         :sync: research
 
-        Create a new method or answer a research question. Compare it to
-        baselines without rewriting the evaluation, and get the figures for
-        your paper.
+        Pick the experimental protocol of a paper, turn it into a reproducible
+        benchmark (typically with your coding agent), then add the missing
+        baselines, your method, or the use cases you think matter. You get
+        figures for your paper and results others can rerun.
 
         **Example:** the `simulated benchmark
         <https://github.com/soda-inria/crossing-the-validation-crisis/tree/main/simulated>`_
@@ -43,7 +41,7 @@ One benchmark, three goals
         `ML <https://github.com/benchopt/template_benchmark_ml>`_ |
         `optimization <https://github.com/benchopt/template_benchmark>`_
 
-    .. tab-item:: :octicon:`people` Competition
+    .. tab-item:: :octicon:`people` Run a competition
         :sync: competition
 
         Evaluate the methods submitted by participants, with the same scoring
@@ -57,7 +55,7 @@ One benchmark, three goals
         **Start from the** `Codabench template
         <https://github.com/benchopt/template_codabench>`_.
 
-    .. tab-item:: :octicon:`organization` Reference benchmark
+    .. tab-item:: :octicon:`organization` Maintain a reference benchmark
         :sync: reference
 
         Give a consolidated view of a field, across many test cases. The
@@ -70,6 +68,19 @@ One benchmark, three goals
         <https://github.com/scikit-adaptation/skada-bench>`_.
 
         **Publish your results:** see :ref:`publish_benchmark`.
+
+
+Explore benchopt
+----------------
+
+.. raw:: html
+
+   <object class="benchopt-figure benchopt-overview" data="_static/benchopt_overview.svg"
+           type="image/svg+xml"
+           aria-label="Research, competitions and reference benchmarks all rely on one benchopt benchmark, which produces paper figures, reusable results, leaderboards and a live results site.">
+   </object>
+   <p class="overview-hint">Hover a use to see what it relies on and produces,
+   click a tool or an arrow to open its documentation.</p>
 
 
 Use benchopt

@@ -3,6 +3,8 @@
 Available benchmarks
 ====================
 
+.. _featured_benchmarks:
+
 Featured benchmarks
 -------------------
 

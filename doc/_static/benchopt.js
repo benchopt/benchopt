@@ -40,9 +40,8 @@ window.addEventListener("load", function() {
   }
 });
 
-// Sync the landing page overview figure with the page theme and the goal tabs
-function initOverviewFigure() {
-  const obj = document.querySelector("object.benchopt-overview");
+// Pass the page theme to the landing page figures, and sync the overview with the goal tabs
+function initFigure(obj) {
   const svg = obj?.contentDocument?.documentElement;
   if (!svg || svg.tagName.toLowerCase() !== "svg" || svg.dataset.synced) return;
   svg.dataset.synced = "1";
@@ -51,6 +50,7 @@ function initOverviewFigure() {
   const setTheme = () => svg.setAttribute("data-theme", html.dataset.theme || "light");
   setTheme();
   new MutationObserver(setTheme).observe(html, {attributes: true, attributeFilter: ["data-theme"]});
+  if (!obj.classList.contains("benchopt-overview")) return;
 
   // Links open in the page, resolved against the figure's own URL
   svg.querySelectorAll("a[href]").forEach((a) => {
@@ -110,6 +110,8 @@ function initOverviewFigure() {
   });
 }
 window.addEventListener("load", function() {
-  initOverviewFigure();
-  document.querySelector("object.benchopt-overview")?.addEventListener("load", initOverviewFigure);
+  for (const obj of document.querySelectorAll("object.benchopt-figure")) {
+    initFigure(obj);
+    obj.addEventListener("load", () => initFigure(obj));
+  }
 });
