@@ -20,6 +20,7 @@ const UNDEFINED_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  *   - scale (string)
  *   - with_quantiles (boolean)
  *   - hidden_curves (array)
+ *   - highlight_tag (string, '' for none, the plot's default if unset)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
@@ -38,6 +39,7 @@ const setState = (partialState) => {
 
   // When changing chart type, apply the default scale defined by the plot data
   if (plotKindChanged) {
+    delete window._state.highlight_tag;
     const plotData = getPlotData();
     if (plotData && "scale" in plotData) {
       window._state.scale = plotData.scale;
@@ -340,10 +342,14 @@ const getPlotData = () => {
 const getScatterData = () => {
   // create a list of object to plot in plotly
   const curves = [];
+  const tag = highlightTag();
 
   getPlotData().data.forEach(curveData => {
     label = curveData.label;
     y = curveData.y;
+    // Curves with the highlighted tag get their label next to their last
+    // point, the others are dimmed.
+    const tagged = (curveData.tags ?? []).includes(tag);
     if ("y_low" in curveData && "y_high" in curveData && state().with_quantiles) {
       y_low = curveData.y_low;
       y_high = curveData.y_high;
@@ -355,7 +361,10 @@ const getScatterData = () => {
     curves.push({
       type: 'scatter',
       name: label,
-      mode: 'lines+markers',
+      mode: tagged ? 'lines+markers+text' : 'lines+markers',
+      text: tagged ? curveData.x.map((_, i) => i === curveData.x.length - 1 ? label : '') : undefined,
+      textposition: 'top right',
+      opacity: tag && !tagged ? 0.3 : 1,
       line: {
         color: curveData.color,
       },
@@ -1198,6 +1207,15 @@ const isChart = chart => {
 
 const isVisible = curve => !state().hidden_curves.includes(curve);
 
+// The tag whose curves are highlighted: the user's choice, else the plot's
+// default `highlight`. '' highlights nothing.
+const highlightTag = () => state().highlight_tag ?? getPlotData().highlight ?? '';
+
+// The tags of the current plot's curves, in order of appearance.
+const getTags = () => [...new Set(
+  getPlotData().data.flatMap(curveData => curveData.tags ?? [])
+)];
+
 const isSolverAvailable = solver => data(solver) !== null;
 
 const isSmallScreen = () => window.screen.availHeight < 900;
@@ -2039,6 +2057,7 @@ const renderLegend = () => {
   show(container);
 
   legend.innerHTML = '';
+  renderHighlightSelector();
 
   getCurves().forEach(curve => {
     const curve_data = data(curve);
@@ -2052,6 +2071,27 @@ const renderLegend = () => {
   legend.appendChild(makeResizeHandle(legend, 'x', clampLegendWidth));
   legend.style.width = legendWidth;
 }
+
+// Menu of the curve tags to highlight, hidden when no curve has a tag.
+const renderHighlightSelector = () => {
+  const container = document.getElementById('legend_highlight');
+  const tags = getTags();
+  container.innerHTML = '';
+  (tags.length ? show : hide)(container);
+  if (!tags.length) return;
+
+  const select = document.createElement('select');
+  select.className = 'ml-2 text-sm rounded border-gray-300 py-0';
+  ['', ...tags].forEach(tag => {
+    const option = document.createElement('option');
+    option.value = tag;
+    option.textContent = tag || 'none';
+    select.appendChild(option);
+  });
+  select.value = highlightTag();
+  select.addEventListener('change', () => setState({highlight_tag: select.value}));
+  container.append('Label:', select);
+};
 
 // Width the user dragged the legend to ('' until they do).
 let legendWidth = '';
@@ -2116,6 +2156,19 @@ const createLegendItem = (curve, color, symbolNumber) => {
       window.clickedCurve = null;
       handleCurveDoubleClick(curve);
     }
+  });
+
+  // Hovering a legend item brings its curve forward and dims the others.
+  item.addEventListener('mouseenter', () => {
+    const div = getPlotDiv();
+    Plotly.restyle(div, {
+      opacity: div.data.map(trace => trace.legendgroup === curve ? 1 : 0.15)
+    });
+  });
+  item.addEventListener('mouseleave', () => {
+    Plotly.restyle(getPlotDiv(), {
+      opacity: getScatterData().map(trace => trace.opacity ?? 1)
+    });
   });
 
   // Create the HTML text node for the curve name in the legend

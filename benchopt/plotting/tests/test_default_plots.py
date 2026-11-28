@@ -247,3 +247,20 @@ def test_table_cells_descriptions():
         [custom, {'value': '**O**', 'description': 'objective O'}],
         [3, 'other'],
     ]
+
+
+def test_scatter_highlight_tag_matplotlib():
+    from benchopt.plotting.generate_matplotlib import get_plot_scatter
+
+    trace = dict(x=[1, 2], y=[1, 2], color="C0", marker="o")
+    plot_data = dict(
+        title="", xlabel="", ylabel="", highlight="GPU", data=[
+            dict(trace, label="tagged", tags=["GPU"]),
+            dict(trace, label="other", tags=["CPU"]),
+            dict(trace, label="no_tags"),
+        ]
+    )
+    fig = get_plot_scatter(plot_data)
+    ax = fig.axes[0]
+    assert [t.get_text() for t in ax.texts] == ["tagged"]
+    assert [line.get_alpha() for line in ax.lines] == [1, .3, .3]

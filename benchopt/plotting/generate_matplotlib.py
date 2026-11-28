@@ -53,14 +53,23 @@ def get_plot_figure(plot_datas, output_dir):
 
 def get_plot_scatter(plot_data):
     fig = plt.figure()
+    tag = plot_data.get("highlight")
     for curve_data in plot_data["data"]:
+        tagged = tag in curve_data.get("tags", [])
         plt.plot(
             curve_data["x"], curve_data["y"],
             color=curve_data["color"],
             marker=curve_data["marker"],
             label=curve_data["label"],
-            linewidth=3
+            linewidth=3,
+            alpha=.3 if tag and not tagged else 1,
         )
+        if tagged:
+            plt.annotate(
+                curve_data["label"],
+                (curve_data["x"][-1], curve_data["y"][-1]),
+                xytext=(5, 5), textcoords="offset points",
+            )
 
         if "y_low" in curve_data and "y_high" in curve_data:
             y_low = curve_data["y_low"]
