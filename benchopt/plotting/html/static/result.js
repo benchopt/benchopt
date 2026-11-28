@@ -2090,7 +2090,11 @@ const renderLegend = () => {
   legend.innerHTML = '';
   renderGroupSelector();
 
-  getCurves().forEach(curve => {
+  // The curves of the group first, then the others, and the hidden ones last.
+  const terms = groupTerms();
+  const rank = curve => !isVisible(curve) ? 2
+    : terms.length && !inGroup(data(curve), terms) ? 1 : 0;
+  getCurves().sort((a, b) => rank(a) - rank(b)).forEach(curve => {
     const curve_data = data(curve);
     legend.appendChild(
       createLegendItem(curve, curve_data.color, curve_data.marker % N_SYMBOLS)
@@ -2102,6 +2106,10 @@ const renderLegend = () => {
   legend.appendChild(makeResizeHandle(legend, 'x', clampLegendWidth));
   legend.style.width = legendWidth;
 }
+
+// Whether the group controls are unfolded, set once the user folds or
+// unfolds them. By default, they are unfolded when the curves have tags.
+let groupMenuOpen = null;
 
 // Whether to give the focus back to the group box after a re-render.
 let groupInputRefocus = false;
@@ -2138,6 +2146,16 @@ const renderGroupSelector = () => {
   // From the keyboard, keep typing in the box after the re-render.
   const typeTerms = group => { groupInputRefocus = true; setTerms(group); };
   container.innerHTML = '';
+
+  const menu = document.createElement('details');
+  menu.open = groupMenuOpen ?? (getTags().length > 0 || terms.length > 0);
+  menu.addEventListener('toggle', () => { groupMenuOpen = menu.open; });
+  const summary = document.createElement('summary');
+  summary.className = 'text-sm text-gray-700 mb-1';
+  summary.style.cursor = 'pointer';
+  summary.textContent = `Groups${terms.length ? ': ' + terms.join(', ') : ''}`;
+  menu.appendChild(summary);
+  container.appendChild(menu);
 
   const row = document.createElement('div');
   row.className = 'flex flex-wrap items-center';
@@ -2185,15 +2203,22 @@ const renderGroupSelector = () => {
 
   row.appendChild(toggle('Label', groupLabel(), 'group_label'));
   row.appendChild(toggle('Highlight', groupHighlight(), 'group_highlight'));
-  const hideOthers = chip('Hide others', () => setState({
-    hidden_curves: getCurves().filter(curve => {
-      const curveData = data(curve);
-      return !(curveData.tags ?? []).includes('all') && !inGroup(curveData, terms);
-    })
+  // Curves tagged 'all' are in no group and never hidden by these buttons.
+  const curvesIn = inside => getCurves().filter(curve => {
+    const curveData = data(curve);
+    return !(curveData.tags ?? []).includes('all')
+      && inGroup(curveData, terms) === inside;
+  });
+  const hideGroup = chip('Hide group', () => setState({
+    hidden_curves: [...new Set([...state().hidden_curves, ...curvesIn(true)])]
   }));
-  hideOthers.style.marginLeft = '0.75rem';
-  row.append(hideOthers, chip('Show all', purgeHiddenCurves));
-  container.appendChild(row);
+  hideGroup.style.marginLeft = '0.75rem';
+  row.append(
+    hideGroup,
+    chip('Hide others', () => setState({hidden_curves: curvesIn(false)})),
+    chip('Show all', purgeHiddenCurves),
+  );
+  menu.appendChild(row);
 
   const tags = getTags().filter(tag => !terms.includes(tag));
   if (tags.length) {
@@ -2201,7 +2226,7 @@ const renderGroupSelector = () => {
     tagRow.className = 'flex flex-wrap items-center text-sm text-gray-500';
     tagRow.append('Tags:\u00a0');
     tags.forEach(tag => tagRow.appendChild(chip(tag, () => setTerms([...terms, tag]))));
-    container.appendChild(tagRow);
+    menu.appendChild(tagRow);
   }
   if (groupInputRefocus) input.focus();
   groupInputRefocus = false;

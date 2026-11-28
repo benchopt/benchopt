@@ -108,8 +108,8 @@ each dictionary represents a trace in the plot. Each dictionary must contain:
 - :code:`tags` (optional): A list of strings, e.g. :code:`["GPU", "pareto"]`.
   The legend of the HTML report selects a group of traces from terms, each a
   tag, a solver name or part of one, or :code:`all`. The traces of the group
-  can show their label next to their last point, the others can be dimmed or
-  hidden. A trace labeled with a solver name is also tagged with its base
+  can show their label next to their last point or be hidden, and the others
+  can be dimmed or hidden. A trace labeled with a solver name is also tagged with its base
   name when several solvers share it. A trace tagged :code:`all`, e.g. a
   reference line, is never in the group nor dimmed.
 - :code:`y_low`, :code:`y_high` (optional): Lists of values to display uncertainty in the plot.
