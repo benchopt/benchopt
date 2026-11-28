@@ -9,10 +9,12 @@
 
 |Test Status| |codecov| |Documentation| |Python 3.10+| |install-per-months| |discord| |SWH|
 
-``Benchopt`` is a Python framework to build and run benchmarks. You write the
-**datasets** and the **evaluation** once, and every **method** (called a
-*solver*) is run and scored the same way, on your laptop or on a cluster.
-Adding a dataset, a metric or a method updates the whole comparison.
+You have datasets, a way to score results, and a few methods to compare.
+``Benchopt`` makes that comparison easy: write the **datasets** and the
+**evaluation** once, plug in the **methods** (called *solvers*), and every
+result is scored the same way. The comparison is fairer by design, and
+benchopt provides the tools to run it efficiently, from your laptop to a
+cluster.
 
 .. image:: https://raw.githubusercontent.com/benchopt/benchopt/main/doc/_static/benchopt_overview.svg
    :width: 100%

@@ -5,12 +5,12 @@
 *For AI and optimization: same data, same metrics, every method.*
 
 
-|Python 3.10+| |PyPI version| |License|
-
-Benchopt is a Python framework to build and run benchmarks. You write the
-**datasets** and the **evaluation** once, and every **method** (called a
-*solver*) is run and scored the same way, on your laptop or on a cluster.
-Adding a dataset, a metric or a method updates the whole comparison.
+You have datasets, a way to score results, and a few methods to compare.
+Benchopt makes that comparison easy: write the **datasets** and the
+**evaluation** once, plug in the **methods** (called *solvers*), and every
+result is scored the same way. The comparison is fairer by design, and
+benchopt provides the tools to run it efficiently, from your laptop to a
+cluster.
 
 .. raw:: html
 
@@ -72,8 +72,8 @@ One benchmark, three goals
         **Publish your results:** see :ref:`publish_benchmark`.
 
 
-Learn benchopt
---------------
+Use benchopt
+------------
 
 Start small and grow when needed: run one of the :ref:`available_benchmarks`, add your method
 as one file, write your own benchmark from a template, then scale it to a
@@ -152,14 +152,6 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
       booktitle = {NeurIPS},
       url       = {https://arxiv.org/abs/2206.13424}
    }
-
-
-.. |Python 3.10+| image:: https://img.shields.io/badge/python-3.10%2B-blue
-   :target: https://www.python.org/downloads/release/python-3100/
-.. |License| image:: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
-   :target: https://github.com/benchopt/benchopt/blob/main/LICENSE
-.. |PyPI version| image:: https://badge.fury.io/py/benchopt.svg
-   :target: https://pypi.org/project/benchopt/
 
 
 .. it mandatory to keep the toctree here although it doesn't show up in the page
