@@ -51,31 +51,26 @@ function initFigure(obj) {
   setTheme();
   new MutationObserver(setTheme).observe(html, {attributes: true, attributeFilter: ["data-theme"]});
   if (obj.classList.contains("benchopt-add")) {
-    // The example tabs choose the benchmark shown in the figure.
-    const tabs = document.querySelector(".example-tabs");
-    if (!tabs) return;
+    // The pills in the figure choose the benchmark it shows.
     const keys = ["house", "llm", "ts"];
-    const inputs = [...tabs.querySelectorAll(":scope > input")];
-    const show = () => svg.setAttribute("data-example", keys[inputs.findIndex(x => x.checked)]);
-    tabs.addEventListener("change", show);
+    const show = (key) => svg.setAttribute("data-example", key);
     // On first view, show each example in turn; any interaction stops it.
     let demo = null;
     const stop = () => { clearTimeout(demo); demo = null; };
     const step = (i) => {
-      inputs[i % inputs.length].checked = true;
-      show();
-      if (i < inputs.length) demo = setTimeout(() => step(i + 1), 2600);
+      show(keys[i % keys.length]);
+      if (i < keys.length) demo = setTimeout(() => step(i + 1), 2600);
     };
+    svg.querySelectorAll(".pill-btn").forEach((pill) => {
+      pill.addEventListener("click", () => { stop(); show(pill.dataset.key); });
+    });
     new IntersectionObserver((entries, observer) => {
       if (entries[0].isIntersecting) {
         observer.disconnect();
         demo = setTimeout(() => step(1), 2600);
       }
     }, {threshold: 0.6}).observe(obj);
-    ["pointerdown", "mouseover"].forEach((ev) => {
-      svg.addEventListener(ev, stop);
-      tabs.addEventListener(ev, stop);
-    });
+    ["pointerdown", "mouseover"].forEach((ev) => svg.addEventListener(ev, stop));
     return;
   }
   if (!obj.classList.contains("benchopt-overview")) return;

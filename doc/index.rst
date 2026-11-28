@@ -11,27 +11,6 @@ rerun and extend. Your coding agent can do most of the work.
 
 :ref:`See a comparison <featured_benchmarks>` · :ref:`Run your first benchmark <get_started>`
 
-.. tab-set::
-    :class: example-tabs
-
-    .. tab-item:: House prices
-        :sync: house
-
-        Which method predicts house prices with the smallest error? See the
-        `house prices benchmark <https://github.com/benchopt/benchmark_house_prices>`_.
-
-    .. tab-item:: LLM training
-        :sync: llm
-
-        Which optimizer trains a small GPT to the lowest loss? See the
-        `NanoGPT benchmark <https://github.com/benchopt/benchmark_nanogpt>`_.
-
-    .. tab-item:: Time series
-        :sync: ts
-
-        Which foundation model forecasts time series best? See the
-        `time series benchmark <https://github.com/benchopt/benchmark_tsfm>`_.
-
 .. raw:: html
 
    <object class="benchopt-figure benchopt-add" data="_static/benchopt_add_method.svg"
