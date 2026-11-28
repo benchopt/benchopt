@@ -119,7 +119,9 @@ def shorten_names(df):
     -------
     df : pandas.DataFrame
         Copy of *df* with shortened ``*_name`` columns, added ``*_full_name``
-        columns and HTML ``*_description`` columns.
+        columns and HTML ``*_description`` columns. A ``solver_tag`` column
+        holds the base name of the solvers that share it with another one,
+        and None for the others.
     """
     df = df.copy()
     for col, desc_col in _DESCRIPTION_COLUMNS.items():
@@ -141,6 +143,14 @@ def shorten_names(df):
                 for k, v in df.groupby(col)[desc_col].first().items()
             }
         short_map, desc = compute_labels(default_names, prose)
+        if col == "solver_name":
+            bases = {
+                n: _extract_options(d)[0] for n, d in default_names.items()
+            }
+            counts = Counter(bases.values())
+            df["solver_tag"] = names.map(
+                {n: b if counts[b] > 1 else None for n, b in bases.items()}
+            )
 
         full_col = col.replace("_name", "_full_name")
         df[full_col] = names

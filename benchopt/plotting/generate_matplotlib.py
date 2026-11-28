@@ -53,14 +53,37 @@ def get_plot_figure(plot_datas, output_dir):
 
 def get_plot_scatter(plot_data):
     fig = plt.figure()
+    terms = plot_data.get("highlight") or []
+    terms = [terms] if isinstance(terms, str) else terms
+    terms = [t.lower() for t in terms]
+    all_tags = {
+        t.lower() for c in plot_data["data"] for t in c.get("tags", [])
+    }
     for curve_data in plot_data["data"]:
+        # A term is a tag, or part of the label when it is no tag, and 'all'
+        # takes every curve. Curves tagged 'all' are never dimmed nor
+        # labelled.
+        tags = [t.lower() for t in curve_data.get("tags", [])]
+        label = curve_data["label"].lower()
+        always = "all" in tags
+        tagged = not always and any(
+            t == "all" or t in tags or (t not in all_tags and t in label)
+            for t in terms
+        )
         plt.plot(
             curve_data["x"], curve_data["y"],
             color=curve_data["color"],
             marker=curve_data["marker"],
             label=curve_data["label"],
-            linewidth=3
+            linewidth=3,
+            alpha=.3 if terms and not tagged and not always else 1,
         )
+        if tagged:
+            plt.annotate(
+                curve_data["label"],
+                (curve_data["x"][-1], curve_data["y"][-1]),
+                xytext=(5, 5), textcoords="offset points",
+            )
 
         if "y_low" in curve_data and "y_high" in curve_data:
             y_low = curve_data["y_low"]

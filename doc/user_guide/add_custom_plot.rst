@@ -105,6 +105,13 @@ each dictionary represents a trace in the plot. Each dictionary must contain:
 - :code:`marker` (optional): The marker style of the trace.
 - :code:`marker_size` (optional): The size of the trace markers, 10 by
   default.
+- :code:`tags` (optional): A list of strings, e.g. :code:`["GPU", "pareto"]`.
+  The legend of the HTML report selects a group of traces from terms, each a
+  tag, a solver name or part of one, or :code:`all`. The traces of the group
+  can show their label next to their last point or be hidden, and the others
+  can be dimmed or hidden. A trace labeled with a solver name is also tagged with its base
+  name when several solvers share it. A trace tagged :code:`all`, e.g. a
+  reference line, is never in the group nor dimmed.
 - :code:`y_low`, :code:`y_high` (optional): Lists of values to display uncertainty in the plot.
   They will be used to display shaded area around the plot.
 - :code:`x_low`, :code:`x_high` (optional): Lists of values to display uncertainty in the plot.
@@ -120,6 +127,8 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
   This only affects the matplotlib backend, not the html page.
 - :code:`scale` (optional, default="loglog"): The scale of the axes in the matplotlib backend,
   can be either "linear", "semilog-x", "semilog-y" or "loglog".
+- :code:`highlight` (optional): The term or list of terms of the default
+  group, see :code:`tags` above.
 
 .. code-block:: python
 

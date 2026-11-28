@@ -106,6 +106,13 @@ PLOT
 - Custom ``scatter`` plots can set the size of a trace's markers with
   ``marker_size``. By `Thomas Moreau`_ (:gh:`1052`)
 
+- Traces of custom ``scatter`` plots can have ``tags``, and solvers sharing
+  a base name are tagged with it. In the legend of the HTML report, a group
+  of traces is selected by typing tags or solver names, to label, highlight
+  or hide them, and views save it. The plot metadata can set the default
+  group with ``highlight``. Hovering a legend item highlights its trace.
+  By `Thomas Moreau`_ (:gh:`1061`)
+
 - The "Suboptimal Curve" and "Relative Curve" toggles are replaced by a
   ``Y_axis`` option of the ``objective_curve`` plot, so they no longer apply
   to custom scatter plots. Views using the deprecated ``suboptimal_curve``
